@@ -1,0 +1,9 @@
+desktop
+android
+release
+*.exe
+*.pdb
+build-output
+.git
+.github
+node_modules
