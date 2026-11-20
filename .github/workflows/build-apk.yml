@@ -1,0 +1,60 @@
+name: Build and Release Android APK
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build-apk:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v3
+        with:
+          gradle-version: '8.5'
+
+      - name: Build Android APK
+        working-directory: ./android
+        run: gradle assembleDebug --stacktrace
+
+      - name: Rename APK
+        run: |
+          mkdir -p build-output
+          cp android/app/build/outputs/apk/debug/app-debug.apk build-output/RAIWAVE.apk
+
+      - name: Upload APK Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: RAIWAVE-Android-APK
+          path: build-output/RAIWAVE.apk
+
+      - name: Release APK
+        uses: softprops/action-gh-release@v2
+        if: startsWith(github.ref, 'refs/tags/') || github.ref == 'refs/heads/main'
+        with:
+          tag_name: v1.0.0
+          name: "RAIWAVE v1.0.0 Official Release"
+          body: |
+            ### 🎵 RAIWAVE v1.0.0 — Feel Every Frequency
+            **Lead Engineer & Creator:** Kazi Raiyan
+
+            - **Android APK:** Download and install `RAIWAVE.apk` on any Android device.
+            - **Web & PWA:** [https://raiwave.vercel.app](https://raiwave.vercel.app)
+            - **Desktop:** Run `RAIWAVE.exe`
+          files: |
+            build-output/RAIWAVE.apk
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

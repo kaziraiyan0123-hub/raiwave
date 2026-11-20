@@ -1,0 +1,9 @@
+<resources>
+    <style name="Theme.RAIWAVE" parent="Theme.MaterialComponents.DayNight.NoActionBar">
+        <item name="colorPrimary">@color/wave_lime</item>
+        <item name="colorSecondary">@color/ocean_teal</item>
+        <item name="android:statusBarColor">@color/black</item>
+        <item name="android:navigationBarColor">@color/black</item>
+        <item name="android:windowBackground">@color/black</item>
+    </style>
+</resources>
