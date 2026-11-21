@@ -8,6 +8,7 @@ import {
   Heart,
   Music2,
   Sparkles,
+  Smartphone,
 } from 'lucide-react'
 import { usePlayer } from '../context/PlayerContext'
 import { SAMPLE_PLAYLISTS } from '../data/musicData'
@@ -174,6 +175,22 @@ export const Sidebar: React.FC = () => {
                 </button>
               )
             })}
+          </div>
+
+          {/* Direct Mobile App Download */}
+          <div className="pt-2 border-t border-white/5">
+            <a
+              href="/RAIWAVE.apk"
+              download="RAIWAVE.apk"
+              className="flex items-center justify-between px-3 py-2 rounded-xl bg-white/5 hover:bg-white/10 text-white text-xs font-semibold transition-all border border-white/5 group"
+              title="Direct 1-tap download of RAIWAVE.apk for Android (no GitHub required)"
+            >
+              <div className="flex items-center gap-2">
+                <Smartphone className="w-3.5 h-3.5 text-[#B6F36B] group-hover:scale-110 transition-transform" />
+                <span>Get Mobile App</span>
+              </div>
+              <span className="text-[10px] text-[#52D6C9] font-mono font-bold">APK (5MB)</span>
+            </a>
           </div>
 
           {/* Bottom High-Res Audio Badge */}

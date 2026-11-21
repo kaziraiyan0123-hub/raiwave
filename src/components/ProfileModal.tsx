@@ -243,13 +243,13 @@ export const ProfileModal: React.FC = () => {
               </button>
 
               <a
-                href="https://github.com/kaziraiyan0123-hub/raiwave/releases/latest"
-                target="_blank"
-                rel="noreferrer"
-                className="w-full sm:w-auto px-4 py-2 rounded-xl bg-[#52D6C9]/10 hover:bg-[#52D6C9]/20 text-[#52D6C9] text-xs font-bold font-display transition-all flex items-center justify-center gap-1.5 border border-[#52D6C9]/30"
+                href="/RAIWAVE.apk"
+                download="RAIWAVE.apk"
+                className="w-full sm:w-auto px-4 py-2 rounded-xl bg-[#52D6C9]/10 hover:bg-[#52D6C9]/20 text-[#52D6C9] text-xs font-bold font-display transition-all flex items-center justify-center gap-1.5 border border-[#52D6C9]/30 shadow-sm active:scale-95"
+                title="Direct 1-tap download of RAIWAVE.apk directly to your phone (no GitHub account required)"
               >
                 <Smartphone className="w-3.5 h-3.5" />
-                <span>Download APK</span>
+                <span>Direct Download APK</span>
               </a>
             </div>
           </div>
