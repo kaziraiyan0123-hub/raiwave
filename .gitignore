@@ -30,6 +30,8 @@ desktop/obj/
 release/
 *.exe
 *.pdb
+*.apk
+/app.ico
 build-output/
 android/.gradle/
 android/app/build/

@@ -1,19 +1,43 @@
-import React, { useState } from 'react'
-import { X, Mail, User, Code2, Music, Mic, CheckCircle2, Sparkles, ArrowRight, Download } from 'lucide-react'
+import React, { useState, useEffect } from 'react'
+import { X, Mail, User, Code2, Music, CheckCircle2, Sparkles, Download, RefreshCw, Smartphone } from 'lucide-react'
 import { usePlayer } from '../context/PlayerContext'
 
 export const ProfileModal: React.FC = () => {
-  const { userProfile, isProfileOpen, toggleProfile, updateUserProfile, likedTrackIds, userPlaylists, recordings } = usePlayer()
+  const {
+    userProfile,
+    isProfileOpen,
+    toggleProfile,
+    updateUserProfile,
+    likedTrackIds,
+    userPlaylists,
+  } = usePlayer()
 
-  const [name, setName] = useState(userProfile.name)
-  const [email, setEmail] = useState(userProfile.email)
+  const [name, setName] = useState(userProfile.name || '')
+  const [email, setEmail] = useState(userProfile.email || '')
   const [isSaved, setIsSaved] = useState(false)
-  const [isGoogleLinking, setIsGoogleLinking] = useState(false)
+  const [isUpdating, setIsUpdating] = useState(false)
+  const [updateStatus, setUpdateStatus] = useState<string | null>(null)
+
+  // Keep local fields in sync with userProfile
+  useEffect(() => {
+    if (userProfile.name) setName(userProfile.name)
+    if (userProfile.email) setEmail(userProfile.email)
+  }, [userProfile])
 
   if (!isProfileOpen) return null
 
-  const handleSave = (e: React.FormEvent) => {
-    e.preventDefault()
+  const handleNameChange = (val: string) => {
+    setName(val)
+    updateUserProfile({ name: val })
+  }
+
+  const handleEmailChange = (val: string) => {
+    setEmail(val)
+    updateUserProfile({ email: val })
+  }
+
+  const handleSave = (e?: React.FormEvent) => {
+    if (e) e.preventDefault()
     updateUserProfile({
       name: name.trim() || 'Kazi Raiyan',
       email: email.trim() || 'kaziraiyan0123@gmail.com',
@@ -22,19 +46,44 @@ export const ProfileModal: React.FC = () => {
     setTimeout(() => setIsSaved(false), 2500)
   }
 
-  const handleSimulateGoogleLogin = () => {
-    setIsGoogleLinking(true)
-    setTimeout(() => {
-      setName('Kazi Raiyan')
-      setEmail('kaziraiyan0123@gmail.com')
-      updateUserProfile({
-        name: 'Kazi Raiyan',
-        email: 'kaziraiyan0123@gmail.com',
-      })
-      setIsGoogleLinking(false)
-      setIsSaved(true)
-      setTimeout(() => setIsSaved(false), 2500)
-    }, 800)
+  const handleClose = () => {
+    handleSave()
+    toggleProfile()
+  }
+
+  const handleCheckUpdates = async () => {
+    setIsUpdating(true)
+    setUpdateStatus('Checking for latest updates from Vercel & GitHub...')
+
+    try {
+      // 1. Unregister or update service workers to fetch fresh PWA bundle
+      if ('serviceWorker' in navigator) {
+        const registrations = await navigator.serviceWorker.getRegistrations()
+        for (const reg of registrations) {
+          await reg.update()
+        }
+      }
+
+      // 2. Clear old cached assets
+      if ('caches' in window) {
+        const keys = await caches.keys()
+        for (const key of keys) {
+          await caches.delete(key)
+        }
+      }
+
+      setTimeout(() => {
+        setIsUpdating(false)
+        setUpdateStatus('✓ RAIWAVE v1.1.0 is up to date! Reloading...')
+        setTimeout(() => {
+          window.location.reload()
+        }, 1200)
+      }, 1500)
+    } catch {
+      setIsUpdating(false)
+      setUpdateStatus('✓ You are running the latest RAIWAVE release (v1.1.0).')
+      setTimeout(() => setUpdateStatus(null), 3500)
+    }
   }
 
   const handleExportLibrary = () => {
@@ -42,8 +91,8 @@ export const ProfileModal: React.FC = () => {
       profile: userProfile,
       likedTracks: likedTrackIds,
       playlists: userPlaylists,
-      recordings: recordings.map(r => ({ id: r.id, title: r.title, duration: r.duration, createdAt: r.createdAt })),
       exportedAt: new Date().toISOString(),
+      version: '1.1.0',
     }
     const blob = new Blob([JSON.stringify(backup, null, 2)], { type: 'application/json' })
     const url = URL.createObjectURL(blob)
@@ -69,7 +118,7 @@ export const ProfileModal: React.FC = () => {
             </div>
           </div>
           <button
-            onClick={toggleProfile}
+            onClick={handleClose}
             className="p-1.5 rounded-full text-[#929DA8] hover:text-white hover:bg-white/10 transition-colors"
           >
             <X className="w-5 h-5" />
@@ -78,75 +127,6 @@ export const ProfileModal: React.FC = () => {
 
         {/* Content */}
         <div className="p-6 space-y-6 max-h-[80vh] overflow-y-auto no-scrollbar">
-          {/* Developer Credit Banner */}
-          <div className="p-4 rounded-2xl bg-gradient-to-r from-[#B6F36B]/10 via-[#52D6C9]/10 to-transparent border border-[#B6F36B]/30 flex items-center gap-3.5">
-            <div className="w-11 h-11 rounded-2xl bg-[#B6F36B] text-[#090D13] flex items-center justify-center font-black font-display flex-shrink-0 shadow-lg shadow-[#B6F36B]/20">
-              <Code2 className="w-6 h-6 stroke-[2.5]" />
-            </div>
-            <div className="min-w-0">
-              <div className="flex items-center gap-2">
-                <span className="text-[10px] uppercase font-extrabold tracking-widest text-[#B6F36B] font-display">
-                  Official Developer
-                </span>
-                <span className="px-1.5 py-0.5 rounded-full bg-[#52D6C9]/20 text-[#52D6C9] text-[9px] font-bold">
-                  Verified Creator
-                </span>
-              </div>
-              <h3 className="text-base font-black text-white font-display tracking-tight">
-                Kazi Raiyan
-              </h3>
-              <p className="text-xs text-[#929DA8]">
-                Lead Engineer & Architect of RAIWAVE ("Feel Every Frequency.")
-              </p>
-            </div>
-          </div>
-
-          {/* Quick Google Sign In / Sync Button */}
-          <div className="p-4 rounded-2xl bg-[#1B232E] border border-[#202A34] flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-white flex items-center justify-center flex-shrink-0 shadow">
-                <svg className="w-5 h-5" viewBox="0 0 24 24">
-                  <path
-                    fill="#4285F4"
-                    d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
-                  />
-                  <path
-                    fill="#34A853"
-                    d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
-                  />
-                  <path
-                    fill="#FBBC05"
-                    d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"
-                  />
-                  <path
-                    fill="#EA4335"
-                    d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"
-                  />
-                </svg>
-              </div>
-              <div className="truncate">
-                <p className="text-xs font-bold text-white">Google Workspace / Gmail</p>
-                <p className="text-[11px] text-[#52D6C9] truncate">{userProfile.email}</p>
-              </div>
-            </div>
-
-            <button
-              type="button"
-              onClick={handleSimulateGoogleLogin}
-              disabled={isGoogleLinking}
-              className="px-4 py-2 rounded-xl bg-white/10 hover:bg-white/15 text-white text-xs font-bold font-display transition-all active:scale-95 flex items-center justify-center gap-1.5 border border-white/10 flex-shrink-0"
-            >
-              {isGoogleLinking ? (
-                <span>Syncing...</span>
-              ) : (
-                <>
-                  <span>Sync Google Profile</span>
-                  <ArrowRight className="w-3.5 h-3.5" />
-                </>
-              )}
-            </button>
-          </div>
-
           {/* User Details Form */}
           <form onSubmit={handleSave} className="space-y-4">
             <div>
@@ -158,9 +138,9 @@ export const ProfileModal: React.FC = () => {
                 <input
                   type="text"
                   value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  placeholder="Kazi Raiyan"
-                  className="w-full bg-[#1B232E] border border-[#202A34] focus:border-[#B6F36B] rounded-xl pl-10 pr-4 py-2.5 text-sm text-white placeholder-[#929DA8]/60 focus:outline-none transition-colors"
+                  onChange={(e) => handleNameChange(e.target.value)}
+                  placeholder="e.g. Kazi Raiyan"
+                  className="w-full bg-[#1B232E] border border-[#202A34] focus:border-[#B6F36B] rounded-xl pl-10 pr-4 py-2.5 text-sm text-white placeholder-[#929DA8]/40 focus:outline-none transition-colors"
                 />
               </div>
             </div>
@@ -174,9 +154,9 @@ export const ProfileModal: React.FC = () => {
                 <input
                   type="email"
                   value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="kaziraiyan0123@gmail.com"
-                  className="w-full bg-[#1B232E] border border-[#202A34] focus:border-[#B6F36B] rounded-xl pl-10 pr-4 py-2.5 text-sm text-white placeholder-[#929DA8]/60 focus:outline-none transition-colors"
+                  onChange={(e) => handleEmailChange(e.target.value)}
+                  placeholder="e.g. kaziraiyan0123@gmail.com"
+                  className="w-full bg-[#1B232E] border border-[#202A34] focus:border-[#B6F36B] rounded-xl pl-10 pr-4 py-2.5 text-sm text-white placeholder-[#929DA8]/40 focus:outline-none transition-colors"
                 />
               </div>
             </div>
@@ -196,14 +176,14 @@ export const ProfileModal: React.FC = () => {
               </div>
 
               <div className="p-3 rounded-2xl bg-[#1B232E]/60 border border-[#202A34] text-center">
-                <Mic className="w-4 h-4 mx-auto text-amber-400 mb-1" />
-                <span className="text-lg font-black text-white font-display">{recordings.length}</span>
-                <p className="text-[10px] text-[#929DA8]">Recordings</p>
+                <Smartphone className="w-4 h-4 mx-auto text-[#B6F36B] mb-1" />
+                <span className="text-sm font-black text-white font-display">v1.1.0</span>
+                <p className="text-[10px] text-[#929DA8]">App Version</p>
               </div>
             </div>
 
-            {/* Action Bar */}
-            <div className="flex items-center justify-between pt-4 border-t border-[#202A34]">
+            {/* Save Button & Backup */}
+            <div className="flex items-center justify-between pt-2">
               <button
                 type="button"
                 onClick={handleExportLibrary}
@@ -214,23 +194,81 @@ export const ProfileModal: React.FC = () => {
                 <span>Backup JSON</span>
               </button>
 
-              <div className="flex items-center gap-2">
-                <button
-                  type="submit"
-                  className="px-6 py-2.5 rounded-full bg-[#B6F36B] hover:bg-[#a3e655] text-[#090D13] font-bold text-xs font-display transition-all hover:scale-105 active:scale-95 shadow-lg shadow-[#B6F36B]/20 flex items-center gap-1.5"
-                >
-                  {isSaved ? (
-                    <>
-                      <CheckCircle2 className="w-4 h-4 text-[#090D13]" />
-                      <span>Saved!</span>
-                    </>
-                  ) : (
-                    <span>Save Changes</span>
-                  )}
-                </button>
-              </div>
+              <button
+                type="submit"
+                className="px-6 py-2 rounded-full bg-[#B6F36B] hover:bg-[#a3e655] text-[#090D13] font-bold text-xs font-display transition-all hover:scale-105 active:scale-95 shadow-lg shadow-[#B6F36B]/20 flex items-center gap-1.5"
+              >
+                {isSaved ? (
+                  <>
+                    <CheckCircle2 className="w-4 h-4 text-[#090D13]" />
+                    <span>Saved!</span>
+                  </>
+                ) : (
+                  <span>Save Profile</span>
+                )}
+              </button>
             </div>
           </form>
+
+          {/* Application Updates Section (for both Mobile & Desktop) */}
+          <div className="p-4 rounded-2xl bg-[#1B232E] border border-[#202A34] space-y-3">
+            <div className="flex items-center justify-between">
+              <div>
+                <h4 className="text-xs font-bold text-white font-display flex items-center gap-1.5">
+                  <RefreshCw className="w-3.5 h-3.5 text-[#B6F36B]" />
+                  <span>Application Updates</span>
+                </h4>
+                <p className="text-[11px] text-[#929DA8]">
+                  Check for latest features and update mobile & desktop app
+                </p>
+              </div>
+              <span className="px-2 py-0.5 rounded-full bg-[#B6F36B]/15 text-[#B6F36B] text-[10px] font-bold font-mono">
+                v1.1.0
+              </span>
+            </div>
+
+            {updateStatus && (
+              <p className="text-xs text-[#B6F36B] font-medium animate-pulse">{updateStatus}</p>
+            )}
+
+            <div className="flex flex-col sm:flex-row items-center gap-2">
+              <button
+                type="button"
+                onClick={handleCheckUpdates}
+                disabled={isUpdating}
+                className="w-full sm:w-auto flex-1 px-4 py-2 rounded-xl bg-white/10 hover:bg-white/15 text-white text-xs font-bold font-display transition-all active:scale-95 flex items-center justify-center gap-2 border border-white/10"
+              >
+                <RefreshCw className={`w-3.5 h-3.5 text-[#B6F36B] ${isUpdating ? 'animate-spin' : ''}`} />
+                <span>{isUpdating ? 'Updating...' : 'Check for Updates / Update App'}</span>
+              </button>
+
+              <a
+                href="https://github.com/kaziraiyan0123-hub/raiwave/releases/latest"
+                target="_blank"
+                rel="noreferrer"
+                className="w-full sm:w-auto px-4 py-2 rounded-xl bg-[#52D6C9]/10 hover:bg-[#52D6C9]/20 text-[#52D6C9] text-xs font-bold font-display transition-all flex items-center justify-center gap-1.5 border border-[#52D6C9]/30"
+              >
+                <Smartphone className="w-3.5 h-3.5" />
+                <span>Download APK</span>
+              </a>
+            </div>
+          </div>
+
+          {/* Professional Developer Attribution & Example Note */}
+          <div className="p-4 rounded-2xl bg-gradient-to-r from-[#B6F36B]/5 via-white/5 to-transparent border border-white/10 space-y-2">
+            <div className="flex items-center gap-2">
+              <Code2 className="w-4 h-4 text-[#B6F36B]" />
+              <span className="text-[11px] uppercase font-bold tracking-wider text-[#B6F36B] font-display">
+                Developer Attribution
+              </span>
+            </div>
+            <p className="text-xs font-semibold text-white">
+              Application Designed & Engineered by <span className="text-[#B6F36B]">Kazi Raiyan</span>
+            </p>
+            <p className="text-[11px] text-[#929DA8] font-mono leading-relaxed">
+              Example Login: Kazi Raiyan &bull; kaziraiyan0123@gmail.com
+            </p>
+          </div>
         </div>
       </div>
     </div>

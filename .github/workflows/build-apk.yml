@@ -45,15 +45,21 @@ jobs:
         uses: softprops/action-gh-release@v2
         if: startsWith(github.ref, 'refs/tags/') || github.ref == 'refs/heads/main'
         with:
-          tag_name: v1.0.0
-          name: "RAIWAVE v1.0.0 Official Release"
+          tag_name: v1.1.0
+          name: "RAIWAVE v1.1.0 Official Release"
           body: |
-            ### 🎵 RAIWAVE v1.0.0 — Feel Every Frequency
+            ### 🎵 RAIWAVE v1.1.0 — Feel Every Frequency
             **Lead Engineer & Creator:** Kazi Raiyan
 
-            - **Android APK:** Download and install `RAIWAVE.apk` on any Android device.
+            - **Android APK:** Download and install `RAIWAVE.apk` (v1.1.0) on any Android device.
             - **Web & PWA:** [https://raiwave.vercel.app](https://raiwave.vercel.app)
-            - **Desktop:** Run `RAIWAVE.exe`
+            - **Desktop:** Run `RAIWAVE.exe` with new custom branding icon.
+            - **What's New in v1.1.0:**
+              - Full-length music streaming (fixed 30s playback).
+              - Mobile full-featured search bar identical to PC.
+              - Removed clutter, audio recorder, and extra notifications.
+              - Embedded RAIWAVE desktop icon for Windows.
+              - In-app live updater.
           files: |
             build-output/RAIWAVE.apk
         env:

@@ -103,7 +103,7 @@ export const Sidebar: React.FC = () => {
             </button>
           </div>
 
-          {/* Special Quick Lists: Liked Songs & Studio Recordings */}
+          {/* Special Quick List: Liked Songs */}
           <div className="flex flex-col gap-1 pb-3 border-b border-white/5">
             <button
               onClick={() => navigateTo('liked')}
@@ -119,19 +119,6 @@ export const Sidebar: React.FC = () => {
               <div className="flex flex-col text-left truncate">
                 <span className="truncate">Liked Songs</span>
                 <span className="text-[10px] text-[#929DA8]">{likedTrackIds.length} tracks</span>
-              </div>
-            </button>
-
-            <button
-              onClick={() => navigateTo('library')}
-              className="flex items-center gap-3 px-2 py-2 rounded-xl text-xs font-medium text-[#929DA8] hover:text-white hover:bg-white/5 transition-all"
-            >
-              <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-red-500 to-amber-500 flex items-center justify-center flex-shrink-0 shadow-md">
-                <Music2 className="w-3.5 h-3.5 text-white" />
-              </div>
-              <div className="flex flex-col text-left truncate">
-                <span className="truncate">Studio Recordings</span>
-                <span className="text-[10px] text-[#B6F36B]">Live Audio Memos</span>
               </div>
             </button>
           </div>

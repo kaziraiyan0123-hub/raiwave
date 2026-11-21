@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { Play, Pause, Heart, Link as LinkIcon, ArrowRight, Loader2, Sparkles } from 'lucide-react'
+import { Play, Pause, Heart, Search, X, Loader2 } from 'lucide-react'
 import { usePlayer } from '../../context/PlayerContext'
 import { SAMPLE_TRACKS, SAMPLE_ARTISTS, SAMPLE_ALBUMS, GENRE_CATEGORIES } from '../../data/musicData'
 import { searchGlobalMusic } from '../../services/musicSearch'
@@ -21,7 +21,6 @@ export const SearchView: React.FC = () => {
     toggleLike,
   } = usePlayer()
 
-  const [directInput, setDirectInput] = useState('')
   const [onlineResults, setOnlineResults] = useState<Track[]>([])
   const [isSearchingOnline, setIsSearchingOnline] = useState(false)
 
@@ -97,49 +96,28 @@ export const SearchView: React.FC = () => {
     return `${m}:${s < 10 ? '0' : ''}${s}`
   }
 
-  const handleDirectPlay = (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!directInput.trim()) return
-
-    playCustomUrlOrId(directInput.trim())
-    setDirectInput('')
-  }
-
   return (
-    <div className="p-4 sm:p-6 select-none space-y-8 pb-28 md:pb-20">
-      {/* 1. Universal Instant Search & Stream Bar */}
-      <div className="bg-gradient-to-r from-[#141A23] via-[#1B232E] to-[#202A34] p-5 rounded-2xl border border-white/10 shadow-xl">
-        <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-          <div className="space-y-1">
-            <h3 className="text-base font-bold text-white flex items-center gap-2 font-heading">
-              <Sparkles className="w-4 h-4 text-[#B6F36B]" />
-              Stream Any Song (Spotify, YouTube Music & Global Catalog)
-            </h3>
-            <p className="text-xs text-[#929DA8]">
-              Search any artist or song name worldwide, or paste any track link to play instantly.
-            </p>
-          </div>
-
-          <form onSubmit={handleDirectPlay} className="flex items-center gap-2 w-full md:w-auto">
-            <div className="relative flex-1 md:w-80">
-              <LinkIcon className="w-3.5 h-3.5 absolute left-3 top-3 text-[#929DA8]" />
-              <input
-                type="text"
-                placeholder="Type any song or paste link..."
-                value={directInput}
-                onChange={(e) => setDirectInput(e.target.value)}
-                className="w-full bg-[#090D13] border border-white/10 focus:border-[#B6F36B] focus:outline-none rounded-xl pl-9 pr-3 py-2 text-xs text-white placeholder-[#929DA8]"
-              />
-            </div>
-            <button
-              type="submit"
-              className="px-4 py-2 bg-[#B6F36B] hover:bg-[#c4f885] text-[#090D13] font-bold text-xs font-heading rounded-xl transition-transform hover:scale-105 active:scale-95 flex items-center gap-1.5 flex-shrink-0 shadow-[0_0_15px_rgba(182,243,107,0.3)]"
-            >
-              <span>Play</span>
-              <ArrowRight className="w-3.5 h-3.5" />
-            </button>
-          </form>
+    <div className="p-4 sm:p-6 select-none space-y-6 pb-28 md:pb-20">
+      {/* Mobile Dedicated Fast Search Input */}
+      <div className="md:hidden relative">
+        <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-[#929DA8]">
+          <Search className="w-4 h-4 text-[#B6F36B]" />
         </div>
+        <input
+          type="text"
+          placeholder="Search any song, artist, album..."
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          className="w-full pl-10 pr-10 py-3 bg-[#141A23] text-white text-sm font-medium rounded-2xl border border-white/10 focus:border-[#B6F36B] focus:outline-none transition-all placeholder-[#929DA8] shadow-inner"
+        />
+        {searchQuery && (
+          <button
+            onClick={() => setSearchQuery('')}
+            className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-[#929DA8] hover:text-white"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        )}
       </div>
 
       {/* Search Header */}

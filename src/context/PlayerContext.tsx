@@ -423,15 +423,7 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
               return
             }
 
-            // Fallback: If no alternate YouTube stream is embeddable, play audio stream directly
-            if (track.previewUrl && audioRef.current) {
-              currentEngineRef.current = 'audio'
-              setActiveEngine('audio')
-              audioRef.current.src = track.previewUrl
-              audioRef.current.currentTime = 0
-              audioRef.current.play().catch(() => {})
-              showToast(`▶ Playing studio audio: ${track.title}`)
-            } else if (track.audioUrl && audioRef.current) {
+            if (track.audioUrl && audioRef.current) {
               currentEngineRef.current = 'audio'
               setActiveEngine('audio')
               audioRef.current.src = track.audioUrl
@@ -492,17 +484,7 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         youtubeService.loadVideo(track.youtubeId, shouldPlay)
         setIsPlaying(shouldPlay)
       } else {
-        // Instant audio playback via preview if available (zero waiting time)
-        if (track.previewUrl && audioRef.current && shouldPlay) {
-          currentEngineRef.current = 'audio'
-          setActiveEngine('audio')
-          audioRef.current.src = track.previewUrl
-          audioRef.current.currentTime = 0
-          audioRef.current.play().catch(() => {})
-          setIsPlaying(true)
-        }
-
-        // Concurrently resolve verified embeddable YouTube stream for the full song
+        showToast(`▶ Loading full song: ${track.title}`)
         youtubeService.loadSearchQuery(`${track.artist} - ${track.title}`).then((vid) => {
           if (vid) {
             track.youtubeId = vid

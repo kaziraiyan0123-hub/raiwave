@@ -1,7 +1,6 @@
 using System;
 using System.Drawing;
 using System.IO;
-using System.Threading.Tasks;
 using System.Windows.Forms;
 using Microsoft.Web.WebView2.Core;
 using Microsoft.Web.WebView2.WinForms;
@@ -10,7 +9,7 @@ namespace Raiwave;
 
 public partial class Form1 : Form
 {
-    private WebView2 _webView;
+    private WebView2? _webView;
 
     public Form1()
     {
@@ -26,6 +25,17 @@ public partial class Form1 : Form
         this.MinimumSize = new Size(960, 640);
         this.StartPosition = FormStartPosition.CenterScreen;
         this.BackColor = Color.FromArgb(9, 13, 19); // Midnight Black #090D13
+
+        // Load RAIWAVE icon for window titlebar and taskbar
+        try
+        {
+            string iconPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "app.ico");
+            if (File.Exists(iconPath))
+            {
+                this.Icon = new Icon(iconPath);
+            }
+        }
+        catch { }
     }
 
     private async void InitializeWebView()

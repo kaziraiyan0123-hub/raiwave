@@ -11,7 +11,6 @@ import { MobileFullPlayer } from './components/mobile/MobileFullPlayer'
 import { YouTubeIframeContainer } from './components/YouTubeIframeContainer'
 import { ToastNotification } from './components/ToastNotification'
 import { ProfileModal } from './components/ProfileModal'
-import { AudioRecorderModal } from './components/AudioRecorderModal'
 
 function App() {
   return (
@@ -22,9 +21,6 @@ function App() {
 
         {/* User Gmail Profile & Account Modal */}
         <ProfileModal />
-
-        {/* RAIWAVE Studio Voice & Audio Recorder Modal */}
-        <AudioRecorderModal />
 
         {/* Mobile Top Header (hidden on desktop) */}
         <MobileTopBar />

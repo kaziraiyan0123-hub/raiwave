@@ -67,7 +67,6 @@ export class RealtimeMusicService {
           const rawImg = item['im:image']?.[2]?.label || item['im:image']?.[0]?.label || ''
           // Upgrade thumbnail to high-res 600x600 artwork
           const coverUrl = rawImg ? rawImg.replace(/\/\d+x\d+bb\./, '/600x600bb.') : 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=600&auto=format&fit=crop&q=80'
-          const previewUrl = item?.link?.[1]?.attributes?.href || undefined
           const releaseDate = item['im:releaseDate']?.label
           const releaseYear = releaseDate ? new Date(releaseDate).getFullYear() : new Date().getFullYear()
 
@@ -76,10 +75,9 @@ export class RealtimeMusicService {
             title,
             artist,
             album,
-            duration: 210, // Default calibrated duration, updated dynamically when stream loads
+            duration: 210, // Dynamic stream duration
             coverUrl,
-            previewUrl,
-            source: 'youtube', // Streams full track legally via official embed
+            source: 'youtube', // Full length streaming
             genre,
             releaseYear,
             color: BRAND_COLORS[idx % BRAND_COLORS.length],
@@ -142,8 +140,7 @@ export class RealtimeMusicService {
             album: item.collectionName || 'Single',
             duration: item.trackTimeMillis ? Math.round(item.trackTimeMillis / 1000) : 210,
             coverUrl: highResArt,
-            previewUrl: item.previewUrl,
-            source: 'youtube',
+            source: 'youtube', // Full length streaming
             genre: item.primaryGenreName || category,
             releaseYear: item.releaseDate ? new Date(item.releaseDate).getFullYear() : 2026,
             color: BRAND_COLORS[idx % BRAND_COLORS.length],

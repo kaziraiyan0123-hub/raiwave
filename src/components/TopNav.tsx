@@ -3,8 +3,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Search,
-  Bell,
-  Mic,
+  X,
 } from 'lucide-react'
 import { usePlayer } from '../context/PlayerContext'
 
@@ -17,7 +16,6 @@ export const TopNav: React.FC = () => {
     playCustomUrlOrId,
     userProfile,
     toggleProfile,
-    toggleRecorder,
   } = usePlayer()
   const [urlMessage, setUrlMessage] = useState('')
 
@@ -59,7 +57,7 @@ export const TopNav: React.FC = () => {
         {/* Global Fast Search Bar */}
         <div className="relative flex-1 max-w-md">
           <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-[#929DA8]">
-            <Search className="w-4 h-4" />
+            <Search className="w-4 h-4 text-[#B6F36B]" />
           </div>
           <input
             type="text"
@@ -73,8 +71,16 @@ export const TopNav: React.FC = () => {
               if (currentView !== 'search') navigateTo('search')
             }}
             onKeyDown={handleKeyDown}
-            className="w-full pl-10 pr-4 py-2 bg-[#141A23] hover:bg-[#1B232E] focus:bg-[#1B232E] text-white text-xs font-medium rounded-full border border-white/10 focus:border-[#B6F36B] focus:outline-none transition-all placeholder-[#929DA8] shadow-inner"
+            className="w-full pl-10 pr-9 py-2 bg-[#141A23] hover:bg-[#1B232E] focus:bg-[#1B232E] text-white text-xs font-medium rounded-full border border-white/10 focus:border-[#B6F36B] focus:outline-none transition-all placeholder-[#929DA8] shadow-inner"
           />
+          {searchQuery && (
+            <button
+              onClick={() => setSearchQuery('')}
+              className="absolute inset-y-0 right-0 pr-3 flex items-center text-[#929DA8] hover:text-white"
+            >
+              <X className="w-3.5 h-3.5" />
+            </button>
+          )}
           {urlMessage && (
             <div className="absolute -bottom-6 left-3 text-[11px] text-[#B6F36B] font-semibold animate-pulse font-heading">
               {urlMessage}
@@ -83,45 +89,21 @@ export const TopNav: React.FC = () => {
         </div>
       </div>
 
-      {/* Right side tools: Studio Recorder & Google Account Profile (RAIWAVE PRO removed as instructed) */}
+      {/* Right side: Clean, professional user avatar button (no notification button or recorder) */}
       <div className="flex items-center gap-3">
-        {/* Studio Recorder Quick Trigger */}
         <button
-          onClick={toggleRecorder}
-          className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-red-500/10 hover:bg-red-500/20 border border-red-500/30 text-xs font-bold text-red-400 font-display transition-all active:scale-95 shadow-sm"
-          title="Record Audio Memo or Song in Studio"
-        >
-          <Mic className="w-3.5 h-3.5 text-red-400 animate-pulse" />
-          <span>Studio Recorder</span>
-        </button>
-
-        <button
-          className="w-9 h-9 rounded-full bg-[#141A23] border border-white/5 flex items-center justify-center text-[#929DA8] hover:text-white transition-colors relative"
-          title="Notifications"
-        >
-          <Bell className="w-4 h-4" />
-          <span className="absolute top-2 right-2 w-2 h-2 rounded-full bg-[#B6F36B] shadow-[0_0_8px_#B6F36B]" />
-        </button>
-
-        {/* User Gmail Profile Trigger */}
-        <div
           data-testid="profile-trigger"
           onClick={toggleProfile}
-          className="flex items-center gap-2.5 pl-2 py-1 pr-3 rounded-full bg-[#141A23] hover:bg-[#1B232E] border border-[#202A34] cursor-pointer group transition-all"
-          title="Manage Gmail Account & Profile"
+          className="relative p-1 rounded-full bg-[#141A23] hover:bg-[#1B232E] border border-[#202A34] cursor-pointer group transition-all"
+          title="Account Profile & Settings"
         >
-          <div className="relative">
-            <img
-              src={userProfile.avatarUrl}
-              alt={userProfile.name}
-              className="w-8 h-8 rounded-full object-cover border border-[#B6F36B]/50 group-hover:scale-105 transition-transform shadow"
-            />
-            <span className="absolute bottom-0 right-0 w-2 h-2 rounded-full bg-[#B6F36B] ring-2 ring-[#090D13]" />
-          </div>
-          <span className="text-xs font-bold text-white font-display group-hover:text-[#B6F36B] transition-colors truncate max-w-[120px]">
-            {userProfile.name}
-          </span>
-        </div>
+          <img
+            src={userProfile.avatarUrl}
+            alt="Profile"
+            className="w-8 h-8 rounded-full object-cover border border-[#B6F36B]/50 group-hover:scale-105 transition-transform shadow"
+          />
+          <span className="absolute bottom-1 right-1 w-2.5 h-2.5 rounded-full bg-[#B6F36B] ring-2 ring-[#090D13]" />
+        </button>
       </div>
     </header>
   )
