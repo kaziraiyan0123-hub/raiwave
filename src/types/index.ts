@@ -24,6 +24,7 @@ export interface Track {
   lyrics?: LyricLine[]
   color?: string // Dominant theme hex for dynamic gradients (e.g. #3b82f6)
   explicit?: boolean
+  isOfflineAvailable?: boolean
 }
 
 export interface Playlist {

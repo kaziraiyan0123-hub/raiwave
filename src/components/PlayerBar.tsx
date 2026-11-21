@@ -16,6 +16,8 @@ import {
   Maximize2,
   Minimize2,
   Tv,
+  ArrowDownToLine,
+  CheckCircle2,
 } from 'lucide-react'
 import { usePlayer } from '../context/PlayerContext'
 import { EqualizerBars } from './EqualizerBars'
@@ -44,6 +46,8 @@ export const PlayerBar: React.FC = () => {
     navigateTo,
     isVideoOpen,
     toggleVideoOpen,
+    saveOffline,
+    isOffline,
   } = usePlayer()
 
   const [isHoveringBar, setIsHoveringBar] = useState(false)
@@ -144,6 +148,18 @@ export const PlayerBar: React.FC = () => {
               liked ? 'text-[#B6F36B] fill-[#B6F36B]' : 'text-[#929DA8] hover:text-white'
             }`}
           />
+        </button>
+
+        <button
+          onClick={() => saveOffline(currentTrack)}
+          title={isOffline(currentTrack.id) ? 'Saved Offline' : 'Download song for offline mode'}
+          className="text-[#929DA8] hover:text-[#B6F36B] transition-transform hover:scale-115 active:scale-95 ml-1 flex-shrink-0"
+        >
+          {isOffline(currentTrack.id) ? (
+            <CheckCircle2 className="w-4 h-4 text-[#B6F36B]" />
+          ) : (
+            <ArrowDownToLine className="w-4 h-4" />
+          )}
         </button>
       </div>
 

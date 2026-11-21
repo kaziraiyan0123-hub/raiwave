@@ -15,9 +15,9 @@ export const MobileMiniPlayer: React.FC = () => {
       id="mobile-mini-player"
       data-testid="mobile-mini-player"
       onClick={toggleMobilePlayer}
-      className="md:hidden fixed bottom-[72px] left-3 right-3 z-30 cursor-pointer select-none group"
+      className="md:hidden fixed bottom-[84px] left-3.5 right-3.5 z-30 cursor-pointer select-none group transition-all"
     >
-      <div className="bg-[#1B232E]/95 backdrop-blur-2xl border border-white/10 rounded-2xl p-2.5 shadow-2xl shadow-black/80 flex items-center justify-between gap-3 relative overflow-hidden transition-all duration-200 active:scale-[0.99]">
+      <div className="bg-[#141A23]/95 backdrop-blur-2xl border border-white/10 rounded-2xl p-2.5 shadow-2xl shadow-black/90 flex items-center justify-between gap-3 relative overflow-hidden transition-all duration-200 active:scale-[0.99]">
         {/* Subtle Ambient Color Glow */}
         <div
           className="absolute -inset-1 opacity-20 blur-xl pointer-events-none transition-all duration-700"

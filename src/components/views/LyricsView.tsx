@@ -3,11 +3,11 @@ import { Music2 } from 'lucide-react'
 import { usePlayer } from '../../context/PlayerContext'
 
 export const LyricsView: React.FC = () => {
-  const { currentTrack, currentTime, seek } = usePlayer()
+  const { currentTrack, currentTime, seek, liveLyrics, isLoadingLyrics } = usePlayer()
   const activeLineRef = useRef<HTMLParagraphElement | null>(null)
   const containerRef = useRef<HTMLDivElement | null>(null)
 
-  const lyrics = currentTrack?.lyrics || []
+  const lyrics = liveLyrics && liveLyrics.length > 0 ? liveLyrics : currentTrack?.lyrics || []
 
   // Find active lyric index
   let activeIndex = -1
@@ -55,11 +55,19 @@ export const LyricsView: React.FC = () => {
         </div>
 
         {/* Lyrics Lines */}
-        {lyrics.length === 0 ? (
+        {isLoadingLyrics ? (
+          <div className="py-24 text-center text-[#929DA8] space-y-3">
+            <Music2 className="w-12 h-12 mx-auto text-[#B6F36B] animate-bounce" />
+            <p className="text-xl font-bold text-white font-heading">
+              Tuning into live synchronized karaoke lyrics...
+            </p>
+            <p className="text-xs text-[#929DA8]">Connecting to real-time lyrical frequency</p>
+          </div>
+        ) : lyrics.length === 0 ? (
           <div className="py-24 text-center text-[#929DA8] space-y-3">
             <Music2 className="w-12 h-12 mx-auto text-[#202A34]" />
-            <p className="text-xl font-bold text-white font-heading">Karaoke lyrics are syncing for this frequency...</p>
-            <p className="text-xs text-[#929DA8]">Enjoy the full studio soundscape!</p>
+            <p className="text-xl font-bold text-white font-heading">Instrumental / No lyrics available</p>
+            <p className="text-xs text-[#929DA8]">Enjoy the full studio lossless soundscape!</p>
           </div>
         ) : (
           lyrics.map((line, idx) => {

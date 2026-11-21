@@ -5,6 +5,10 @@ import { youtubeService } from '../services/youtubePlayer'
 import { parseMediaUrl } from '../utils/urlParser'
 import { searchGlobalMusic } from '../services/musicSearch'
 import { realtimeMusicService } from '../services/realtimeMusicService'
+import { fetchLiveLyrics } from '../services/lyricsService'
+import { offlineService } from '../services/offlineService'
+import { smartQueueService } from '../services/smartQueueService'
+import type { LyricLine } from '../types'
 
 interface PlayerContextType {
   // Playback state
@@ -90,6 +94,27 @@ interface PlayerContextType {
   realtimeRecommended: Track[]
   isLoadingRealtime: boolean
   refreshRealtimeMusic: () => Promise<void>
+
+  // Recently Played
+  clearHistory: () => void
+
+  // Live Synced Lyrics
+  liveLyrics: LyricLine[]
+  isLoadingLyrics: boolean
+
+  // Offline Mode & Downloads
+  offlineTrackIds: string[]
+  saveOffline: (track: Track) => Promise<boolean>
+  removeOffline: (trackId: string) => Promise<boolean>
+  isOffline: (trackId: string) => boolean
+
+  // Smart Queue & Autoplay
+  isSmartQueueEnabled: boolean
+  toggleSmartQueue: () => void
+  smartSuggestions: Track[]
+
+  // Mood Stations
+  playMoodStation: (moodTitle: string, tag: string) => Promise<void>
 }
 
 const PlayerContext = createContext<PlayerContextType | null>(null)
@@ -115,7 +140,66 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const [isShuffle, setIsShuffle] = useState<boolean>(false)
   const [queue, setQueue] = useState<Track[]>(SAMPLE_TRACKS)
   const [queueIndex, setQueueIndex] = useState<number>(0)
-  const [history, setHistory] = useState<Track[]>([])
+  const [history, setHistory] = useState<Track[]>(() => {
+    try {
+      const saved = localStorage.getItem('raiwave_recently_played')
+      if (saved) return JSON.parse(saved)
+    } catch {}
+    return []
+  })
+
+  const clearHistory = () => {
+    setHistory([])
+    try {
+      localStorage.removeItem('raiwave_recently_played')
+    } catch {}
+    showToast('Recently played history cleared')
+  }
+
+  // Live Synced Lyrics State
+  const [liveLyrics, setLiveLyrics] = useState<LyricLine[]>([])
+  const [isLoadingLyrics, setIsLoadingLyrics] = useState<boolean>(false)
+
+  // Offline Mode & Downloads State
+  const [offlineTrackIds, setOfflineTrackIds] = useState<string[]>(() => offlineService.getOfflineTrackIds())
+
+  const saveOffline = async (track: Track): Promise<boolean> => {
+    showToast(`⏳ Saving "${track.title}" offline...`)
+    const success = await offlineService.saveTrackOffline(track)
+    if (success) {
+      setOfflineTrackIds(offlineService.getOfflineTrackIds())
+      showToast(`✅ "${track.title}" downloaded & ready offline!`)
+    } else {
+      showToast(`❌ Could not save "${track.title}" offline`)
+    }
+    return success
+  }
+
+  const removeOffline = async (trackId: string): Promise<boolean> => {
+    const success = await offlineService.removeTrackOffline(trackId)
+    if (success) {
+      setOfflineTrackIds(offlineService.getOfflineTrackIds())
+      showToast(`Removed from offline downloads`)
+    }
+    return success
+  }
+
+  const isOffline = (trackId: string) => offlineTrackIds.includes(trackId)
+
+  // Smart Queue & Autoplay
+  const [isSmartQueueEnabled, setIsSmartQueueEnabled] = useState<boolean>(true)
+  const isSmartQueueEnabledRef = useRef<boolean>(true)
+  const [smartSuggestions, setSmartSuggestions] = useState<Track[]>([])
+
+  const toggleSmartQueue = () => {
+    setIsSmartQueueEnabled((prev) => {
+      const next = !prev
+      isSmartQueueEnabledRef.current = next
+      showToast(next ? '✨ Smart Autoplay Queue: ON' : 'Smart Autoplay Queue: OFF')
+      return next
+    })
+  }
+
   const [activeEngine, setActiveEngine] = useState<'audio' | 'youtube'>('audio')
   const [toastMessage, setToastMessage] = useState<string | null>(null)
   const [isVideoOpen, setIsVideoOpen] = useState<boolean>(false)
@@ -444,22 +528,114 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     youtubeService.setVolume(actualVol)
   }, [volume, isMuted])
 
-  // 4. MediaSession API setup
+  // 4. MediaSession API setup & Android Mobile Background Playback Notification
+  const backgroundAudioRef = useRef<HTMLAudioElement | null>(null)
+
+  useEffect(() => {
+    // 44-byte silent WAV audio loop to keep Android mobile background process & notification alive
+    const bgAudio = new Audio('data:audio/wav;base64,UklGRigAAABXQVZFZm10IBIAAAABAAEARKwAAIhYAQACABAAAABkYXRhAgAAAAEA')
+    bgAudio.loop = true
+    bgAudio.volume = 0.001
+    backgroundAudioRef.current = bgAudio
+    return () => {
+      bgAudio.pause()
+    }
+  }, [])
+
+  useEffect(() => {
+    if (isPlaying) {
+      backgroundAudioRef.current?.play().catch(() => {})
+    } else {
+      backgroundAudioRef.current?.pause()
+    }
+  }, [isPlaying])
+
+  // Live Synced Lyrics fetcher
+  useEffect(() => {
+    if (!currentTrack) {
+      setLiveLyrics([])
+      return
+    }
+
+    if (currentTrack.lyrics && currentTrack.lyrics.length > 0) {
+      setLiveLyrics(currentTrack.lyrics)
+      return
+    }
+
+    let isMounted = true
+    setIsLoadingLyrics(true)
+
+    fetchLiveLyrics(currentTrack.title, currentTrack.artist, currentTrack.duration)
+      .then((lines) => {
+        if (isMounted) {
+          setLiveLyrics(lines)
+          setIsLoadingLyrics(false)
+        }
+      })
+      .catch(() => {
+        if (isMounted) setIsLoadingLyrics(false)
+      })
+
+    return () => {
+      isMounted = false
+    }
+  }, [currentTrack?.id])
+
+  // Smart suggestions updater
+  useEffect(() => {
+    if (!currentTrack) return
+    const queueIds = queue.map((t) => t.id)
+    smartQueueService.getSmartSuggestions(currentTrack, queueIds).then((suggs) => {
+      setSmartSuggestions(suggs)
+    })
+  }, [currentTrack?.id, queue.length])
+
+  // MediaSession API setup
   useEffect(() => {
     if ('mediaSession' in navigator && currentTrack) {
       navigator.mediaSession.metadata = new MediaMetadata({
         title: currentTrack.title,
         artist: currentTrack.artist,
-        album: currentTrack.album,
-        artwork: [{ src: currentTrack.coverUrl, sizes: '512x512', type: 'image/jpeg' }],
+        album: currentTrack.album || 'RAIWAVE Universal Stream',
+        artwork: [
+          { src: currentTrack.coverUrl, sizes: '96x96', type: 'image/jpeg' },
+          { src: currentTrack.coverUrl, sizes: '128x128', type: 'image/jpeg' },
+          { src: currentTrack.coverUrl, sizes: '192x192', type: 'image/jpeg' },
+          { src: currentTrack.coverUrl, sizes: '256x256', type: 'image/jpeg' },
+          { src: currentTrack.coverUrl, sizes: '384x384', type: 'image/jpeg' },
+          { src: currentTrack.coverUrl, sizes: '512x512', type: 'image/jpeg' },
+        ],
       })
+
+      navigator.mediaSession.playbackState = isPlaying ? 'playing' : 'paused'
 
       navigator.mediaSession.setActionHandler('play', () => togglePlay())
       navigator.mediaSession.setActionHandler('pause', () => togglePlay())
       navigator.mediaSession.setActionHandler('previoustrack', () => prevTrack())
       navigator.mediaSession.setActionHandler('nexttrack', () => nextTrack())
+      navigator.mediaSession.setActionHandler('seekto', (details) => {
+        if (details.seekTime !== undefined) seek(details.seekTime)
+      })
+      navigator.mediaSession.setActionHandler('seekbackward', (details) => {
+        const offset = details.seekOffset || 10
+        seek(Math.max(0, currentTime - offset))
+      })
+      navigator.mediaSession.setActionHandler('seekforward', (details) => {
+        const offset = details.seekOffset || 10
+        seek(Math.min(duration, currentTime + offset))
+      })
+
+      try {
+        if (duration > 0 && 'setPositionState' in navigator.mediaSession) {
+          navigator.mediaSession.setPositionState({
+            duration: Math.max(duration, 1),
+            playbackRate: 1,
+            position: Math.min(Math.max(currentTime, 0), duration),
+          })
+        }
+      } catch {}
     }
-  }, [currentTrack])
+  }, [currentTrack, isPlaying, duration, currentTime])
 
   // Central Playback Engine Router
   const loadAndPlayTrack = (track: Track, shouldPlay = true) => {
@@ -533,10 +709,14 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       setIsPlaying(shouldPlay)
     }
 
-    // Add to history
+    // Add to history & persist in localStorage
     setHistory((prev) => {
       const filtered = prev.filter((t) => t.id !== track.id)
-      return [track, ...filtered].slice(0, 30)
+      const updated = [track, ...filtered].slice(0, 30)
+      try {
+        localStorage.setItem('raiwave_recently_played', JSON.stringify(updated))
+      } catch {}
+      return updated
     })
   }
 
@@ -694,6 +874,20 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     } else if (nextIdx >= curQueue.length) {
       if (repeatModeRef.current === 'all') {
         nextIdx = 0
+      } else if (isSmartQueueEnabledRef.current && currentTrackRef.current) {
+        // Smart Queue automatically fetches and queues next recommended track
+        const queueIds = curQueue.map((t) => t.id)
+        smartQueueService.getNextSmartTrack(currentTrackRef.current, queueIds).then((nextSug) => {
+          if (nextSug) {
+            showToast(`✨ Smart Queue Autoplay: ${nextSug.title} • ${nextSug.artist}`)
+            setQueue((prev) => [...prev, nextSug])
+            setQueueIndex(curQueue.length)
+            loadAndPlayTrack(nextSug, true)
+          } else {
+            setIsPlaying(false)
+          }
+        })
+        return
       } else {
         setIsPlaying(false)
         return
@@ -814,6 +1008,23 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     )
   }
 
+  const playMoodStation = async (moodTitle: string, tag: string) => {
+    showToast(`🎶 Tuning into Mood Station: ${moodTitle}...`)
+    try {
+      const results = await searchGlobalMusic(`${tag} hits songs`)
+      if (results.length > 0) {
+        playTrack(results[0], results)
+      } else {
+        const fallback = SAMPLE_TRACKS.filter((t) => t.genre.toLowerCase().includes(tag.toLowerCase()))
+        if (fallback.length > 0) {
+          playTrack(fallback[0], fallback)
+        }
+      }
+    } catch {
+      showToast(`Enjoying ${moodTitle}!`)
+    }
+  }
+
   return (
     <PlayerContext.Provider
       value={{
@@ -828,6 +1039,17 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         queue,
         queueIndex,
         history,
+        clearHistory,
+        liveLyrics,
+        isLoadingLyrics,
+        offlineTrackIds,
+        saveOffline,
+        removeOffline,
+        isOffline,
+        isSmartQueueEnabled,
+        toggleSmartQueue,
+        smartSuggestions,
+        playMoodStation,
         activeEngine,
         toastMessage,
         isVideoOpen,

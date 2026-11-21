@@ -1,8 +1,10 @@
-import React, { useState } from 'react'
-import { Plus, Heart, Bookmark } from 'lucide-react'
+import React, { useState, useEffect } from 'react'
+import { Plus, Heart, Bookmark, ArrowDownToLine, CheckCircle2, Music } from 'lucide-react'
 import { usePlayer } from '../../context/PlayerContext'
 import { SAMPLE_PLAYLISTS, SAMPLE_ALBUMS, SAMPLE_ARTISTS } from '../../data/musicData'
 import { CreatePlaylistModal } from '../CreatePlaylistModal'
+import { offlineService } from '../../services/offlineService'
+import type { Track } from '../../types'
 
 export const LibraryView: React.FC = () => {
   const {
@@ -13,16 +15,26 @@ export const LibraryView: React.FC = () => {
     navigateTo,
     likedTrackIds,
     userProfile,
+    playTrack,
+    offlineTrackIds,
   } = usePlayer()
 
-  const [activeFilter, setActiveFilter] = useState<'all' | 'playlists' | 'albums' | 'artists'>('all')
+  const [activeFilter, setActiveFilter] = useState<'all' | 'offline' | 'playlists' | 'albums' | 'artists'>('all')
   const [isModalOpen, setIsModalOpen] = useState(false)
+  const [savedOfflineTracks, setSavedOfflineTracks] = useState<Track[]>([])
+
+  // Load saved offline tracks
+  useEffect(() => {
+    offlineService.getOfflineTracks().then((tracks) => {
+      setSavedOfflineTracks(tracks)
+    })
+  }, [offlineTrackIds.length])
 
   const allPlaylists = [...userPlaylists, ...SAMPLE_PLAYLISTS]
 
   return (
     <>
-      <div className="p-4 sm:p-6 select-none space-y-6 pb-32 md:pb-24">
+      <div className="p-4 sm:p-6 select-none space-y-6 pb-40 md:pb-24">
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div className="flex items-center gap-3">
@@ -48,7 +60,7 @@ export const LibraryView: React.FC = () => {
 
         {/* Filter Pills */}
         <div className="flex items-center gap-2 overflow-x-auto no-scrollbar py-1">
-          {(['all', 'playlists', 'albums', 'artists'] as const).map((filter) => (
+          {(['all', 'offline', 'playlists', 'albums', 'artists'] as const).map((filter) => (
             <button
               key={filter}
               onClick={() => setActiveFilter(filter)}
@@ -58,10 +70,58 @@ export const LibraryView: React.FC = () => {
                   : 'bg-[#141A23] hover:bg-[#1B232E] text-[#929DA8] hover:text-white border border-[#202A34] font-semibold'
               }`}
             >
-              {filter}
+              {filter === 'offline' ? `Offline (${offlineTrackIds.length})` : filter}
             </button>
           ))}
         </div>
+
+        {/* Offline Downloads Vault Banner / Section */}
+        {(activeFilter === 'all' || activeFilter === 'offline') && (
+          <section className="space-y-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <ArrowDownToLine className="w-4 h-4 text-[#52D6C9]" />
+                <h2 className="text-lg font-bold text-white font-display">
+                  Offline Music Vault ({savedOfflineTracks.length})
+                </h2>
+              </div>
+              <span className="text-xs text-[#52D6C9] font-mono">No Wi-Fi Needed</span>
+            </div>
+
+            {savedOfflineTracks.length === 0 ? (
+              <div className="p-6 rounded-2xl bg-[#141A23]/50 border border-dashed border-[#202A34] text-center space-y-1">
+                <Music className="w-8 h-8 text-[#929DA8] mx-auto mb-2" />
+                <p className="text-sm font-semibold text-white font-heading">No offline tracks saved yet</p>
+                <p className="text-xs text-[#929DA8]">
+                  Tap the download icon on any song to save and listen without internet.
+                </p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+                {savedOfflineTracks.map((track) => (
+                  <div
+                    key={track.id}
+                    onClick={() => playTrack(track, savedOfflineTracks)}
+                    className="flex items-center gap-3 p-3 rounded-2xl bg-[#141A23] hover:bg-[#1B232E] border border-white/5 cursor-pointer group transition-all"
+                  >
+                    <img
+                      src={track.coverUrl}
+                      alt={track.title}
+                      className="w-12 h-12 rounded-xl object-cover flex-shrink-0"
+                    />
+                    <div className="truncate flex-1 min-w-0">
+                      <p className="text-xs sm:text-sm font-bold text-white truncate group-hover:text-[#B6F36B] transition-colors">
+                        {track.title}
+                      </p>
+                      <p className="text-[11px] text-[#929DA8] truncate">{track.artist}</p>
+                    </div>
+                    <CheckCircle2 className="w-4 h-4 text-[#B6F36B] flex-shrink-0" />
+                  </div>
+                ))}
+              </div>
+            )}
+          </section>
+        )}
 
         {/* Quick Liked Songs Banner */}
         {(activeFilter === 'all' || activeFilter === 'playlists') && (

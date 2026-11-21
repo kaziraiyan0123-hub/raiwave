@@ -1,63 +1,102 @@
 import React from 'react'
-import { Compass, Flame, Radio, Zap, Moon, Headphones, HeartHandshake, Dumbbell } from 'lucide-react'
+import {
+  Compass,
+  Flame,
+  Radio,
+  Zap,
+  Moon,
+  Headphones,
+  HeartHandshake,
+  Dumbbell,
+  Play,
+  Sparkles,
+  Heart,
+} from 'lucide-react'
 import { usePlayer } from '../../context/PlayerContext'
 import { GENRE_CATEGORIES, SAMPLE_TRACKS } from '../../data/musicData'
 
 export const ExploreView: React.FC = () => {
-  const { playTrack, setSearchQuery, navigateTo } = usePlayer()
+  const { playTrack, setSearchQuery, navigateTo, playMoodStation } = usePlayer()
 
   const MOOD_COLLECTIONS = [
     {
       title: 'Midnight Drive',
       subtitle: 'Atmospheric synths and nighttime basslines',
       icon: Moon,
-      gradient: 'from-blue-600 to-indigo-900',
-      tag: 'Synthpop',
+      gradient: 'from-blue-600 via-indigo-900 to-[#090D13]',
+      tag: 'Synthwave',
+      vibeColor: '#6366F1',
     },
     {
       title: 'Energy Boost',
       subtitle: 'High-octane anthems to supercharge your day',
       icon: Zap,
-      gradient: 'from-amber-500 to-rose-700',
+      gradient: 'from-amber-500 via-rose-700 to-[#090D13]',
       tag: 'Pop',
+      vibeColor: '#F59E0B',
     },
     {
       title: 'Deep Focus & Lofi',
       subtitle: 'Mellow beats for studying and coding',
       icon: Headphones,
-      gradient: 'from-emerald-600 to-teal-900',
+      gradient: 'from-emerald-600 via-teal-900 to-[#090D13]',
       tag: 'Lo-Fi',
+      vibeColor: '#10B981',
     },
     {
       title: 'Workout & Power',
       subtitle: 'Heavy beats and pulse-pounding rhythms',
       icon: Dumbbell,
-      gradient: 'from-red-600 to-orange-800',
+      gradient: 'from-red-600 via-orange-800 to-[#090D13]',
       tag: 'Hip-Hop',
+      vibeColor: '#EF4444',
     },
     {
       title: 'Melancholy & Blues',
       subtitle: 'Soulful chords and deep emotions',
       icon: HeartHandshake,
-      gradient: 'from-purple-700 to-slate-900',
+      gradient: 'from-purple-700 via-slate-900 to-[#090D13]',
       tag: 'Blues',
+      vibeColor: '#8B5CF6',
     },
     {
       title: 'Live Frequencies',
-      subtitle: 'Concerts and acoustic sessions',
+      subtitle: 'Concerts, stadiums, and acoustic sessions',
       icon: Radio,
-      gradient: 'from-teal-500 to-cyan-800',
+      gradient: 'from-teal-500 via-cyan-800 to-[#090D13]',
       tag: 'Rock',
+      vibeColor: '#14B8A6',
+    },
+    {
+      title: 'Romantic & Soul',
+      subtitle: 'Intimate melodies and heartfelt serenades',
+      icon: Heart,
+      gradient: 'from-rose-600 via-pink-900 to-[#090D13]',
+      tag: 'Soul',
+      vibeColor: '#EC4899',
+    },
+    {
+      title: 'Chill & Relax',
+      subtitle: 'Calm soundscapes and acoustic warmth',
+      icon: Sparkles,
+      gradient: 'from-sky-600 via-blue-900 to-[#090D13]',
+      tag: 'Acoustic',
+      vibeColor: '#0EA5E9',
     },
   ]
 
-  const handleMoodClick = (tag: string) => {
+  const handleLaunchMood = (mood: typeof MOOD_COLLECTIONS[0], e?: React.MouseEvent) => {
+    if (e) e.stopPropagation()
+    playMoodStation(mood.title, mood.tag)
+  }
+
+  const handleExploreTag = (tag: string) => {
     setSearchQuery(tag)
     navigateTo('search')
   }
 
   return (
-    <div className="p-4 sm:p-6 space-y-8 select-none pb-28 md:pb-20">
+    <div className="p-4 sm:p-6 space-y-8 select-none pb-40 md:pb-24">
       {/* Header */}
       <div className="flex flex-col gap-1">
         <div className="inline-flex items-center gap-2 text-xs font-bold text-[#B6F36B] font-heading">
@@ -68,47 +107,62 @@ export const ExploreView: React.FC = () => {
           Browse All Music & Moods
         </h1>
         <p className="text-xs sm:text-sm text-[#929DA8]">
-          Discover curated soundscapes, trending vibes, and global genres tailored to your sonic taste.
+          Discover curated soundscapes, live mood stations, and global genres tailored to your taste.
         </p>
       </div>
 
-      {/* Moods & Vibes Grid */}
+      {/* Moods & Vibes Section (Fixed with real Mood Radio launch) */}
       <section className="space-y-4">
-        <div className="flex items-center gap-2">
-          <Flame className="w-4 h-4 text-[#B6F36B]" />
-          <h2 className="text-xl font-bold text-white font-heading tracking-tight">
-            Curated Moods & Vibes
-          </h2>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Flame className="w-4 h-4 text-[#B6F36B]" />
+            <h2 className="text-xl font-bold text-white font-heading tracking-tight">
+              Curated Mood Stations & Vibes
+            </h2>
+          </div>
+          <span className="text-xs text-[#929DA8]">Tap play to launch station</span>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           {MOOD_COLLECTIONS.map((mood) => {
             const Icon = mood.icon
             return (
               <div
                 key={mood.title}
-                onClick={() => handleMoodClick(mood.tag)}
-                className={`p-5 rounded-2xl bg-gradient-to-br ${mood.gradient} cursor-pointer shadow-lg hover:scale-[1.02] active:scale-[0.98] transition-all duration-300 relative overflow-hidden group border border-white/10`}
+                onClick={() => handleLaunchMood(mood)}
+                className={`p-5 rounded-3xl bg-gradient-to-br ${mood.gradient} cursor-pointer shadow-xl hover:scale-[1.02] active:scale-[0.98] transition-all duration-300 relative overflow-hidden group border border-white/10 flex flex-col justify-between h-40`}
               >
-                <div className="relative z-10 flex flex-col justify-between h-28">
-                  <div className="flex items-center justify-between">
-                    <span className="p-2 rounded-xl bg-black/30 backdrop-blur-md text-white">
-                      <Icon className="w-5 h-5" />
-                    </span>
-                    <span className="text-[10px] font-bold uppercase tracking-wider text-white/80 bg-white/10 px-2.5 py-1 rounded-full">
-                      {mood.tag}
-                    </span>
-                  </div>
+                {/* Top Badge & Play Trigger */}
+                <div className="relative z-10 flex items-center justify-between">
+                  <span className="p-2.5 rounded-2xl bg-black/40 backdrop-blur-md text-white border border-white/10 shadow-sm">
+                    <Icon className="w-5 h-5" />
+                  </span>
 
-                  <div>
-                    <h3 className="text-lg font-bold text-white font-heading truncate">
-                      {mood.title}
-                    </h3>
-                    <p className="text-xs text-white/80 line-clamp-1">{mood.subtitle}</p>
-                  </div>
+                  <button
+                    onClick={(e) => handleLaunchMood(mood, e)}
+                    className="w-10 h-10 rounded-full bg-[#B6F36B] text-[#090D13] flex items-center justify-center shadow-lg shadow-black/50 hover:scale-110 active:scale-95 transition-transform"
+                    title={`Play ${mood.title} station`}
+                  >
+                    <Play className="w-4 h-4 fill-[#090D13] ml-0.5" />
+                  </button>
                 </div>
 
-                <div className="absolute -bottom-6 -right-6 w-24 h-24 rounded-full bg-white/10 blur-xl pointer-events-none group-hover:scale-150 transition-transform duration-500" />
+                {/* Bottom Details */}
+                <div className="relative z-10">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-[#B6F36B] font-mono">
+                    {mood.tag} Frequency
+                  </span>
+                  <h3 className="text-lg font-black text-white font-heading truncate">
+                    {mood.title}
+                  </h3>
+                  <p className="text-xs text-white/80 line-clamp-1 mt-0.5">{mood.subtitle}</p>
+                </div>
+
+                {/* Ambient Glow */}
+                <div
+                  className="absolute -bottom-8 -right-8 w-28 h-28 rounded-full blur-2xl pointer-events-none opacity-40 group-hover:opacity-70 transition-opacity"
+                  style={{ backgroundColor: mood.vibeColor }}
+                />
               </div>
             )
           })}
@@ -125,7 +179,7 @@ export const ExploreView: React.FC = () => {
           {GENRE_CATEGORIES.map((genre) => (
             <div
               key={genre.id}
-              onClick={() => handleMoodClick(genre.name)}
+              onClick={() => handleExploreTag(genre.name)}
               className="p-5 rounded-2xl bg-[#141A23] hover:bg-[#1B232E] border border-white/5 hover:border-[#B6F36B]/30 cursor-pointer transition-all duration-200 group flex flex-col justify-between h-32 relative overflow-hidden shadow-md"
             >
               <div

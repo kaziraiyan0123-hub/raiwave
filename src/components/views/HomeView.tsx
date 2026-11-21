@@ -1,5 +1,5 @@
 import React from 'react'
-import { Play, Pause, Heart, Flame, ArrowRight, Disc3, RefreshCw } from 'lucide-react'
+import { Play, Pause, Heart, Flame, ArrowRight, Disc3, RefreshCw, History, ArrowDownToLine, CheckCircle2 } from 'lucide-react'
 import { usePlayer } from '../../context/PlayerContext'
 import {
   SAMPLE_PLAYLISTS,
@@ -24,6 +24,10 @@ export const HomeView: React.FC = () => {
     realtimeTopTracks,
     isLoadingRealtime,
     refreshRealtimeMusic,
+    history,
+    clearHistory,
+    saveOffline,
+    isOffline,
   } = usePlayer()
 
   // Use live real-time global top tracks if available, otherwise fallback to curated sample tracks
@@ -136,6 +140,72 @@ export const HomeView: React.FC = () => {
         </div>
       </section>
 
+      {/* 2.5. Recently Played Tracks (All musics played recently) */}
+      {history.length > 0 && (
+        <section className="space-y-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <History className="w-4 h-4 text-[#B6F36B]" />
+              <h2 className="text-xl font-bold text-white font-heading tracking-tight">
+                Recently Played ({history.length})
+              </h2>
+            </div>
+            <button
+              onClick={clearHistory}
+              className="text-[11px] font-semibold text-[#929DA8] hover:text-[#52D6C9] transition-colors"
+            >
+              Clear History
+            </button>
+          </div>
+
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3.5">
+            {history.slice(0, 6).map((track) => {
+              const isSelected = currentTrack?.id === track.id
+              const isTrackPlaying = isSelected && isPlaying
+
+              return (
+                <div
+                  key={track.id}
+                  onClick={() => {
+                    if (isTrackPlaying) togglePlay()
+                    else playTrack(track, history)
+                  }}
+                  className={`p-3 rounded-2xl bg-[#141A23]/80 hover:bg-[#1B232E] border border-white/5 cursor-pointer group transition-all duration-200 relative overflow-hidden ${
+                    isSelected ? 'ring-1 ring-[#B6F36B] shadow-[0_0_15px_rgba(182,243,107,0.2)]' : ''
+                  }`}
+                >
+                  <div className="relative aspect-square rounded-xl overflow-hidden mb-2.5 shadow-md">
+                    <img
+                      src={track.coverUrl}
+                      alt={track.title}
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                    />
+                    <div
+                      className={`absolute inset-0 bg-black/40 flex items-center justify-center transition-opacity ${
+                        isTrackPlaying ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
+                      }`}
+                    >
+                      <div className="w-10 h-10 rounded-full bg-[#B6F36B] text-[#090D13] flex items-center justify-center shadow-lg transform group-hover:scale-105 active:scale-95 transition-transform">
+                        {isTrackPlaying ? (
+                          <Pause className="w-4 h-4 fill-current" />
+                        ) : (
+                          <Play className="w-4 h-4 fill-current ml-0.5" />
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
+                  <h3 className="text-xs font-bold text-white truncate font-heading group-hover:text-[#B6F36B] transition-colors">
+                    {track.title}
+                  </h3>
+                  <p className="text-[11px] text-[#929DA8] truncate mt-0.5">{track.artist}</p>
+                </div>
+              )
+            })}
+          </div>
+        </section>
+      )}
+
       {/* 3. Live Real-Time Global Top Charts */}
       <section className="space-y-4">
         <div className="flex items-center justify-between">
@@ -225,12 +295,28 @@ export const HomeView: React.FC = () => {
                         toggleLike(track.id)
                       }}
                       className="p-1 hover:text-white transition-colors"
+                      title={liked ? 'Unlike' : 'Like'}
                     >
                       <Heart
                         className={`w-4 h-4 ${
                           liked ? 'text-[#B6F36B] fill-[#B6F36B]' : 'hover:text-white'
                         }`}
                       />
+                    </button>
+
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        saveOffline(track)
+                      }}
+                      className="p-1 hover:text-[#B6F36B] transition-colors"
+                      title={isOffline(track.id) ? 'Downloaded Offline' : 'Download song for offline mode'}
+                    >
+                      {isOffline(track.id) ? (
+                        <CheckCircle2 className="w-4 h-4 text-[#B6F36B]" />
+                      ) : (
+                        <ArrowDownToLine className="w-4 h-4 hover:text-[#B6F36B]" />
+                      )}
                     </button>
 
                     <span className="font-mono text-[11px]">{formatTime(track.duration)}</span>

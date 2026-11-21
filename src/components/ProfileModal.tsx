@@ -177,7 +177,7 @@ export const ProfileModal: React.FC = () => {
 
               <div className="p-3 rounded-2xl bg-[#1B232E]/60 border border-[#202A34] text-center">
                 <Smartphone className="w-4 h-4 mx-auto text-[#B6F36B] mb-1" />
-                <span className="text-sm font-black text-white font-display">v1.1.0</span>
+                <span className="text-sm font-black text-white font-display">v1.2.0</span>
                 <p className="text-[10px] text-[#929DA8]">App Version</p>
               </div>
             </div>
@@ -223,7 +223,7 @@ export const ProfileModal: React.FC = () => {
                 </p>
               </div>
               <span className="px-2 py-0.5 rounded-full bg-[#B6F36B]/15 text-[#B6F36B] text-[10px] font-bold font-mono">
-                v1.1.0
+                v1.2.0
               </span>
             </div>
 
