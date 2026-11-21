@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { Play, Pause, Heart, Search, X, Loader2 } from 'lucide-react'
+import { Play, Pause, Heart, Loader2 } from 'lucide-react'
 import { usePlayer } from '../../context/PlayerContext'
 import { SAMPLE_TRACKS, SAMPLE_ARTISTS, SAMPLE_ALBUMS, GENRE_CATEGORIES } from '../../data/musicData'
 import { searchGlobalMusic } from '../../services/musicSearch'
@@ -14,7 +14,6 @@ export const SearchView: React.FC = () => {
     isPlaying,
     playTrack,
     togglePlay,
-    playCustomUrlOrId,
     openAlbum,
     openArtist,
     isLiked,
@@ -98,28 +97,6 @@ export const SearchView: React.FC = () => {
 
   return (
     <div className="p-4 sm:p-6 select-none space-y-6 pb-28 md:pb-20">
-      {/* Mobile Dedicated Fast Search Input */}
-      <div className="md:hidden relative">
-        <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-[#929DA8]">
-          <Search className="w-4 h-4 text-[#B6F36B]" />
-        </div>
-        <input
-          type="text"
-          placeholder="Search any song, artist, album..."
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          className="w-full pl-10 pr-10 py-3 bg-[#141A23] text-white text-sm font-medium rounded-2xl border border-white/10 focus:border-[#B6F36B] focus:outline-none transition-all placeholder-[#929DA8] shadow-inner"
-        />
-        {searchQuery && (
-          <button
-            onClick={() => setSearchQuery('')}
-            className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-[#929DA8] hover:text-white"
-          >
-            <X className="w-4 h-4" />
-          </button>
-        )}
-      </div>
-
       {/* Search Header */}
       {searchQuery && (
         <div className="flex items-center justify-between">
@@ -147,18 +124,11 @@ export const SearchView: React.FC = () => {
       {searchQuery ? (
         <div className="space-y-8">
           {combinedTracks.length === 0 && !isSearchingOnline && (
-            <div className="p-8 bg-[#141A23] rounded-2xl border border-white/10 text-center max-w-xl mx-auto space-y-4">
-              <p className="text-xl font-bold text-white font-heading">Stream "{searchQuery}" Instantly</p>
+            <div className="p-8 bg-[#141A23] rounded-2xl border border-white/10 text-center max-w-xl mx-auto space-y-2">
+              <p className="text-base font-bold text-white font-heading">No results found for "{searchQuery}"</p>
               <p className="text-xs text-[#929DA8]">
-                Click below to stream "{searchQuery}" immediately through the player.
+                Check spelling or try searching for another artist, track, or album.
               </p>
-              <button
-                onClick={() => playCustomUrlOrId(searchQuery)}
-                className="px-6 py-2.5 bg-[#B6F36B] hover:bg-[#c4f885] text-[#090D13] font-bold text-xs font-heading rounded-full transition-transform hover:scale-105 active:scale-95 shadow-lg shadow-[#B6F36B]/20 inline-flex items-center gap-2"
-              >
-                <Play className="w-4 h-4 fill-current ml-0.5" />
-                <span>Play "{searchQuery}" Now</span>
-              </button>
             </div>
           )}
 

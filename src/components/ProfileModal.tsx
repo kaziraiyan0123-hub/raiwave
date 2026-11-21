@@ -39,15 +39,18 @@ export const ProfileModal: React.FC = () => {
   const handleSave = (e?: React.FormEvent) => {
     if (e) e.preventDefault()
     updateUserProfile({
-      name: name.trim() || 'Kazi Raiyan',
-      email: email.trim() || 'kaziraiyan0123@gmail.com',
+      name: name.trim(),
+      email: email.trim(),
     })
     setIsSaved(true)
     setTimeout(() => setIsSaved(false), 2500)
   }
 
   const handleClose = () => {
-    handleSave()
+    updateUserProfile({
+      name: name.trim(),
+      email: email.trim(),
+    })
     toggleProfile()
   }
 
@@ -61,6 +64,9 @@ export const ProfileModal: React.FC = () => {
         const registrations = await navigator.serviceWorker.getRegistrations()
         for (const reg of registrations) {
           await reg.update()
+          if (reg.waiting) {
+            reg.waiting.postMessage({ type: 'SKIP_WAITING' })
+          }
         }
       }
 
@@ -74,14 +80,14 @@ export const ProfileModal: React.FC = () => {
 
       setTimeout(() => {
         setIsUpdating(false)
-        setUpdateStatus('✓ RAIWAVE v1.1.0 is up to date! Reloading...')
+        setUpdateStatus('✓ RAIWAVE v1.2.1 is up to date! Reloading...')
         setTimeout(() => {
           window.location.reload()
-        }, 1200)
-      }, 1500)
+        }, 1000)
+      }, 1200)
     } catch {
       setIsUpdating(false)
-      setUpdateStatus('✓ You are running the latest RAIWAVE release (v1.1.0).')
+      setUpdateStatus('✓ You are running the latest RAIWAVE release (v1.2.1).')
       setTimeout(() => setUpdateStatus(null), 3500)
     }
   }
@@ -139,7 +145,7 @@ export const ProfileModal: React.FC = () => {
                   type="text"
                   value={name}
                   onChange={(e) => handleNameChange(e.target.value)}
-                  placeholder="e.g. Kazi Raiyan"
+                  placeholder="Enter your name"
                   className="w-full bg-[#1B232E] border border-[#202A34] focus:border-[#B6F36B] rounded-xl pl-10 pr-4 py-2.5 text-sm text-white placeholder-[#929DA8]/40 focus:outline-none transition-colors"
                 />
               </div>
@@ -155,7 +161,7 @@ export const ProfileModal: React.FC = () => {
                   type="email"
                   value={email}
                   onChange={(e) => handleEmailChange(e.target.value)}
-                  placeholder="e.g. kaziraiyan0123@gmail.com"
+                  placeholder="Enter your Gmail address"
                   className="w-full bg-[#1B232E] border border-[#202A34] focus:border-[#B6F36B] rounded-xl pl-10 pr-4 py-2.5 text-sm text-white placeholder-[#929DA8]/40 focus:outline-none transition-colors"
                 />
               </div>
@@ -177,7 +183,7 @@ export const ProfileModal: React.FC = () => {
 
               <div className="p-3 rounded-2xl bg-[#1B232E]/60 border border-[#202A34] text-center">
                 <Smartphone className="w-4 h-4 mx-auto text-[#B6F36B] mb-1" />
-                <span className="text-sm font-black text-white font-display">v1.2.0</span>
+                <span className="text-sm font-black text-white font-display">v1.2.1</span>
                 <p className="text-[10px] text-[#929DA8]">App Version</p>
               </div>
             </div>
@@ -223,7 +229,7 @@ export const ProfileModal: React.FC = () => {
                 </p>
               </div>
               <span className="px-2 py-0.5 rounded-full bg-[#B6F36B]/15 text-[#B6F36B] text-[10px] font-bold font-mono">
-                v1.2.0
+                v1.2.1
               </span>
             </div>
 
@@ -259,14 +265,14 @@ export const ProfileModal: React.FC = () => {
             <div className="flex items-center gap-2">
               <Code2 className="w-4 h-4 text-[#B6F36B]" />
               <span className="text-[11px] uppercase font-bold tracking-wider text-[#B6F36B] font-display">
-                Developer Attribution
+                Developer Attribution & Example
               </span>
             </div>
             <p className="text-xs font-semibold text-white">
               Application Designed & Engineered by <span className="text-[#B6F36B]">Kazi Raiyan</span>
             </p>
             <p className="text-[11px] text-[#929DA8] font-mono leading-relaxed">
-              Example Login: Kazi Raiyan &bull; kaziraiyan0123@gmail.com
+              Example: Kazi Raiyan &bull; kaziraiyan0123@gmail.com
             </p>
           </div>
         </div>

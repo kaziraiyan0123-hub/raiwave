@@ -45,24 +45,21 @@ jobs:
         uses: softprops/action-gh-release@v2
         if: startsWith(github.ref, 'refs/tags/') || github.ref == 'refs/heads/main'
         with:
-          tag_name: v1.2.0
-          name: "RAIWAVE v1.2.0 Official Release"
+          tag_name: v1.2.1
+          name: "RAIWAVE v1.2.1 Official Release"
           body: |
-            ### 🎵 RAIWAVE v1.2.0 — Feel Every Frequency
+            ### 🎵 RAIWAVE v1.2.1 — Feel Every Frequency
             **Lead Engineer & Creator:** Kazi Raiyan
 
-            - **Android APK:** Download and install `RAIWAVE.apk` (v1.2.0) on any Android device.
+            - **Android APK:** Download and install `RAIWAVE.apk` (v1.2.1) on any Android device.
             - **Web & PWA:** [https://raiwave.vercel.app](https://raiwave.vercel.app)
             - **Desktop:** Run `RAIWAVE.exe` with embedded icon and offline mode.
-            - **What's New in v1.2.0:**
-              - Repositioned Mobile Mini-Player for a floating experience above navigation bar.
-              - Mobile Background Media Playback Notification Bar with system lock screen controller.
-              - Dynamic Audio Soundwave Beats Visualizer around album artwork (replaced circular arc line).
-              - Live Synced Karaoke Lyrics with line-by-line highlight and auto-scroll.
-              - Curated Mood Stations with 1-tap Mood Radio.
-              - Recently Played track history saved on Home screen.
-              - Offline Mode: download and play music without internet.
-              - AI Smart Queue with automatic Autoplay recommendation engine.
+            - **What's New in v1.2.1:**
+              - **Full Track Audio Playback:** Removed 30-second preview limitations across mobile and desktop.
+              - **Profile Name Persistence:** Personal name and Gmail are preserved permanently without resetting, and inputs start clean with developer attribution and examples at the bottom.
+              - **PC Executable Icon:** Fixed title bar and taskbar icon for single-file `RAIWAVE.exe`.
+              - **Automatic In-App Updates:** Instant updates delivered to mobile APK and PWA automatically upon deployment.
+              - **Mobile & Desktop Parity:** Unified search bar, removed redundant mobile search inputs, and cleaned all banners.
           files: |
             build-output/RAIWAVE.apk
         env:

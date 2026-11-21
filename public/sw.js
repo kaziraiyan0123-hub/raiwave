@@ -1,10 +1,17 @@
-// RAIWAVE Service Worker for Offline PWA & Fast Caching
-const CACHE_NAME = 'raiwave-v1'
+// RAIWAVE Service Worker for Offline PWA & Fast Automatic Updates
+const CACHE_NAME = 'raiwave-v1.2.1'
 const ASSETS_TO_CACHE = [
   '/',
   '/index.html',
   '/manifest.webmanifest'
 ]
+
+// Message listener for instant updates from client
+self.addEventListener('message', (event) => {
+  if (event.data && event.data.type === 'SKIP_WAITING') {
+    self.skipWaiting()
+  }
+})
 
 self.addEventListener('install', (event) => {
   event.waitUntil(
@@ -21,6 +28,7 @@ self.addEventListener('activate', (event) => {
       return Promise.all(
         keys.map((key) => {
           if (key !== CACHE_NAME) {
+            console.log('[SW] Purging outdated cache:', key)
             return caches.delete(key)
           }
         })
@@ -31,24 +39,40 @@ self.addEventListener('activate', (event) => {
 })
 
 self.addEventListener('fetch', (event) => {
-  // Only handle GET requests for local assets
   if (event.request.method !== 'GET') return
   if (!event.request.url.startsWith(self.location.origin)) return
 
+  // NETWORK-FIRST for HTML documents and navigation:
+  // Guarantees mobile users and desktop apps immediately receive latest Vercel deployments!
+  if (event.request.mode === 'navigate' || event.request.destination === 'document') {
+    event.respondWith(
+      fetch(event.request)
+        .then((networkResponse) => {
+          if (networkResponse && networkResponse.status === 200) {
+            const responseToCache = networkResponse.clone()
+            caches.open(CACHE_NAME).then((cache) => cache.put(event.request, responseToCache))
+          }
+          return networkResponse
+        })
+        .catch(() => caches.match(event.request).then((cached) => cached || caches.match('/index.html')))
+    )
+    return
+  }
+
+  // Stale-While-Revalidate for other static assets
   event.respondWith(
     caches.match(event.request).then((cachedResponse) => {
-      if (cachedResponse) return cachedResponse
-
-      return fetch(event.request).then((networkResponse) => {
-        if (!networkResponse || networkResponse.status !== 200 || networkResponse.type !== 'basic') {
+      const fetchPromise = fetch(event.request)
+        .then((networkResponse) => {
+          if (networkResponse && networkResponse.status === 200 && networkResponse.type === 'basic') {
+            const responseToCache = networkResponse.clone()
+            caches.open(CACHE_NAME).then((cache) => cache.put(event.request, responseToCache).catch(() => {}))
+          }
           return networkResponse
-        }
-        const responseToCache = networkResponse.clone()
-        caches.open(CACHE_NAME).then((cache) => {
-          cache.put(event.request, responseToCache).catch(() => {})
         })
-        return networkResponse
-      }).catch(() => caches.match('/index.html'))
+        .catch(() => cachedResponse)
+
+      return cachedResponse || fetchPromise
     })
   )
 })

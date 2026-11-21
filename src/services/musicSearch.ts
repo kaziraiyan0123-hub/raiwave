@@ -56,7 +56,6 @@ export async function searchGlobalMusic(query: string): Promise<Track[]> {
         album: item.collectionName || 'Single',
         duration: item.trackTimeMillis ? Math.round(item.trackTimeMillis / 1000) : 210,
         coverUrl: highResArt,
-        previewUrl: item.previewUrl,
         source: 'youtube', // Streams full track via official embed player
         genre: item.primaryGenreName || 'Music',
         releaseYear,

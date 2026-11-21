@@ -29,13 +29,46 @@ public partial class Form1 : Form
         // Load RAIWAVE icon for window titlebar and taskbar
         try
         {
-            string iconPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "app.ico");
-            if (File.Exists(iconPath))
+            // 1. Extract associated icon from executable itself (works in single-file exe)
+            string? exePath = Environment.ProcessPath ?? Application.ExecutablePath;
+            if (!string.IsNullOrEmpty(exePath) && File.Exists(exePath))
             {
-                this.Icon = new Icon(iconPath);
+                var assocIcon = Icon.ExtractAssociatedIcon(exePath);
+                if (assocIcon != null)
+                {
+                    this.Icon = assocIcon;
+                }
             }
         }
         catch { }
+
+        if (this.Icon == null)
+        {
+            try
+            {
+                // 2. Load from embedded resource stream
+                using var stream = typeof(Form1).Assembly.GetManifestResourceStream("Raiwave.app.ico");
+                if (stream != null)
+                {
+                    this.Icon = new Icon(stream);
+                }
+            }
+            catch { }
+        }
+
+        if (this.Icon == null)
+        {
+            try
+            {
+                // 3. Fallback to loose app.ico beside executable
+                string iconPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "app.ico");
+                if (File.Exists(iconPath))
+                {
+                    this.Icon = new Icon(iconPath);
+                }
+            }
+            catch { }
+        }
     }
 
     private async void InitializeWebView()

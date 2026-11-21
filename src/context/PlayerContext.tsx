@@ -213,8 +213,8 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       if (saved) return JSON.parse(saved)
     } catch {}
     return {
-      name: 'Kazi Raiyan',
-      email: 'kaziraiyan0123@gmail.com',
+      name: '',
+      email: '',
       avatarUrl: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=200&auto=format&fit=crop&q=80',
       developerCredit: 'Kazi Raiyan (Lead Developer & Creator)',
       joinedDate: 'November 2026',
@@ -272,7 +272,7 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     const recTrack: Track = {
       id: `recording-${rec.id}`,
       title: rec.title,
-      artist: userProfile.name,
+      artist: userProfile.name || 'Personal Recording',
       album: 'Studio Recordings',
       duration: rec.duration,
       coverUrl: 'https://images.unsplash.com/photo-1598488035139-bdbb2231ce04?w=600&auto=format&fit=crop&q=80',
@@ -416,14 +416,6 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
     const onEnded = () => {
       if (currentEngineRef.current === 'audio') {
-        const track = currentTrackRef.current
-        // If preview audio just ended after 30s, automatically transition to full stream
-        if (track?.youtubeId && audioRef.current?.src === track.previewUrl) {
-          currentEngineRef.current = 'youtube'
-          setActiveEngine('youtube')
-          youtubeService.loadVideo(track.youtubeId, true)
-          return
-        }
         handleTrackEnd()
       }
     }
