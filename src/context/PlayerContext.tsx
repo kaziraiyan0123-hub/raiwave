@@ -25,6 +25,7 @@ interface PlayerContextType {
   history: Track[]
   activeEngine: 'audio' | 'youtube'
   toastMessage: string | null
+  showToast: (msg: string) => void
   isVideoOpen: boolean
   toggleVideoOpen: () => void
 
@@ -1195,6 +1196,7 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         playMoodStation,
         activeEngine,
         toastMessage,
+        showToast,
         isVideoOpen,
         toggleVideoOpen,
         currentView,
