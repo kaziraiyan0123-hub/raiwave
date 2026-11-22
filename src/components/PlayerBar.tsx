@@ -18,6 +18,7 @@ import {
   Tv,
   ArrowDownToLine,
   CheckCircle2,
+  Activity,
 } from 'lucide-react'
 import { usePlayer } from '../context/PlayerContext'
 import { EqualizerBars } from './EqualizerBars'
@@ -319,6 +320,17 @@ export const PlayerBar: React.FC = () => {
           }`}
         >
           <ListMusic className="w-4 h-4" />
+        </button>
+
+        {/* Visualizer Toggle */}
+        <button
+          onClick={() => navigateTo(currentView === 'visualizer' ? 'home' : 'visualizer')}
+          title="Music Visualizer (6 Modes)"
+          className={`p-1.5 rounded-xl transition-all hover:scale-105 active:scale-95 ${
+            currentView === 'visualizer' ? 'text-white bg-purple-500/20 border border-purple-500/30' : 'text-[#94A3B8] hover:text-white'
+          }`}
+        >
+          <Activity className="w-4 h-4" />
         </button>
 
         {/* Volume Controls */}

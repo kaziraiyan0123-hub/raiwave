@@ -69,6 +69,15 @@ export type ViewMode =
   | 'liked'
   | 'lyrics'
   | 'queue'
+  | 'visualizer'
+
+export type VisualizerMode =
+  | 'bars'
+  | 'circular'
+  | 'waveform'
+  | 'aurora'
+  | 'particles'
+  | 'minimal'
 
 export type RepeatMode = 'off' | 'all' | 'one'
 

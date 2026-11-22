@@ -13,6 +13,7 @@ import {
   generatePaletteFromColor,
   type DynamicPalette,
 } from '../services/colorExtractionService'
+import { visualizerAudioService } from '../services/visualizerAudioService'
 import type { LyricLine } from '../types'
 
 interface PlayerContextType {
@@ -463,6 +464,7 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     const audio = new Audio()
     audio.preload = 'auto'
     audioRef.current = audio
+    visualizerAudioService.attachAudioElement(audio)
 
     const onPlay = () => {
       if (currentEngineRef.current === 'audio') {
