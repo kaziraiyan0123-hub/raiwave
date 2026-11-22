@@ -1,5 +1,5 @@
 import React from 'react'
-import { Search, X, Bell } from 'lucide-react'
+import { Search, X } from 'lucide-react'
 import { usePlayer } from '../../context/PlayerContext'
 import { RaiwaveLogo } from '../RaiwaveLogo'
 
@@ -12,8 +12,6 @@ export const MobileTopBar: React.FC = () => {
     playCustomUrlOrId,
     userProfile,
     toggleProfile,
-    isNotificationOpen,
-    toggleNotification,
   } = usePlayer()
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -65,20 +63,8 @@ export const MobileTopBar: React.FC = () => {
         )}
       </div>
 
-      {/* Right: Android Notification Card Toggle & User Profile Avatar */}
+      {/* Right: User Profile Avatar */}
       <div className="flex items-center gap-2 flex-shrink-0">
-        <button
-          onClick={toggleNotification}
-          className={`p-1.5 rounded-full border transition-all active:scale-95 ${
-            isNotificationOpen
-              ? 'bg-[#B6F36B]/20 border-[#B6F36B]/50 text-[#B6F36B]'
-              : 'bg-[#141A23] border-white/10 text-[#929DA8]'
-          }`}
-          title="Toggle Android Notification Card"
-        >
-          <Bell className="w-4 h-4" />
-        </button>
-
         <div
           onClick={toggleProfile}
           className="relative cursor-pointer flex-shrink-0 active:scale-95 transition-transform"

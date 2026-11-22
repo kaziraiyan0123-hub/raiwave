@@ -274,19 +274,17 @@ export const MobileFullPlayer: React.FC = () => {
             </div>
 
             {/* Track Title, Artist & Like Heart Button */}
-            <div className="flex items-center justify-between w-full max-w-xs mt-6 px-2">
-              <div className="truncate flex-1 pr-3">
-                <h2 className="text-xl sm:text-2xl font-black text-white truncate font-heading tracking-tight">
-                  {currentTrack.title}
-                </h2>
-                <p className="text-sm font-semibold text-[#929DA8] truncate mt-0.5">
-                  {currentTrack.artist}
-                </p>
-              </div>
+            <div className="relative flex flex-col items-center justify-center text-center w-full max-w-xs mt-6 px-10">
+              <h2 className="text-xl sm:text-2xl font-black text-white truncate w-full font-heading tracking-tight text-center">
+                {currentTrack.title}
+              </h2>
+              <p className="text-sm font-semibold text-[#929DA8] truncate w-full mt-1 text-center">
+                {currentTrack.artist}
+              </p>
 
               <button
                 onClick={() => toggleLike(currentTrack.id)}
-                className="w-10 h-10 rounded-full bg-white/5 border border-white/10 flex items-center justify-center shadow-lg active:scale-90 transition-transform flex-shrink-0"
+                className="absolute right-0 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-white/5 border border-white/10 flex items-center justify-center shadow-lg active:scale-90 transition-transform flex-shrink-0"
                 title={liked ? 'Unlike' : 'Like song'}
               >
                 <Heart

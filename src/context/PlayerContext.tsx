@@ -718,6 +718,21 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
     showToast(`▶ Now Playing: ${track.title} • ${track.artist}`)
 
+    // TIER 0: Offline Mode (Cached audio from IndexedDB vault)
+    if ((typeof navigator !== 'undefined' && !navigator.onLine) || offlineService.isOffline(track.id)) {
+      offlineService.getOfflineAudioBlob(track.id).then((blob) => {
+        if (playRequestIdRef.current !== reqId) return
+        if (blob && audioRef.current) {
+          currentEngineRef.current = 'audio'
+          setActiveEngine('audio')
+          youtubeService.pause()
+          audioRef.current.src = URL.createObjectURL(blob)
+          audioRef.current.currentTime = 0
+          if (shouldPlay) audioRef.current.play().catch(() => {})
+        }
+      })
+    }
+
     // TIER 1: YouTube Full-Length Audio/Video Stream (Streams the FULL song from start to finish)
     if (track.youtubeId || track.source === 'youtube') {
       currentEngineRef.current = 'youtube'
@@ -730,7 +745,6 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
       if (track.youtubeId) {
         youtubeService.loadVideo(track.youtubeId, shouldPlay)
-        setIsPlaying(shouldPlay)
       } else {
         showToast(`▶ Loading full song: ${track.title}`)
         youtubeService.loadSearchQuery(`${track.artist} - ${track.title}`).then((vid) => {
@@ -746,7 +760,6 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
                 audioRef.current.load()
               }
               youtubeService.loadVideo(vid, shouldPlay)
-              setIsPlaying(shouldPlay)
             }
           } else {
             setIsPlaying(false)

@@ -45,20 +45,21 @@ jobs:
         uses: softprops/action-gh-release@v2
         if: startsWith(github.ref, 'refs/tags/') || github.ref == 'refs/heads/main'
         with:
-          tag_name: v1.2.4
-          name: "RAIWAVE v1.2.4 Official Release"
+          tag_name: v1.2.5
+          name: "RAIWAVE v1.2.5 Official Release"
           body: |
-            ### 🎵 RAIWAVE v1.2.4 — Feel Every Frequency
+            ### 🎵 RAIWAVE v1.2.5 — Feel Every Frequency
             **Lead Engineer & Creator:** Kazi Raiyan
 
-            - **Android APK:** Download and install `RAIWAVE.apk` (v1.2.4) on any Android device.
+            - **Android APK:** Download and install `RAIWAVE.apk` (v1.2.5) directly through the in-app updater or web.
             - **Web & PWA:** [https://raiwave.vercel.app](https://raiwave.vercel.app)
             - **Desktop:** Run `RAIWAVE.exe` with embedded icon and offline mode.
-            - **What's New in v1.2.4:**
-              - **Permanent Android Background Playback Fix:** Resolved background auto-pause by intercepting WebView window visibility/focus delegates, configuring Desktop Chrome emulation to disable mobile-specific YouTube embed auto-pauses, and securing continuous audio output with Android `AudioManager` AudioFocus and `PowerManager` Partial WakeLock.
-              - **Foreground Service Lifecycle Stability:** Re-architected native `MediaNotificationService` bridge to eliminate redundant `startForegroundService` dispatches, preventing Android 12/13/14 `ForegroundServiceStartNotAllowedException` crashes when minimized.
-              - **Audio Output & Lockscreen Media Sync:** Seamless native Android 11+ Quick Settings / lockscreen playback controls with synchronized seek bar, track artwork, and background hardware volume key control.
-              - **Exact Song Matching & Embed Verification:** 100% verified exact song playback with strict title keyword scoring and embeddability testing.
+            - **What's New in v1.2.5:**
+              - **Seamless Instant Playback:** Eliminated playback start glitch and double-loading lag. Tracks now buffer and start playing instantly on first tap.
+              - **In-App Mobile Updater & Native Download Engine:** Seamless one-tap APK download and package installer launch directly from Profile Settings (`AndroidMedia.downloadAndInstallApk`), plus full native DownloadManager integration in Android WebView.
+              - **True Offline Music Mode:** Fixed offline music download errors with direct device blob downloads and IndexedDB storage. Cached tracks play instantly offline without internet.
+              - **Design & Alignment Refinements:** Perfectly centered track title and artist under circular visualizer, removed unwanted notification bell clutter from headers, and cleaned up modal version info.
+              - **100% Exact Song Matching:** Verified search resolution with strict Spotify/YouTube metadata scoring to ensure the exact song selected plays every time.
           files: |
             build-output/RAIWAVE.apk
         env:

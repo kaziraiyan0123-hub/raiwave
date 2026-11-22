@@ -128,14 +128,17 @@ class YouTubeService {
               // ignore
             }
             if (this.pendingPlayOnReady && this.pendingVideoId) {
-              event.target.loadVideoById(this.pendingVideoId)
-              event.target.playVideo()
+              const vid = this.pendingVideoId
               this.pendingVideoId = null
               this.pendingPlayOnReady = false
+              event.target.loadVideoById(vid)
             } else if (this.pendingPlayOnReady && this.pendingSearchQuery) {
-              this.loadSearchQuery(this.pendingSearchQuery)
+              const q = this.pendingSearchQuery
               this.pendingSearchQuery = null
               this.pendingPlayOnReady = false
+              this.loadSearchQuery(q).then((vid) => {
+                if (vid) event.target.loadVideoById(vid)
+              })
             }
           },
           onStateChange: (event) => {
@@ -226,7 +229,6 @@ class YouTubeService {
     if (!query || !query.trim()) return null
     const resolvedId = await resolveYouTubeVideoId(query, excludeIds)
     if (resolvedId) {
-      this.loadVideo(resolvedId, true)
       return resolvedId
     }
 

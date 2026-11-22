@@ -58,8 +58,18 @@ export const ProfileModal: React.FC = () => {
     setIsUpdating(true)
     setUpdateStatus('Checking for latest updates from Vercel & GitHub...')
 
+    // 1. If running inside Android APK, invoke native DownloadManager & Package Installer
+    const androidBridge = (window as any).AndroidMedia
+    if (androidBridge && typeof androidBridge.downloadAndInstallApk === 'function') {
+      androidBridge.downloadAndInstallApk('https://raiwave.vercel.app/RAIWAVE.apk')
+      setIsUpdating(false)
+      setUpdateStatus('🚀 Downloading latest RAIWAVE v1.2.5 APK update! Check your notification bar to install.')
+      setTimeout(() => setUpdateStatus(null), 6000)
+      return
+    }
+
     try {
-      // 1. Unregister or update service workers to fetch fresh PWA bundle
+      // 2. Unregister or update service workers to fetch fresh PWA bundle
       if ('serviceWorker' in navigator) {
         const registrations = await navigator.serviceWorker.getRegistrations()
         for (const reg of registrations) {
@@ -70,7 +80,7 @@ export const ProfileModal: React.FC = () => {
         }
       }
 
-      // 2. Clear old cached assets
+      // 3. Clear old cached assets
       if ('caches' in window) {
         const keys = await caches.keys()
         for (const key of keys) {
@@ -80,14 +90,14 @@ export const ProfileModal: React.FC = () => {
 
       setTimeout(() => {
         setIsUpdating(false)
-        setUpdateStatus('✓ RAIWAVE v1.2.2 is up to date! Reloading...')
+        setUpdateStatus('✓ RAIWAVE v1.2.5 is up to date! Reloading...')
         setTimeout(() => {
           window.location.reload()
         }, 1000)
       }, 1200)
     } catch {
       setIsUpdating(false)
-      setUpdateStatus('✓ You are running the latest RAIWAVE release (v1.2.2).')
+      setUpdateStatus('✓ You are running the latest RAIWAVE release (v1.2.5).')
       setTimeout(() => setUpdateStatus(null), 3500)
     }
   }
@@ -183,7 +193,7 @@ export const ProfileModal: React.FC = () => {
 
               <div className="p-3 rounded-2xl bg-[#1B232E]/60 border border-[#202A34] text-center">
                 <Smartphone className="w-4 h-4 mx-auto text-[#B6F36B] mb-1" />
-                <span className="text-sm font-black text-white font-display">v1.2.2</span>
+                <span className="text-sm font-black text-white font-display">v1.2.5</span>
                 <p className="text-[10px] text-[#929DA8]">App Version</p>
               </div>
             </div>
@@ -229,7 +239,7 @@ export const ProfileModal: React.FC = () => {
                 </p>
               </div>
               <span className="px-2 py-0.5 rounded-full bg-[#B6F36B]/15 text-[#B6F36B] text-[10px] font-bold font-mono">
-                v1.2.2
+                v1.2.5
               </span>
             </div>
 
@@ -248,15 +258,24 @@ export const ProfileModal: React.FC = () => {
                 <span>{isUpdating ? 'Updating...' : 'Check for Updates / Update App'}</span>
               </button>
 
-              <a
-                href="/RAIWAVE.apk"
-                download="RAIWAVE.apk"
+              <button
+                type="button"
+                onClick={() => {
+                  const androidBridge = (window as any).AndroidMedia
+                  if (androidBridge && typeof androidBridge.downloadAndInstallApk === 'function') {
+                    androidBridge.downloadAndInstallApk('https://raiwave.vercel.app/RAIWAVE.apk')
+                    setUpdateStatus('🚀 Downloading latest RAIWAVE.apk update to your Downloads folder...')
+                    setTimeout(() => setUpdateStatus(null), 6000)
+                  } else {
+                    window.open('/RAIWAVE.apk', '_blank')
+                  }
+                }}
                 className="w-full sm:w-auto px-4 py-2 rounded-xl bg-[#52D6C9]/10 hover:bg-[#52D6C9]/20 text-[#52D6C9] text-xs font-bold font-display transition-all flex items-center justify-center gap-1.5 border border-[#52D6C9]/30 shadow-sm active:scale-95"
                 title="Direct 1-tap download of RAIWAVE.apk directly to your phone (no GitHub account required)"
               >
                 <Smartphone className="w-3.5 h-3.5" />
                 <span>Direct Download APK</span>
-              </a>
+              </button>
             </div>
           </div>
 

@@ -1,23 +1,30 @@
 package com.raiwave.app;
 
 import android.Manifest;
+import android.app.DownloadManager;
+import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.pm.PackageManager;
 import android.graphics.Color;
 import android.media.AudioManager;
+import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Environment;
 import android.view.View;
 import android.view.Window;
 import android.view.WindowManager;
 import android.webkit.CookieManager;
 import android.webkit.JavascriptInterface;
 import android.webkit.PermissionRequest;
+import android.webkit.URLUtil;
 import android.webkit.WebChromeClient;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
+import android.widget.Toast;
 import androidx.activity.OnBackPressedCallback;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
@@ -126,7 +133,6 @@ public class MainActivity extends AppCompatActivity {
         settings.setMixedContentMode(WebSettings.MIXED_CONTENT_ALWAYS_ALLOW);
 
         // Desktop User-Agent: Crucial to bypass YouTube's mobile-only background auto-pause restriction!
-        // Desktop YouTube players never pause when minimized or when the tab/window is in background.
         String desktopUserAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36";
         settings.setUserAgentString(desktopUserAgent);
 
@@ -135,8 +141,38 @@ public class MainActivity extends AppCompatActivity {
         cookieManager.setAcceptCookie(true);
         cookieManager.setAcceptThirdPartyCookies(webView, true);
 
-        // Native Android Media Notification Bridge
+        // Native Android Media & Update Bridge
         webView.addJavascriptInterface(new RaiwaveMediaBridge(), "AndroidMedia");
+
+        // Native Download Listener so offline music and APK downloads work seamlessly
+        webView.setDownloadListener((url, userAgent, contentDisposition, mimetype, contentLength) -> {
+            try {
+                if (url.startsWith("blob:") || url.startsWith("data:")) {
+                    return;
+                }
+                DownloadManager.Request request = new DownloadManager.Request(Uri.parse(url));
+                request.setMimeType(mimetype);
+                String cookies = CookieManager.getInstance().getCookie(url);
+                request.addRequestHeader("cookie", cookies);
+                request.addRequestHeader("User-Agent", userAgent);
+                request.setDescription("Downloading file...");
+                String filename = URLUtil.guessFileName(url, contentDisposition, mimetype);
+                request.setTitle(filename);
+                request.setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED);
+                request.setDestinationInExternalPublicDir(Environment.DIRECTORY_DOWNLOADS, filename);
+
+                DownloadManager dm = (DownloadManager) getSystemService(Context.DOWNLOAD_SERVICE);
+                if (dm != null) {
+                    dm.enqueue(request);
+                    Toast.makeText(MainActivity.this, "Downloading " + filename + " to Downloads folder...", Toast.LENGTH_SHORT).show();
+                }
+            } catch (Exception e) {
+                try {
+                    Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(url));
+                    startActivity(intent);
+                } catch (Exception ignored) {}
+            }
+        });
 
         webView.setWebViewClient(new WebViewClient() {
             @Override
@@ -220,8 +256,62 @@ public class MainActivity extends AppCompatActivity {
         }
 
         @JavascriptInterface
+        public void downloadAndInstallApk(String apkUrl) {
+            runOnUiThread(() -> {
+                try {
+                    DownloadManager.Request request = new DownloadManager.Request(Uri.parse(apkUrl));
+                    request.setMimeType("application/vnd.android.package-archive");
+                    request.setDescription("Downloading latest RAIWAVE APK update...");
+                    request.setTitle("RAIWAVE Update (v1.2.5)");
+                    request.setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED);
+                    request.setDestinationInExternalPublicDir(Environment.DIRECTORY_DOWNLOADS, "RAIWAVE.apk");
+
+                    DownloadManager dm = (DownloadManager) getSystemService(Context.DOWNLOAD_SERVICE);
+                    if (dm != null) {
+                        final long downloadId = dm.enqueue(request);
+                        Toast.makeText(MainActivity.this, "Downloading RAIWAVE update... Pull down notifications to view progress.", Toast.LENGTH_LONG).show();
+
+                        BroadcastReceiver onComplete = new BroadcastReceiver() {
+                            @Override
+                            public void onReceive(Context context, Intent intent) {
+                                long id = intent.getLongExtra(DownloadManager.EXTRA_DOWNLOAD_ID, -1);
+                                if (id == downloadId) {
+                                    try {
+                                        Uri apkUri = dm.getUriForDownloadedFile(downloadId);
+                                        if (apkUri != null) {
+                                            Intent installIntent = new Intent(Intent.ACTION_VIEW);
+                                            installIntent.setDataAndType(apkUri, "application/vnd.android.package-archive");
+                                            installIntent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION | Intent.FLAG_ACTIVITY_NEW_TASK);
+                                            startActivity(installIntent);
+                                        }
+                                    } catch (Exception ex) {
+                                        ex.printStackTrace();
+                                    }
+                                    try {
+                                        unregisterReceiver(this);
+                                    } catch (Exception ignored) {}
+                                }
+                            }
+                        };
+
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                            registerReceiver(onComplete, new IntentFilter(DownloadManager.ACTION_DOWNLOAD_COMPLETE), Context.RECEIVER_NOT_EXPORTED);
+                        } else {
+                            registerReceiver(onComplete, new IntentFilter(DownloadManager.ACTION_DOWNLOAD_COMPLETE));
+                        }
+                    }
+                } catch (Exception e) {
+                    try {
+                        Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(apkUrl));
+                        startActivity(intent);
+                    } catch (Exception ignored) {}
+                }
+            });
+        }
+
+        @JavascriptInterface
         public String getNativeVersion() {
-            return "1.2.4";
+            return "1.2.5";
         }
     }
 
