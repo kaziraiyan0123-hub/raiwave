@@ -94,15 +94,15 @@ export const TopNav: React.FC = () => {
         <button
           data-testid="profile-trigger"
           onClick={toggleProfile}
-          className="relative p-1 rounded-full bg-[#141A23] hover:bg-[#1B232E] border border-[#202A34] cursor-pointer group transition-all"
+          className="relative p-1 rounded-full bg-[#12141D] hover:bg-[#181B27] border border-white/10 cursor-pointer group transition-all"
           title="Account Profile & Settings"
         >
           <img
             src={userProfile.avatarUrl}
             alt="Profile"
-            className="w-8 h-8 rounded-full object-cover border border-[#B6F36B]/50 group-hover:scale-105 transition-transform shadow"
+            className="w-8 h-8 rounded-full object-cover border border-[#8B5CF6]/50 group-hover:scale-105 transition-transform shadow"
           />
-          <span className="absolute bottom-1 right-1 w-2.5 h-2.5 rounded-full bg-[#B6F36B] ring-2 ring-[#090D13]" />
+          <span className="absolute bottom-1 right-1 w-2.5 h-2.5 rounded-full bg-[#8B5CF6] ring-2 ring-[#0B0D13]" />
         </button>
       </div>
     </header>

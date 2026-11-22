@@ -2,13 +2,14 @@ import React, { useState } from 'react'
 import {
   Home,
   Compass,
-  Search,
   Bookmark,
   Plus,
   Heart,
   Music2,
   Sparkles,
   Smartphone,
+  ListMusic,
+  History,
 } from 'lucide-react'
 import { usePlayer } from '../context/PlayerContext'
 import { SAMPLE_PLAYLISTS } from '../data/musicData'
@@ -29,6 +30,18 @@ export const Sidebar: React.FC = () => {
 
   const isLikedActive = currentView === 'liked'
 
+  const handleRecentlyPlayedClick = () => {
+    navigateTo('home')
+    setTimeout(() => {
+      const el = document.getElementById('recently-played-section')
+      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    }, 100)
+  }
+
+  const handlePlaylistsClick = () => {
+    navigateTo('library')
+  }
+
   return (
     <>
       <aside className="hidden md:flex flex-col w-64 bg-[#0B0D13] h-full select-none text-[#94A3B8] p-3 gap-2 flex-shrink-0 border-r border-white/5">
@@ -42,10 +55,11 @@ export const Sidebar: React.FC = () => {
             <RaiwaveLogo size="md" />
           </div>
 
-          <nav className="flex flex-col gap-1 mt-2">
+          <nav className="flex flex-col gap-1 mt-1">
+            {/* 1. Home */}
             <button
               onClick={() => navigateTo('home')}
-              className={`flex items-center gap-3.5 px-3 py-2.5 rounded-xl font-medium text-xs font-heading transition-all ${
+              className={`flex items-center gap-3.5 px-3 py-2 rounded-xl font-medium text-xs font-heading transition-all ${
                 currentView === 'home'
                   ? 'bg-gradient-to-r from-[#8B5CF6] to-[#7C3AED] text-white font-bold shadow-[0_4px_16px_rgba(139,92,246,0.35)]'
                   : 'text-[#94A3B8] hover:text-white hover:bg-white/5'
@@ -55,28 +69,61 @@ export const Sidebar: React.FC = () => {
               <span>Home</span>
             </button>
 
+            {/* 2. Discover */}
             <button
               onClick={() => navigateTo('explore')}
-              className={`flex items-center gap-3.5 px-3 py-2.5 rounded-xl font-medium text-xs font-heading transition-all ${
+              className={`flex items-center gap-3.5 px-3 py-2 rounded-xl font-medium text-xs font-heading transition-all ${
                 currentView === 'explore'
                   ? 'bg-gradient-to-r from-[#8B5CF6] to-[#7C3AED] text-white font-bold shadow-[0_4px_16px_rgba(139,92,246,0.35)]'
                   : 'text-[#94A3B8] hover:text-white hover:bg-white/5'
               }`}
             >
               <Compass className={`w-4 h-4 ${currentView === 'explore' ? 'text-white stroke-[2.5]' : ''}`} />
-              <span>Explore</span>
+              <span>Discover</span>
             </button>
 
+            {/* 3. My Library */}
             <button
-              onClick={() => navigateTo('search')}
-              className={`flex items-center gap-3.5 px-3 py-2.5 rounded-xl font-medium text-xs font-heading transition-all ${
-                currentView === 'search'
+              onClick={() => navigateTo('library')}
+              className={`flex items-center gap-3.5 px-3 py-2 rounded-xl font-medium text-xs font-heading transition-all ${
+                currentView === 'library'
                   ? 'bg-gradient-to-r from-[#8B5CF6] to-[#7C3AED] text-white font-bold shadow-[0_4px_16px_rgba(139,92,246,0.35)]'
                   : 'text-[#94A3B8] hover:text-white hover:bg-white/5'
               }`}
             >
-              <Search className={`w-4 h-4 ${currentView === 'search' ? 'text-white stroke-[2.5]' : ''}`} />
-              <span>Search</span>
+              <Bookmark className={`w-4 h-4 ${currentView === 'library' ? 'text-white stroke-[2.5]' : ''}`} />
+              <span>My Library</span>
+            </button>
+
+            {/* 4. Playlists */}
+            <button
+              onClick={handlePlaylistsClick}
+              className="flex items-center gap-3.5 px-3 py-2 rounded-xl font-medium text-xs font-heading transition-all text-[#94A3B8] hover:text-white hover:bg-white/5"
+            >
+              <ListMusic className="w-4 h-4" />
+              <span>Playlists</span>
+            </button>
+
+            {/* 5. Favorites */}
+            <button
+              onClick={() => navigateTo('liked')}
+              className={`flex items-center gap-3.5 px-3 py-2 rounded-xl font-medium text-xs font-heading transition-all ${
+                isLikedActive
+                  ? 'bg-gradient-to-r from-[#8B5CF6] to-[#7C3AED] text-white font-bold shadow-[0_4px_16px_rgba(139,92,246,0.35)]'
+                  : 'text-[#94A3B8] hover:text-white hover:bg-white/5'
+              }`}
+            >
+              <Heart className={`w-4 h-4 ${isLikedActive ? 'text-white fill-white' : ''}`} />
+              <span>Favorites ({likedTrackIds.length})</span>
+            </button>
+
+            {/* 6. Recently Played */}
+            <button
+              onClick={handleRecentlyPlayedClick}
+              className="flex items-center gap-3.5 px-3 py-2 rounded-xl font-medium text-xs font-heading transition-all text-[#94A3B8] hover:text-white hover:bg-white/5"
+            >
+              <History className="w-4 h-4" />
+              <span>Recently Played</span>
             </button>
           </nav>
         </div>
