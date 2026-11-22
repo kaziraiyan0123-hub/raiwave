@@ -529,6 +529,7 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
           .then((newId) => {
             if (newId) {
               track.youtubeId = newId
+              youtubeService.loadVideo(newId, true)
               return
             }
 
@@ -1052,6 +1053,13 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   }, [togglePlay, nextTrack, prevTrack])
 
   const handleTrackEnd = () => {
+    // A track can only legitimately end if it reached near the end of its duration.
+    // Spurious ENDED events fired by YouTube during stream unloads or buffer stalls must be ignored!
+    if (duration > 5 && currentTime < duration - 4) {
+      console.warn(`Spurious track end ignored (currentTime: ${currentTime}, duration: ${duration})`)
+      return
+    }
+
     if (repeatModeRef.current === 'one') {
       seek(0)
       if (currentEngineRef.current === 'audio' && audioRef.current) {

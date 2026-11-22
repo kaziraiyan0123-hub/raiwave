@@ -61,6 +61,7 @@ class YouTubeService {
   private pendingSearchQuery: string | null = null
   private pendingPlayOnReady = false
   private isExplicitlyPaused = true
+  private isTransitioning = false
   private timeInterval: number | null = null
   private boundTarget: string | HTMLElement = 'raiwave-youtube-player'
 
@@ -154,6 +155,7 @@ class YouTubeService {
             const ps = window.YT.PlayerState
             if (event.data === ps.PLAYING) {
               this.isExplicitlyPaused = false
+              this.isTransitioning = false
               this.onStateChangeCb?.('playing')
             } else if (event.data === ps.PAUSED) {
               // Intercept automatic OS/browser background pauses:
@@ -172,6 +174,15 @@ class YouTubeService {
                 } catch {}
               }
             } else if (event.data === ps.ENDED) {
+              // Ignore spurious ENDED events fired during track transitions or premature unloads
+              if (this.isTransitioning) {
+                return
+              }
+              const cur = this.player?.getCurrentTime() || 0
+              const tot = this.player?.getDuration() || 0
+              if (tot > 5 && cur < Math.max(5, tot - 5)) {
+                return
+              }
               this.onStateChangeCb?.('ended')
             } else if (event.data === ps.BUFFERING) {
               this.onStateChangeCb?.('buffering')
@@ -220,6 +231,7 @@ class YouTubeService {
 
   public loadVideo(videoId: string, playImmediately = true) {
     this.isExplicitlyPaused = !playImmediately
+    this.isTransitioning = true
     if (this.player && this.isReady && typeof this.player.loadVideoById === 'function') {
       try {
         if (typeof this.player.unMute === 'function') {

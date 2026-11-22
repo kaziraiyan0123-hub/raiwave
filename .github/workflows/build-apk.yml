@@ -45,20 +45,20 @@ jobs:
         uses: softprops/action-gh-release@v2
         if: startsWith(github.ref, 'refs/tags/') || github.ref == 'refs/heads/main'
         with:
-          tag_name: v1.2.6
-          name: "RAIWAVE v1.2.6 Official Release"
+          tag_name: v1.2.7
+          name: "RAIWAVE v1.2.7 Official Release"
           body: |
-            ### 🎵 RAIWAVE v1.2.6 — Feel Every Frequency
+            ### 🎵 RAIWAVE v1.2.7 — Feel Every Frequency
             **Lead Engineer & Creator:** Kazi Raiyan
 
-            - **Android APK:** Download and install `RAIWAVE.apk` (v1.2.6) directly through the in-app updater or web.
+            - **Android APK:** Download and install `RAIWAVE.apk` (v1.2.7) directly through the in-app updater or web.
             - **Web & PWA:** [https://raiwave.vercel.app](https://raiwave.vercel.app)
             - **Desktop:** Run `RAIWAVE.exe` with embedded icon and offline mode.
-            - **What's New in v1.2.6:**
-              - **Permanent Audio Focus & 0:01 Glitch Elimination:** Resolved Android OS audio focus handshake where internal WebView playback transiently triggered `MediaNotificationService` self-pause. Music now streams continuously with 0 interruptions or false pauses.
-              - **Eliminated Internal HTML5 Audio Collision:** Stopped silent background `<audio>` loop while YouTube stream engine is active, preventing browser media element conflicts.
-              - **100% Exact Song Matching & Outsider Filter:** Re-architected search ranker to prioritize verified YouTube Music studio releases with direct embeddable IDs over unverified ghost tracks. No more accidental track replacements.
-              - **Core Title & Artist Preservation:** Added precision core-title scoring before description separators, guaranteeing popular anthems (such as Ayub Bachchu's "Shei Tumi", Sidhu's "Shei Tumi", Tahsan's "Alo" & "Prematal") play their exact official recordings.
+            - **What's New in v1.2.7:**
+              - **Clean Mobile Screen & Removed Floating Card:** Restricted `AndroidMediaNotificationCard` to desktop/tablets (`hidden md:block`), completely eliminating the in-app floating controller that obstructed mobile views and caused confusing duplicate play/pause buttons.
+              - **Permanent Elimination of Song Replacement:** Guarded against premature/spurious YouTube player `ENDED` events during stream transitions in both `youtubePlayer.ts` and `PlayerContext.tsx`. Selecting any song now reliably plays that exact song without being replaced by another track.
+              - **Intuitive Mobile Track Tapping:** Tapping an already playing track row or card now seamlessly opens the mobile full player instead of inadvertently pausing playback. Explicit play/pause buttons remain dedicated to playback toggle.
+              - **Precision Catalog Cleaning:** Purged ambiguous generic aliases from `PREMAPPED_CATALOG`, ensuring exact artist and title match fidelity.
           files: |
             build-output/RAIWAVE.apk
         env:

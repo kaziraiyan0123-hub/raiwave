@@ -22,6 +22,7 @@ export const PlaylistView: React.FC = () => {
     toggleLike,
     isShuffle,
     toggleShuffle,
+    toggleMobilePlayer,
   } = usePlayer()
 
   if (!selectedPlaylist) {
@@ -144,8 +145,8 @@ export const PlaylistView: React.FC = () => {
                 <div
                   key={track.id}
                   onClick={() => {
-                    if (isThisTrackPlaying) {
-                      togglePlay()
+                    if (isThisTrackSelected) {
+                      toggleMobilePlayer()
                     } else {
                       playTrack(track, tracks)
                     }

@@ -63,7 +63,7 @@ export const ProfileModal: React.FC = () => {
     if (androidBridge && typeof androidBridge.downloadAndInstallApk === 'function') {
       androidBridge.downloadAndInstallApk('https://raiwave.vercel.app/RAIWAVE.apk')
       setIsUpdating(false)
-      setUpdateStatus('🚀 Downloading latest RAIWAVE v1.2.6 APK update! Check your notification bar to install.')
+      setUpdateStatus('🚀 Downloading latest RAIWAVE v1.2.7 APK update! Check your notification bar to install.')
       setTimeout(() => setUpdateStatus(null), 6000)
       return
     }
@@ -90,14 +90,14 @@ export const ProfileModal: React.FC = () => {
 
       setTimeout(() => {
         setIsUpdating(false)
-        setUpdateStatus('✓ RAIWAVE v1.2.6 is up to date! Reloading...')
+        setUpdateStatus('✓ RAIWAVE v1.2.7 is up to date! Reloading...')
         setTimeout(() => {
           window.location.reload()
         }, 1000)
       }, 1200)
     } catch {
       setIsUpdating(false)
-      setUpdateStatus('✓ You are running the latest RAIWAVE release (v1.2.6).')
+      setUpdateStatus('✓ You are running the latest RAIWAVE release (v1.2.7).')
       setTimeout(() => setUpdateStatus(null), 3500)
     }
   }
@@ -239,7 +239,7 @@ export const ProfileModal: React.FC = () => {
                 </p>
               </div>
               <span className="px-2 py-0.5 rounded-full bg-[#B6F36B]/15 text-[#B6F36B] text-[10px] font-bold font-mono">
-                v1.2.6
+                v1.2.7
               </span>
             </div>
 

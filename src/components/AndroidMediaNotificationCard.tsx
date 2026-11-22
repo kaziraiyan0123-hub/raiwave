@@ -65,7 +65,7 @@ export const AndroidMediaNotificationCard: React.FC = () => {
     <div
       id="android-media-notification-card"
       data-testid="android-media-notification-card"
-      className="fixed top-16 right-3 sm:top-20 sm:right-6 z-40 w-[calc(100vw-1.5rem)] sm:w-[410px] max-w-[430px] select-none transition-all duration-300 ease-in-out animate-in fade-in slide-in-from-top-4"
+      className="hidden md:block fixed top-20 right-6 z-40 w-[410px] max-w-[430px] select-none transition-all duration-300 ease-in-out animate-in fade-in slide-in-from-top-4"
     >
       {/* Outer Card with Dynamic Theme & Frosted Blur */}
       <div
@@ -164,6 +164,22 @@ export const AndroidMediaNotificationCard: React.FC = () => {
                 title="Expand notification"
               >
                 <ChevronDown className="w-5 h-5" />
+              </button>
+
+              {/* Close / Dismiss (X) */}
+              <button
+                onClick={(e) => {
+                  e.stopPropagation()
+                  toggleNotification()
+                }}
+                className={`p-1.5 rounded-full transition-colors active:scale-95 ${
+                  isDark
+                    ? 'text-white/60 hover:text-white hover:bg-white/10'
+                    : 'text-neutral-400 hover:text-neutral-900 hover:bg-black/5'
+                }`}
+                title="Dismiss notification"
+              >
+                <X className="w-4 h-4" />
               </button>
             </div>
           </div>

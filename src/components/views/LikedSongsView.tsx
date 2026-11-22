@@ -12,6 +12,7 @@ export const LikedSongsView: React.FC = () => {
     currentTrack,
     isPlaying,
     togglePlay,
+    toggleMobilePlayer,
   } = usePlayer()
 
   const likedTracks = SAMPLE_TRACKS.filter((t) => likedTrackIds.includes(t.id))
@@ -100,8 +101,8 @@ export const LikedSongsView: React.FC = () => {
                 <div
                   key={track.id}
                   onClick={() => {
-                    if (isThisTrackPlaying) {
-                      togglePlay()
+                    if (isThisTrackSelected) {
+                      toggleMobilePlayer()
                     } else {
                       playTrack(track, likedTracks)
                     }

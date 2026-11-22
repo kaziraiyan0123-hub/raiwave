@@ -18,6 +18,7 @@ export const SearchView: React.FC = () => {
     openArtist,
     isLiked,
     toggleLike,
+    toggleMobilePlayer,
   } = usePlayer()
 
   const [onlineResults, setOnlineResults] = useState<Track[]>([])
@@ -148,7 +149,7 @@ export const SearchView: React.FC = () => {
                   return (
                     <div
                       onClick={() => {
-                        if (isTopPlaying) togglePlay()
+                        if (currentTrack?.id === topResult.id) toggleMobilePlayer()
                         else playTrack(topResult, combinedTracks)
                       }}
                       className="bg-[#141A23] hover:bg-[#1B232E] p-6 rounded-2xl cursor-pointer transition-all duration-300 group relative flex flex-col justify-between min-h-[240px] shadow-2xl border border-white/5 hover:border-[#B6F36B]/40 relative overflow-hidden"
@@ -207,7 +208,7 @@ export const SearchView: React.FC = () => {
                       <div
                         key={track.id}
                         onClick={() => {
-                          if (isTrackPlaying) togglePlay()
+                          if (isTrackSelected) toggleMobilePlayer()
                           else playTrack(track, combinedTracks)
                         }}
                         className={`flex items-center justify-between p-2.5 rounded-xl hover:bg-white/5 cursor-pointer group transition-colors ${

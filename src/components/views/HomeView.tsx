@@ -28,6 +28,7 @@ export const HomeView: React.FC = () => {
     clearHistory,
     saveOffline,
     isOffline,
+    toggleMobilePlayer,
   } = usePlayer()
 
   // Use live real-time global top tracks if available, otherwise fallback to curated sample tracks
@@ -167,7 +168,7 @@ export const HomeView: React.FC = () => {
                 <div
                   key={track.id}
                   onClick={() => {
-                    if (isTrackPlaying) togglePlay()
+                    if (isSelected) toggleMobilePlayer()
                     else playTrack(track, history)
                   }}
                   className={`p-3 rounded-2xl bg-[#141A23]/80 hover:bg-[#1B232E] border border-white/5 cursor-pointer group transition-all duration-200 relative overflow-hidden ${
@@ -185,13 +186,20 @@ export const HomeView: React.FC = () => {
                         isTrackPlaying ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
                       }`}
                     >
-                      <div className="w-10 h-10 rounded-full bg-[#B6F36B] text-[#090D13] flex items-center justify-center shadow-lg transform group-hover:scale-105 active:scale-95 transition-transform">
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          if (isTrackPlaying) togglePlay()
+                          else playTrack(track, history)
+                        }}
+                        className="w-10 h-10 rounded-full bg-[#B6F36B] text-[#090D13] flex items-center justify-center shadow-lg transform group-hover:scale-105 active:scale-95 transition-transform"
+                      >
                         {isTrackPlaying ? (
                           <Pause className="w-4 h-4 fill-current" />
                         ) : (
                           <Play className="w-4 h-4 fill-current ml-0.5" />
                         )}
-                      </div>
+                      </button>
                     </div>
                   </div>
 
@@ -235,7 +243,7 @@ export const HomeView: React.FC = () => {
                 <div
                   key={track.id}
                   onClick={() => {
-                    if (isTrackPlaying) togglePlay()
+                    if (isSelected) toggleMobilePlayer()
                     else playTrack(track, liveCharts)
                   }}
                   className={`flex items-center justify-between px-4 py-3 hover:bg-white/5 cursor-pointer transition-colors group ${
