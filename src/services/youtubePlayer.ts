@@ -60,6 +60,7 @@ class YouTubeService {
   private pendingVideoId: string | null = null
   private pendingSearchQuery: string | null = null
   private pendingPlayOnReady = false
+  private isExplicitlyPaused = true
   private timeInterval: number | null = null
   private boundTarget: string | HTMLElement = 'raiwave-youtube-player'
 
@@ -114,6 +115,7 @@ class YouTubeService {
           playsinline: 1,
           rel: 0,
           modestbranding: 1,
+          origin: window.location.origin,
         },
         events: {
           onReady: (event) => {
@@ -140,8 +142,17 @@ class YouTubeService {
             if (!window.YT) return
             const ps = window.YT.PlayerState
             if (event.data === ps.PLAYING) {
+              this.isExplicitlyPaused = false
               this.onStateChangeCb?.('playing')
             } else if (event.data === ps.PAUSED) {
+              // Intercept automatic OS/browser background pauses:
+              // If the user did NOT click pause, immediately re-trigger playback to keep background audio alive!
+              if (!this.isExplicitlyPaused) {
+                try {
+                  this.player?.playVideo()
+                } catch {}
+                return
+              }
               this.onStateChangeCb?.('paused')
             } else if (event.data === ps.ENDED) {
               this.onStateChangeCb?.('ended')
@@ -191,6 +202,7 @@ class YouTubeService {
   }
 
   public loadVideo(videoId: string, playImmediately = true) {
+    this.isExplicitlyPaused = !playImmediately
     if (this.player && this.isReady && typeof this.player.loadVideoById === 'function') {
       try {
         if (typeof this.player.unMute === 'function') {
@@ -224,6 +236,7 @@ class YouTubeService {
   }
 
   public play() {
+    this.isExplicitlyPaused = false
     if (this.player && this.isReady && typeof this.player.playVideo === 'function') {
       try {
         if (typeof this.player.unMute === 'function') {
@@ -239,6 +252,7 @@ class YouTubeService {
   }
 
   public pause() {
+    this.isExplicitlyPaused = true
     this.pendingPlayOnReady = false
     if (this.player && this.isReady && typeof this.player.pauseVideo === 'function') {
       try {

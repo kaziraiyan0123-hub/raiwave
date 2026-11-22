@@ -5,11 +5,13 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.graphics.Color;
+import android.media.AudioManager;
 import android.os.Build;
 import android.os.Bundle;
 import android.view.View;
 import android.view.Window;
 import android.view.WindowManager;
+import android.webkit.CookieManager;
 import android.webkit.JavascriptInterface;
 import android.webkit.PermissionRequest;
 import android.webkit.WebChromeClient;
@@ -44,8 +46,8 @@ public class MainActivity extends AppCompatActivity {
     }
 
     /**
-     * Custom WebView that keeps Chromium rendering and timers active in background
-     * by reporting VISIBLE to prevent background throttling or pausing.
+     * Custom WebView that keeps Chromium rendering, audio, and timers active in background
+     * by intercepting visibility and focus callbacks to prevent background throttling or pausing.
      */
     private static class BackgroundAudioWebView extends WebView {
         public BackgroundAudioWebView(Context context) {
@@ -57,12 +59,30 @@ public class MainActivity extends AppCompatActivity {
             // Keep Chromium's audio, video, and JS timers running when app is minimized or phone locked
             super.onWindowVisibilityChanged(View.VISIBLE);
         }
+
+        @Override
+        public void dispatchWindowVisibilityChanged(int visibility) {
+            super.dispatchWindowVisibilityChanged(View.VISIBLE);
+        }
+
+        @Override
+        protected void onVisibilityChanged(View changedView, int visibility) {
+            super.onVisibilityChanged(changedView, View.VISIBLE);
+        }
+
+        @Override
+        public void onWindowFocusChanged(boolean hasWindowFocus) {
+            super.onWindowFocusChanged(true);
+        }
     }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         instance = this;
+
+        // Route physical volume rocker keys directly to media playback stream
+        setVolumeControlStream(AudioManager.STREAM_MUSIC);
 
         // Immersive dark status bar & navigation bar
         Window window = getWindow();
@@ -105,6 +125,16 @@ public class MainActivity extends AppCompatActivity {
         settings.setCacheMode(WebSettings.LOAD_DEFAULT);
         settings.setMixedContentMode(WebSettings.MIXED_CONTENT_ALWAYS_ALLOW);
 
+        // Desktop User-Agent: Crucial to bypass YouTube's mobile-only background auto-pause restriction!
+        // Desktop YouTube players never pause when minimized or when the tab/window is in background.
+        String desktopUserAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36";
+        settings.setUserAgentString(desktopUserAgent);
+
+        // Enable first-party and third-party cookies for YouTube embed handshake
+        CookieManager cookieManager = CookieManager.getInstance();
+        cookieManager.setAcceptCookie(true);
+        cookieManager.setAcceptThirdPartyCookies(webView, true);
+
         // Native Android Media Notification Bridge
         webView.addJavascriptInterface(new RaiwaveMediaBridge(), "AndroidMedia");
 
@@ -113,6 +143,22 @@ public class MainActivity extends AppCompatActivity {
             public boolean shouldOverrideUrlLoading(WebView view, String url) {
                 view.loadUrl(url);
                 return true;
+            }
+
+            @Override
+            public void onPageFinished(WebView view, String url) {
+                super.onPageFinished(view, url);
+                view.evaluateJavascript(
+                        "(function() {" +
+                        "  try {" +
+                        "    Object.defineProperty(document, 'hidden', { get: function() { return false; }, configurable: true });" +
+                        "    Object.defineProperty(document, 'visibilityState', { get: function() { return 'visible'; }, configurable: true });" +
+                        "    Object.defineProperty(document, 'webkitHidden', { get: function() { return false; }, configurable: true });" +
+                        "    Object.defineProperty(document, 'webkitVisibilityState', { get: function() { return 'visible'; }, configurable: true });" +
+                        "  } catch(e) {}" +
+                        "})()",
+                        null
+                );
             }
         });
 
@@ -167,13 +213,15 @@ public class MainActivity extends AppCompatActivity {
                     startService(intent);
                 }
             } catch (Exception e) {
-                e.printStackTrace();
+                try {
+                    startService(intent);
+                } catch (Exception ignored) {}
             }
         }
 
         @JavascriptInterface
         public String getNativeVersion() {
-            return "1.2.3";
+            return "1.2.4";
         }
     }
 
@@ -222,6 +270,12 @@ public class MainActivity extends AppCompatActivity {
     protected void onPause() {
         super.onPause();
         // Do NOT pause WebView audio or timers when minimized so music continues in background!
+    }
+
+    @Override
+    protected void onStop() {
+        super.onStop();
+        // Do NOT pause WebView audio or timers when minimized or phone screen is locked!
     }
 
     @Override

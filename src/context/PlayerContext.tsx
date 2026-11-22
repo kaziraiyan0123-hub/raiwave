@@ -561,16 +561,18 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   // 4. MediaSession API setup & Android Mobile Background Playback Notification
   const backgroundAudioRef = useRef<HTMLAudioElement | null>(null)
   const isPlayingRef = useRef(isPlaying)
+  const lastReportedTrackIdRef = useRef<string | null>(null)
+  const lastReportedPlayingRef = useRef<boolean | null>(null)
 
   useEffect(() => {
     isPlayingRef.current = isPlaying
   }, [isPlaying])
 
   useEffect(() => {
-    // 44-byte silent WAV audio loop to keep Android mobile background process & notification alive
+    // Silent audio loop to keep Android mobile background audio process alive
     const bgAudio = new Audio('data:audio/wav;base64,UklGRigAAABXQVZFZm10IBIAAAABAAEARKwAAIhYAQACABAAAABkYXRhAgAAAAEA')
     bgAudio.loop = true
-    bgAudio.volume = 0.001
+    bgAudio.volume = 0.02 // Must be > 0.01 for Chromium isAudible check
     backgroundAudioRef.current = bgAudio
     return () => {
       bgAudio.pause()
@@ -672,8 +674,15 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     }
 
     // Update Native Android Media Notification in Android APK
-    try {
-      if (currentTrack) {
+    // Note: Only dispatch updates on track changes or play/pause state transitions.
+    // Never dispatch on every timer tick, which throws ForegroundServiceStartNotAllowedException on Android 12+!
+    const trackChanged = currentTrack && lastReportedTrackIdRef.current !== currentTrack.id
+    const playingChanged = lastReportedPlayingRef.current !== isPlaying
+
+    if (currentTrack && (trackChanged || playingChanged)) {
+      lastReportedTrackIdRef.current = currentTrack.id
+      lastReportedPlayingRef.current = isPlaying
+      try {
         const androidBridge = (window as any).AndroidMedia
         if (androidBridge) {
           if (typeof androidBridge.updateMediaWithDetails === 'function') {
@@ -695,8 +704,8 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
             )
           }
         }
-      }
-    } catch {}
+      } catch {}
+    }
   }, [currentTrack, isPlaying, duration, currentTime])
 
   // Central Playback Engine Router
@@ -917,6 +926,24 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     } else {
       youtubeService.seekTo(seconds)
     }
+
+    // Immediately sync seeked position to Android MediaSession
+    try {
+      if (currentTrack) {
+        const androidBridge = (window as any).AndroidMedia
+        if (androidBridge && typeof androidBridge.updateMediaWithDetails === 'function') {
+          androidBridge.updateMediaWithDetails(
+            currentTrack.title,
+            currentTrack.artist,
+            currentTrack.album || 'RAIWAVE Universal Stream',
+            currentTrack.coverUrl,
+            isPlaying,
+            Math.round(duration || 0),
+            Math.round(seconds)
+          )
+        }
+      }
+    } catch {}
   }
 
   const setVolume = (vol: number) => {

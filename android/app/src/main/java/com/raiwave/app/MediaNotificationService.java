@@ -10,9 +10,13 @@ import android.content.Intent;
 import android.content.pm.ServiceInfo;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.media.AudioAttributes;
+import android.media.AudioFocusRequest;
+import android.media.AudioManager;
 import android.os.Build;
 import android.os.IBinder;
 import android.os.PowerManager;
+import android.os.SystemClock;
 import android.support.v4.media.MediaMetadataCompat;
 import android.support.v4.media.session.MediaSessionCompat;
 import android.support.v4.media.session.PlaybackStateCompat;
@@ -36,15 +40,33 @@ public class MediaNotificationService extends Service {
 
     private MediaSessionCompat mediaSession;
     private NotificationManager notificationManager;
+    private AudioManager audioManager;
+    private AudioFocusRequest audioFocusRequest;
+    private AudioManager.OnAudioFocusChangeListener audioFocusChangeListener;
     private PowerManager.WakeLock wakeLock;
     private Bitmap cachedArtwork = null;
     private String lastCoverUrl = "";
+    private boolean isForegroundStarted = false;
 
     @Override
     public void onCreate() {
         super.onCreate();
         notificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
         createNotificationChannel();
+
+        audioManager = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
+        audioFocusChangeListener = focusChange -> {
+            switch (focusChange) {
+                case AudioManager.AUDIOFOCUS_LOSS_TRANSIENT:
+                case AudioManager.AUDIOFOCUS_LOSS_TRANSIENT_CAN_DUCK:
+                case AudioManager.AUDIOFOCUS_LOSS:
+                    MainActivity.handleMediaAction("pause");
+                    break;
+                case AudioManager.AUDIOFOCUS_GAIN:
+                    MainActivity.handleMediaAction("play");
+                    break;
+            }
+        };
 
         PowerManager powerManager = (PowerManager) getSystemService(Context.POWER_SERVICE);
         if (powerManager != null) {
@@ -84,13 +106,58 @@ public class MediaNotificationService extends Service {
             @Override
             public void onStop() {
                 MainActivity.handleMediaAction("pause");
+                abandonAudioFocus();
                 if (wakeLock != null && wakeLock.isHeld()) {
                     wakeLock.release();
                 }
                 stopForeground(true);
+                isForegroundStarted = false;
                 stopSelf();
             }
         });
+    }
+
+    private void requestAudioFocus() {
+        if (audioManager == null) return;
+        try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                if (audioFocusRequest == null) {
+                    AudioAttributes playbackAttributes = new AudioAttributes.Builder()
+                            .setUsage(AudioAttributes.USAGE_MEDIA)
+                            .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)
+                            .build();
+                    audioFocusRequest = new AudioFocusRequest.Builder(AudioManager.AUDIOFOCUS_GAIN)
+                            .setAudioAttributes(playbackAttributes)
+                            .setAcceptsDelayedFocusGain(true)
+                            .setOnAudioFocusChangeListener(audioFocusChangeListener)
+                            .build();
+                }
+                audioManager.requestAudioFocus(audioFocusRequest);
+            } else {
+                audioManager.requestAudioFocus(
+                        audioFocusChangeListener,
+                        AudioManager.STREAM_MUSIC,
+                        AudioManager.AUDIOFOCUS_GAIN
+                );
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    private void abandonAudioFocus() {
+        if (audioManager == null) return;
+        try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                if (audioFocusRequest != null) {
+                    audioManager.abandonAudioFocusRequest(audioFocusRequest);
+                }
+            } else {
+                audioManager.abandonAudioFocus(audioFocusChangeListener);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
     private void createNotificationChannel() {
@@ -122,10 +189,12 @@ public class MediaNotificationService extends Service {
             MainActivity.handleMediaAction("next");
         } else if (ACTION_STOP.equals(action)) {
             MainActivity.handleMediaAction("pause");
+            abandonAudioFocus();
             if (wakeLock != null && wakeLock.isHeld()) {
                 wakeLock.release();
             }
             stopForeground(true);
+            isForegroundStarted = false;
             stopSelf();
         } else if (ACTION_UPDATE.equals(action)) {
             String title = intent.getStringExtra("title");
@@ -141,8 +210,9 @@ public class MediaNotificationService extends Service {
             if (album == null || album.isEmpty()) album = "RAIWAVE Lossless";
 
             if (isPlaying) {
+                requestAudioFocus();
                 if (wakeLock != null && !wakeLock.isHeld()) {
-                    wakeLock.acquire(1000 * 60 * 180); // 3 hours timeout
+                    wakeLock.acquire(1000 * 60 * 360); // 6 hours timeout
                 }
             } else {
                 if (wakeLock != null && wakeLock.isHeld()) {
@@ -170,8 +240,9 @@ public class MediaNotificationService extends Service {
                 .setActions(actions)
                 .setState(
                         isPlaying ? PlaybackStateCompat.STATE_PLAYING : PlaybackStateCompat.STATE_PAUSED,
-                        positionMs > 0 ? positionMs : PlaybackStateCompat.PLAYBACK_POSITION_UNKNOWN,
-                        1.0f
+                        positionMs >= 0 ? positionMs : PlaybackStateCompat.PLAYBACK_POSITION_UNKNOWN,
+                        isPlaying ? 1.0f : 0.0f,
+                        SystemClock.elapsedRealtime()
                 )
                 .build();
         mediaSession.setPlaybackState(state);
@@ -251,10 +322,19 @@ public class MediaNotificationService extends Service {
         Notification notification = builder.build();
 
         // Android 10+ (API 29+) and Android 14+ (API 34+) require foregroundServiceType parameter
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-            startForeground(NOTIFICATION_ID, notification, ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PLAYBACK);
+        if (!isForegroundStarted) {
+            try {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                    startForeground(NOTIFICATION_ID, notification, ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PLAYBACK);
+                } else {
+                    startForeground(NOTIFICATION_ID, notification);
+                }
+                isForegroundStarted = true;
+            } catch (Exception e) {
+                notificationManager.notify(NOTIFICATION_ID, notification);
+            }
         } else {
-            startForeground(NOTIFICATION_ID, notification);
+            notificationManager.notify(NOTIFICATION_ID, notification);
         }
 
         // Fetch artwork in background thread if changed
@@ -287,6 +367,7 @@ public class MediaNotificationService extends Service {
 
     @Override
     public void onDestroy() {
+        abandonAudioFocus();
         if (wakeLock != null && wakeLock.isHeld()) {
             wakeLock.release();
         }
