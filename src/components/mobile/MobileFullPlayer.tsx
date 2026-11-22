@@ -47,6 +47,16 @@ export const MobileFullPlayer: React.FC = () => {
   const lyricsContainerRef = useRef<HTMLDivElement | null>(null)
   const activeLyricRef = useRef<HTMLParagraphElement | null>(null)
 
+  // 40 Radial Wave Frequency Bars around the centerpiece artwork
+  const totalBars = 40
+  const barAngles = Array.from({ length: totalBars }, (_, i) => (i * 360) / totalBars)
+
+  // Dynamic Beat-Synchronized Audio Rhythm & Soundwave Bars
+  const [visualizerHeights, setVisualizerHeights] = useState<number[]>(() =>
+    Array.from({ length: totalBars }, () => 8)
+  )
+  const [kickPulse, setKickPulse] = useState(0)
+
   // Compute active lyric line
   let activeLyricIndex = -1
   if (liveLyrics && liveLyrics.length > 0) {
@@ -70,6 +80,71 @@ export const MobileFullPlayer: React.FC = () => {
     }
   }, [activeLyricIndex, showInlineLyrics])
 
+  useEffect(() => {
+    if (!isPlaying || !isMobilePlayerOpen) {
+      setVisualizerHeights(Array.from({ length: totalBars }, () => 6))
+      setKickPulse(0)
+      return
+    }
+
+    let animId: number
+    let lastUpdate = 0
+    const genre = (currentTrack?.genre || '').toLowerCase()
+    const bpm =
+      genre.includes('dance') || genre.includes('electronic') || genre.includes('edm')
+        ? 128
+        : genre.includes('hip') || genre.includes('rap')
+        ? 94
+        : genre.includes('rock')
+        ? 132
+        : genre.includes('chill') || genre.includes('lofi')
+        ? 82
+        : 116
+
+    const beatIntervalSec = 60 / bpm
+
+    const updateBeats = () => {
+      const now = performance.now() / 1000
+      if (now - lastUpdate >= 0.035) { // Smooth 28-30 FPS to avoid mobile WebView thread starvation
+        lastUpdate = now
+        const phase = (currentTime > 0 ? currentTime : now) % beatIntervalSec
+        const beatFraction = phase / beatIntervalSec
+
+        // Exponential decay kick pulse on each downbeat
+        const kick = Math.max(0, 1 - beatFraction * 3.4)
+        setKickPulse(kick)
+
+        const snare =
+          beatFraction > 0.45 && beatFraction < 0.65
+            ? Math.max(0, 1 - (beatFraction - 0.45) * 6.5)
+            : 0
+
+        const heights = barAngles.map((_, i) => {
+          const isBass = i <= 6 || i >= 34
+          const isTreble = i >= 17 && i <= 23
+
+          let energy = 0.25
+          if (isBass) {
+            energy = 0.28 + kick * 0.72 + Math.sin(now * 8 + i * 0.3) * 0.12
+          } else if (isTreble) {
+            energy = 0.22 + snare * 0.55 + Math.cos(now * 16 + i * 0.6) * 0.22
+          } else {
+            energy = 0.26 + kick * 0.35 + snare * 0.45 + Math.sin(now * 10 + i * 0.5) * 0.2
+          }
+
+          const clamped = Math.max(0.12, Math.min(1.0, energy))
+          return Math.round(8 + clamped * 28) // 8px to 36px
+        })
+
+        setVisualizerHeights(heights)
+      }
+      animId = requestAnimationFrame(updateBeats)
+    }
+
+    animId = requestAnimationFrame(updateBeats)
+    return () => cancelAnimationFrame(animId)
+  }, [isPlaying, isMobilePlayerOpen, currentTime, currentTrack?.id, currentTrack?.genre])
+
   if (!currentTrack || !isMobilePlayerOpen) return null
 
   const formatTime = (seconds: number) => {
@@ -82,10 +157,6 @@ export const MobileFullPlayer: React.FC = () => {
   const progressPercent = duration > 0 ? (currentTime / duration) * 100 : 0
   const liked = isLiked(currentTrack.id)
   const downloaded = isOffline(currentTrack.id)
-
-  // 40 Radial Wave Frequency Bars around the centerpiece artwork
-  const totalBars = 40
-  const barAngles = Array.from({ length: totalBars }, (_, i) => (i * 360) / totalBars)
 
   return (
     <div className="fixed inset-0 z-50 bg-[#090D13] flex flex-col justify-between p-6 select-none overflow-y-auto no-scrollbar transition-transform duration-300">
@@ -139,8 +210,20 @@ export const MobileFullPlayer: React.FC = () => {
               {/* Concentric Acoustic Shockwave Rings (replacing static green circle line) */}
               {isPlaying && (
                 <>
-                  <div className="absolute inset-2 rounded-full border border-[#B6F36B]/25 animate-ping pointer-events-none duration-1000" />
-                  <div className="absolute -inset-2 rounded-full border border-[#52D6C9]/20 animate-pulse pointer-events-none" />
+                  <div
+                    className="absolute inset-2 rounded-full border border-[#B6F36B]/30 pointer-events-none transition-all duration-75"
+                    style={{
+                      transform: `scale(${1 + kickPulse * 0.12})`,
+                      opacity: 0.3 + kickPulse * 0.7,
+                    }}
+                  />
+                  <div
+                    className="absolute -inset-2 rounded-full border border-[#52D6C9]/25 pointer-events-none transition-all duration-100"
+                    style={{
+                      transform: `scale(${1 + kickPulse * 0.08})`,
+                      opacity: 0.2 + kickPulse * 0.5,
+                    }}
+                  />
                   <div className="absolute -inset-6 rounded-full border border-white/5 pointer-events-none" />
                 </>
               )}
@@ -148,25 +231,22 @@ export const MobileFullPlayer: React.FC = () => {
               {/* 40 Animated Radial Soundwave Beat Bars radiating outward */}
               <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
                 {barAngles.map((angle, idx) => {
-                  // Generate rhythmic variation based on bar index
-                  const wavePhase = (idx * 0.4 + currentTime * 3) % Math.PI
-                  const barScale = isPlaying ? 0.35 + 0.65 * Math.abs(Math.sin(wavePhase)) : 0.25
-                  const barHeight = Math.round(10 + barScale * 26) // 10px to 36px
+                  const barHeight = visualizerHeights[idx] || 8
 
                   return (
                     <div
                       key={idx}
-                      className="absolute origin-bottom transition-all duration-150"
+                      className="absolute origin-bottom transition-all duration-75"
                       style={{
                         transform: `rotate(${angle}deg) translateY(-126px)`,
                       }}
                     >
                       <div
-                        className={`w-1 rounded-full transition-all duration-150 ${
+                        className={`w-1 rounded-full transition-all duration-75 ${
                           isPlaying
                             ? idx % 2 === 0
-                              ? 'bg-[#B6F36B] shadow-[0_0_8px_#B6F36B]'
-                              : 'bg-[#52D6C9] shadow-[0_0_8px_#52D6C9]'
+                              ? 'bg-[#B6F36B] shadow-[0_0_10px_#B6F36B]'
+                              : 'bg-[#52D6C9] shadow-[0_0_10px_#52D6C9]'
                             : 'bg-white/20'
                         }`}
                         style={{ height: `${barHeight}px` }}
@@ -178,11 +258,10 @@ export const MobileFullPlayer: React.FC = () => {
 
               {/* Central Album Artwork with pulsing bass breathing */}
               <div
-                className={`w-52 h-52 sm:w-56 sm:h-56 rounded-full overflow-hidden p-2.5 border-2 border-white/10 shadow-[0_0_50px_rgba(0,0,0,0.9)] relative group transition-transform duration-500 ${
-                  isPlaying ? 'scale-105' : 'scale-100'
-                }`}
+                className="w-52 h-52 sm:w-56 sm:h-56 rounded-full overflow-hidden p-2.5 border-2 border-white/10 shadow-[0_0_50px_rgba(0,0,0,0.9)] relative group transition-transform duration-75"
                 style={{
-                  boxShadow: isPlaying ? `0 0 35px ${currentTrack.color || '#B6F36B'}40` : undefined,
+                  transform: isPlaying ? `scale(${1 + kickPulse * 0.045})` : 'scale(1)',
+                  boxShadow: isPlaying ? `0 0 ${35 + kickPulse * 30}px ${currentTrack.color || '#B6F36B'}50` : undefined,
                 }}
               >
                 <img

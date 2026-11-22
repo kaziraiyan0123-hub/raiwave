@@ -1,5 +1,5 @@
 import React from 'react'
-import { Search, X } from 'lucide-react'
+import { Search, X, Bell } from 'lucide-react'
 import { usePlayer } from '../../context/PlayerContext'
 import { RaiwaveLogo } from '../RaiwaveLogo'
 
@@ -12,6 +12,8 @@ export const MobileTopBar: React.FC = () => {
     playCustomUrlOrId,
     userProfile,
     toggleProfile,
+    isNotificationOpen,
+    toggleNotification,
   } = usePlayer()
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -63,18 +65,32 @@ export const MobileTopBar: React.FC = () => {
         )}
       </div>
 
-      {/* Right: User Profile Avatar (No name text in bar, no recorder, no notification bell) */}
-      <div
-        onClick={toggleProfile}
-        className="relative cursor-pointer flex-shrink-0 active:scale-95 transition-transform"
-        title="Account Profile & Settings"
-      >
-        <img
-          src={userProfile.avatarUrl}
-          alt="Profile"
-          className="w-8 h-8 rounded-full object-cover border border-[#B6F36B]/50 shadow-sm"
-        />
-        <span className="absolute bottom-0 right-0 w-2 h-2 rounded-full bg-[#B6F36B] ring-2 ring-[#090D13]" />
+      {/* Right: Android Notification Card Toggle & User Profile Avatar */}
+      <div className="flex items-center gap-2 flex-shrink-0">
+        <button
+          onClick={toggleNotification}
+          className={`p-1.5 rounded-full border transition-all active:scale-95 ${
+            isNotificationOpen
+              ? 'bg-[#B6F36B]/20 border-[#B6F36B]/50 text-[#B6F36B]'
+              : 'bg-[#141A23] border-white/10 text-[#929DA8]'
+          }`}
+          title="Toggle Android Notification Card"
+        >
+          <Bell className="w-4 h-4" />
+        </button>
+
+        <div
+          onClick={toggleProfile}
+          className="relative cursor-pointer flex-shrink-0 active:scale-95 transition-transform"
+          title="Account Profile & Settings"
+        >
+          <img
+            src={userProfile.avatarUrl}
+            alt="Profile"
+            className="w-8 h-8 rounded-full object-cover border border-[#B6F36B]/50 shadow-sm"
+          />
+          <span className="absolute bottom-0 right-0 w-2 h-2 rounded-full bg-[#B6F36B] ring-2 ring-[#090D13]" />
+        </div>
       </div>
     </header>
   )

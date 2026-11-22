@@ -45,21 +45,20 @@ jobs:
         uses: softprops/action-gh-release@v2
         if: startsWith(github.ref, 'refs/tags/') || github.ref == 'refs/heads/main'
         with:
-          tag_name: v1.2.1
-          name: "RAIWAVE v1.2.1 Official Release"
+          tag_name: v1.2.2
+          name: "RAIWAVE v1.2.2 Official Release"
           body: |
-            ### 🎵 RAIWAVE v1.2.1 — Feel Every Frequency
+            ### 🎵 RAIWAVE v1.2.2 — Feel Every Frequency
             **Lead Engineer & Creator:** Kazi Raiyan
 
-            - **Android APK:** Download and install `RAIWAVE.apk` (v1.2.1) on any Android device.
+            - **Android APK:** Download and install `RAIWAVE.apk` (v1.2.2) on any Android device.
             - **Web & PWA:** [https://raiwave.vercel.app](https://raiwave.vercel.app)
             - **Desktop:** Run `RAIWAVE.exe` with embedded icon and offline mode.
-            - **What's New in v1.2.1:**
-              - **Full Track Audio Playback:** Removed 30-second preview limitations across mobile and desktop.
-              - **Profile Name Persistence:** Personal name and Gmail are preserved permanently without resetting, and inputs start clean with developer attribution and examples at the bottom.
-              - **PC Executable Icon:** Fixed title bar and taskbar icon for single-file `RAIWAVE.exe`.
-              - **Automatic In-App Updates:** Instant updates delivered to mobile APK and PWA automatically upon deployment.
-              - **Mobile & Desktop Parity:** Unified search bar, removed redundant mobile search inputs, and cleaned all banners.
+            - **What's New in v1.2.2:**
+              - **Native Android Media Notification Bar:** Background playback and lock screen controls ([⏮ Prev], [⏸ Pause / ▶ Play], [⏭ Next]) when minimized, matching Spotify.
+              - **Beat-Synchronized Radial Soundwave Visualizer:** 40 dynamic acoustic frequency bars reacting in real-time to tempo, kick downbeats, and genre rhythm with central artwork pulsing.
+              - **Precision YouTube Music Engine:** Integrated YouTube Music WEB_REMIX InnerTube API to resolve exact studio audio and eliminate wrong-song playback bugs.
+              - **Mobile & Desktop Parity & Stability:** Seamless PWA updates, smooth transitions, and persistent profile state.
           files: |
             build-output/RAIWAVE.apk
         env:

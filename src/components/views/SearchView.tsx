@@ -137,7 +137,12 @@ export const SearchView: React.FC = () => {
             <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
               {/* Top Result Card */}
               <div className="lg:col-span-2">
-                <h3 className="text-xl font-bold text-white font-heading mb-3">Top result</h3>
+                <div className="flex items-center justify-between mb-3">
+                  <h3 className="text-xl font-bold text-white font-heading">Top result</h3>
+                  <span className="px-2.5 py-0.5 rounded-full bg-[#B6F36B]/20 border border-[#B6F36B]/40 text-[#B6F36B] text-[10px] font-black uppercase tracking-wider font-heading">
+                    First Priority Match
+                  </span>
+                </div>
                 {(() => {
                   const isTopPlaying = currentTrack?.id === topResult.id && isPlaying
                   return (
@@ -146,22 +151,28 @@ export const SearchView: React.FC = () => {
                         if (isTopPlaying) togglePlay()
                         else playTrack(topResult, combinedTracks)
                       }}
-                      className="bg-[#141A23] hover:bg-[#1B232E] p-6 rounded-2xl cursor-pointer transition-all duration-300 group relative flex flex-col justify-between h-60 shadow-xl border border-white/5 hover:border-[#B6F36B]/30"
+                      className="bg-[#141A23] hover:bg-[#1B232E] p-6 rounded-2xl cursor-pointer transition-all duration-300 group relative flex flex-col justify-between min-h-[240px] shadow-2xl border border-white/5 hover:border-[#B6F36B]/40 relative overflow-hidden"
                     >
-                      <div className="flex items-start justify-between">
+                      {/* Subtle Ambient Glow */}
+                      <div
+                        className="absolute -top-12 -right-12 w-36 h-36 rounded-full opacity-25 blur-2xl pointer-events-none"
+                        style={{ backgroundColor: topResult.color || '#B6F36B' }}
+                      />
+
+                      <div className="flex items-start justify-between z-10">
                         <img
                           src={topResult.coverUrl}
                           alt={topResult.title}
-                          className="w-24 h-24 rounded-xl object-cover shadow-md mb-2 border border-white/10"
+                          className="w-24 h-24 rounded-2xl object-cover shadow-lg border border-white/10 group-hover:scale-105 transition-transform"
                         />
                         {isTopPlaying && <EqualizerBars size="md" />}
                       </div>
-                      <div>
-                        <h4 className="text-2xl font-bold text-white font-heading truncate mb-1">
+                      <div className="z-10 mt-4 pr-14">
+                        <h4 className="text-xl sm:text-2xl font-black text-white font-heading truncate mb-1">
                           {topResult.title}
                         </h4>
-                        <p className="text-sm text-[#929DA8]">
-                          Song • <span className="text-white hover:underline">{topResult.artist}</span>
+                        <p className="text-xs sm:text-sm text-[#929DA8] font-medium truncate">
+                          Official Song &bull; <span className="text-white hover:underline">{topResult.artist}</span>
                         </p>
                       </div>
                       <button
@@ -170,7 +181,8 @@ export const SearchView: React.FC = () => {
                           if (isTopPlaying) togglePlay()
                           else playTrack(topResult, combinedTracks)
                         }}
-                        className="absolute bottom-5 right-5 w-12 h-12 rounded-full bg-[#B6F36B] text-[#090D13] flex items-center justify-center opacity-0 group-hover:opacity-100 translate-y-2 group-hover:translate-y-0 transition-all duration-300 shadow-xl hover:scale-105 active:scale-95"
+                        className="absolute bottom-5 right-5 w-12 h-12 rounded-full bg-[#B6F36B] text-[#090D13] flex items-center justify-center opacity-100 md:opacity-0 md:group-hover:opacity-100 translate-y-0 md:translate-y-2 md:group-hover:translate-y-0 transition-all duration-300 shadow-xl hover:scale-105 active:scale-95 z-20"
+                        title={isTopPlaying ? 'Pause' : 'Play Top Match'}
                       >
                         {isTopPlaying ? (
                           <Pause className="w-6 h-6 fill-current" />

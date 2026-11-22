@@ -81,6 +81,15 @@ interface PlayerContextType {
   toggleProfile: () => void
   updateUserProfile: (updates: Partial<UserProfile>) => void
 
+  // Android Music Notification Card
+  isNotificationOpen: boolean
+  toggleNotification: () => void
+  setIsNotificationOpen: (val: boolean) => void
+  isNotificationExpanded: boolean
+  toggleNotificationExpanded: () => void
+  notificationTheme: 'dark' | 'light'
+  toggleNotificationTheme: () => void
+
   // Studio Audio Recorder
   isRecorderOpen: boolean
   toggleRecorder: () => void
@@ -223,6 +232,29 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   })
   const [isProfileOpen, setIsProfileOpen] = useState<boolean>(false)
   const toggleProfile = () => setIsProfileOpen((prev) => !prev)
+
+  // Android Music Notification Card State
+  const [isNotificationOpen, setIsNotificationOpen] = useState<boolean>(true)
+  const [isNotificationExpanded, setIsNotificationExpanded] = useState<boolean>(false)
+  const [notificationTheme, setNotificationTheme] = useState<'dark' | 'light'>(() => {
+    try {
+      const saved = localStorage.getItem('raiwave_notification_theme')
+      if (saved === 'light' || saved === 'dark') return saved
+    } catch {}
+    return 'dark'
+  })
+
+  const toggleNotification = () => setIsNotificationOpen((prev) => !prev)
+  const toggleNotificationExpanded = () => setIsNotificationExpanded((prev) => !prev)
+  const toggleNotificationTheme = () => {
+    setNotificationTheme((prev) => {
+      const next = prev === 'dark' ? 'light' : 'dark'
+      try {
+        localStorage.setItem('raiwave_notification_theme', next)
+      } catch {}
+      return next
+    })
+  }
 
   const updateUserProfile = (updates: Partial<UserProfile>) => {
     setUserProfile((prev) => {
@@ -522,6 +554,11 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
   // 4. MediaSession API setup & Android Mobile Background Playback Notification
   const backgroundAudioRef = useRef<HTMLAudioElement | null>(null)
+  const isPlayingRef = useRef(isPlaying)
+
+  useEffect(() => {
+    isPlayingRef.current = isPlaying
+  }, [isPlaying])
 
   useEffect(() => {
     // 44-byte silent WAV audio loop to keep Android mobile background process & notification alive
@@ -627,6 +664,21 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         }
       } catch {}
     }
+
+    // Update Native Android Media Notification in Android APK
+    try {
+      if (currentTrack) {
+        const androidBridge = (window as any).AndroidMedia
+        if (androidBridge && typeof androidBridge.updateMedia === 'function') {
+          androidBridge.updateMedia(
+            currentTrack.title,
+            currentTrack.artist,
+            currentTrack.coverUrl,
+            isPlaying
+          )
+        }
+      }
+    } catch {}
   }, [currentTrack, isPlaying, duration, currentTime])
 
   // Central Playback Engine Router
@@ -908,6 +960,26 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     loadAndPlayTrack(curQueue[prevIdx], true)
   }
 
+  // Native Android Media Notification Callback bridge
+  useEffect(() => {
+    ;(window as any).__raiwaveMediaControl = (action: string) => {
+      if (action === 'play') {
+        if (!isPlayingRef.current) togglePlay()
+      } else if (action === 'pause') {
+        if (isPlayingRef.current) togglePlay()
+      } else if (action === 'play_pause') {
+        togglePlay()
+      } else if (action === 'next') {
+        nextTrack()
+      } else if (action === 'prev') {
+        prevTrack()
+      }
+    }
+    return () => {
+      delete (window as any).__raiwaveMediaControl
+    }
+  }, [togglePlay, nextTrack, prevTrack])
+
   const handleTrackEnd = () => {
     if (repeatModeRef.current === 'one') {
       seek(0)
@@ -1085,6 +1157,13 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         isProfileOpen,
         toggleProfile,
         updateUserProfile,
+        isNotificationOpen,
+        toggleNotification,
+        setIsNotificationOpen,
+        isNotificationExpanded,
+        toggleNotificationExpanded,
+        notificationTheme,
+        toggleNotificationTheme,
         isRecorderOpen,
         toggleRecorder,
         recordings,

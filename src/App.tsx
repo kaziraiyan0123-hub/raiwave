@@ -11,6 +11,7 @@ import { MobileFullPlayer } from './components/mobile/MobileFullPlayer'
 import { YouTubeIframeContainer } from './components/YouTubeIframeContainer'
 import { ToastNotification } from './components/ToastNotification'
 import { ProfileModal } from './components/ProfileModal'
+import { AndroidMediaNotificationCard } from './components/AndroidMediaNotificationCard'
 
 function App() {
   return (
@@ -21,6 +22,9 @@ function App() {
 
         {/* User Gmail Profile & Account Modal */}
         <ProfileModal />
+
+        {/* Premium Android-Style Music Notification Card (Compact & Expanded) */}
+        <AndroidMediaNotificationCard />
 
         {/* Mobile Top Header (hidden on desktop) */}
         <MobileTopBar />

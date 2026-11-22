@@ -1,13 +1,14 @@
 package com.raiwave.app;
 
 import android.Manifest;
+import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.graphics.Color;
 import android.os.Build;
 import android.os.Bundle;
-import android.view.View;
 import android.view.Window;
 import android.view.WindowManager;
+import android.webkit.JavascriptInterface;
 import android.webkit.PermissionRequest;
 import android.webkit.WebChromeClient;
 import android.webkit.WebSettings;
@@ -22,13 +23,28 @@ import androidx.core.content.ContextCompat;
 public class MainActivity extends AppCompatActivity {
 
     private static final int PERMISSION_REQUEST_RECORD_AUDIO = 101;
+    private static final int PERMISSION_REQUEST_POST_NOTIFICATIONS = 102;
     private static final String APP_URL = "https://raiwave.vercel.app";
+
+    private static MainActivity instance;
     private WebView webView;
     private PermissionRequest pendingPermissionRequest;
+
+    public static void handleMediaAction(String action) {
+        if (instance != null && instance.webView != null) {
+            instance.runOnUiThread(() -> {
+                instance.webView.evaluateJavascript(
+                        "window.__raiwaveMediaControl && window.__raiwaveMediaControl('" + action + "')",
+                        null
+                );
+            });
+        }
+    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        instance = this;
 
         // Immersive dark status bar & navigation bar
         Window window = getWindow();
@@ -71,6 +87,9 @@ public class MainActivity extends AppCompatActivity {
         settings.setCacheMode(WebSettings.LOAD_DEFAULT);
         settings.setMixedContentMode(WebSettings.MIXED_CONTENT_ALWAYS_ALLOW);
 
+        // Native Android Media Notification Bridge
+        webView.addJavascriptInterface(new RaiwaveMediaBridge(), "AndroidMedia");
+
         webView.setWebViewClient(new WebViewClient() {
             @Override
             public boolean shouldOverrideUrlLoading(WebView view, String url) {
@@ -105,6 +124,33 @@ public class MainActivity extends AppCompatActivity {
         });
     }
 
+    public class RaiwaveMediaBridge {
+        @JavascriptInterface
+        public void updateMedia(String title, String artist, String coverUrl, boolean isPlaying) {
+            Intent intent = new Intent(MainActivity.this, MediaNotificationService.class);
+            intent.setAction(MediaNotificationService.ACTION_UPDATE);
+            intent.putExtra("title", title);
+            intent.putExtra("artist", artist);
+            intent.putExtra("coverUrl", coverUrl);
+            intent.putExtra("isPlaying", isPlaying);
+
+            try {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                    ContextCompat.startForegroundService(MainActivity.this, intent);
+                } else {
+                    startService(intent);
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+
+        @JavascriptInterface
+        public String getNativeVersion() {
+            return "1.2.2";
+        }
+    }
+
     private void checkPermissions() {
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO)
                 != PackageManager.PERMISSION_GRANTED) {
@@ -113,6 +159,18 @@ public class MainActivity extends AppCompatActivity {
                     new String[]{Manifest.permission.RECORD_AUDIO},
                     PERMISSION_REQUEST_RECORD_AUDIO
             );
+        }
+
+        // Post Notifications permission for Android 13+ (API 33+)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            if (ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS)
+                    != PackageManager.PERMISSION_GRANTED) {
+                ActivityCompat.requestPermissions(
+                        this,
+                        new String[]{Manifest.permission.POST_NOTIFICATIONS},
+                        PERMISSION_REQUEST_POST_NOTIFICATIONS
+                );
+            }
         }
     }
 
@@ -132,5 +190,17 @@ public class MainActivity extends AppCompatActivity {
                 }
             }
         }
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+        // Do NOT pause WebView audio or timers when minimized so music continues in background!
+    }
+
+    @Override
+    protected void onDestroy() {
+        instance = null;
+        super.onDestroy();
     }
 }

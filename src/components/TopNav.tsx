@@ -4,6 +4,7 @@ import {
   ChevronRight,
   Search,
   X,
+  Bell,
 } from 'lucide-react'
 import { usePlayer } from '../context/PlayerContext'
 
@@ -16,6 +17,9 @@ export const TopNav: React.FC = () => {
     playCustomUrlOrId,
     userProfile,
     toggleProfile,
+    isNotificationOpen,
+    toggleNotification,
+    isPlaying,
   } = usePlayer()
   const [urlMessage, setUrlMessage] = useState('')
 
@@ -89,8 +93,24 @@ export const TopNav: React.FC = () => {
         </div>
       </div>
 
-      {/* Right side: Clean, professional user avatar button (no notification button or recorder) */}
-      <div className="flex items-center gap-3">
+      {/* Right side: Android Notification Card Toggle & User Profile */}
+      <div className="flex items-center gap-2.5">
+        <button
+          onClick={toggleNotification}
+          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-xs font-semibold transition-all active:scale-95 ${
+            isNotificationOpen
+              ? 'bg-[#B6F36B]/15 border-[#B6F36B]/40 text-[#B6F36B] shadow-[0_0_12px_rgba(182,243,107,0.25)]'
+              : 'bg-[#141A23] hover:bg-[#1B232E] border-[#202A34] text-[#929DA8] hover:text-white'
+          }`}
+          title="Toggle Android Media Notification Card"
+        >
+          <Bell className="w-3.5 h-3.5" />
+          <span className="hidden lg:inline text-[11px] font-heading">Notification</span>
+          {isPlaying && (
+            <span className="w-1.5 h-1.5 rounded-full bg-[#B6F36B] animate-pulse" />
+          )}
+        </button>
+
         <button
           data-testid="profile-trigger"
           onClick={toggleProfile}

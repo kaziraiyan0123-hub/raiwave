@@ -216,10 +216,24 @@ class YouTubeService {
     if (resolvedId) {
       this.loadVideo(resolvedId, true)
       return resolvedId
-    } else {
-      console.warn('Could not resolve embeddable video ID for query:', query)
-      return null
     }
+
+    // Direct YouTube Player search playlist fallback
+    if (this.player && this.isReady && typeof this.player.loadPlaylist === 'function') {
+      try {
+        this.player.loadPlaylist({
+          listType: 'search',
+          list: query,
+          index: 0,
+        })
+        return 'search-playlist'
+      } catch (err) {
+        console.warn('YouTube loadPlaylist search fallback failed:', err)
+      }
+    }
+
+    console.warn('Could not resolve embeddable video ID for query:', query)
+    return null
   }
 
   public play() {

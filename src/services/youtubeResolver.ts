@@ -1,4 +1,4 @@
-// Legal, zero-API-key YouTube Video Resolver
+// Precision YouTube Music & Video Resolver
 // Resolves any song title & artist to its verified embeddable YouTube Video ID
 
 const memoryCache = new Map<string, string>()
@@ -35,32 +35,43 @@ const PREMAPPED_CATALOG: Record<string, string> = {
   'the weeknd - starboy': '34Na4j8AVgA',
   'the weeknd - save your tears': 'XXYlFuWEuKI',
   'miley cyrus - flowers': 'G7KNmW9a75Y',
+  'pritom hasan - bhenge porona ebhabe': '0KPtvk32ob0',
+  'tahsan - prematal': 'EyBL9Jq1pxg',
+  'chris lake - beggin': '6i0HqJ1tRn8',
+  'chris lake, aluna - beggin': '6i0HqJ1tRn8',
+}
+
+function normalizeKey(str: string): string {
+  return str.toLowerCase().replace(/[^a-z0-9]/g, '')
 }
 
 export async function resolveYouTubeVideoId(query: string, excludeIds: string[] = []): Promise<string | null> {
   const clean = query.trim().toLowerCase()
   if (!clean) return null
 
-  // Fast check: Known pre-mapped library
+  const normQuery = normalizeKey(clean)
+
+  // 1. Strict exact check in pre-mapped catalog (avoids playing wrong songs from partial matches)
   if (excludeIds.length === 0) {
     for (const [key, vid] of Object.entries(PREMAPPED_CATALOG)) {
-      if (clean.includes(key) || key.includes(clean)) {
+      if (clean === key || normQuery === normalizeKey(key)) {
         return vid
       }
     }
   }
 
-  // Fast check: In-memory cache
-  if (excludeIds.length === 0 && memoryCache.has(clean)) {
-    return memoryCache.get(clean)!
+  // 2. In-memory exact cache
+  const cacheKey = `${normQuery}_${excludeIds.sort().join('_')}`
+  if (memoryCache.has(cacheKey)) {
+    return memoryCache.get(cacheKey)!
   }
 
-  // Fast check: Persisted local storage cache
+  // 3. Persisted localStorage exact cache
   if (excludeIds.length === 0) {
     try {
-      const saved = localStorage.getItem(`yt_id_${clean}`)
+      const saved = localStorage.getItem(`yt_exact_${normQuery}`)
       if (saved) {
-        memoryCache.set(clean, saved)
+        memoryCache.set(cacheKey, saved)
         return saved
       }
     } catch {
@@ -77,55 +88,22 @@ export async function resolveYouTubeVideoId(query: string, excludeIds: string[] 
   for (const endpoint of endpoints) {
     try {
       const res = await fetch(endpoint, {
-        headers: { 'Accept': 'application/json' },
+        headers: { Accept: 'application/json' },
       })
       if (res.ok) {
         const data = await res.json()
-        if (data.videoId) {
-          memoryCache.set(clean, data.videoId)
+        if (data.videoId && !excludeIds.includes(data.videoId)) {
+          memoryCache.set(cacheKey, data.videoId)
           try {
-            localStorage.setItem(`yt_id_${clean}`, data.videoId)
+            if (excludeIds.length === 0) {
+              localStorage.setItem(`yt_exact_${normQuery}`, data.videoId)
+            }
           } catch {}
           return data.videoId
         }
       }
     } catch {
       // try next endpoint
-    }
-  }
-
-  // Fallback: Public Invidious instance search
-  const invidiousInstances = [
-    'https://invidious.nerdvpn.de',
-    'https://inv.nadeko.net',
-    'https://vid.puffyan.us',
-  ]
-
-  for (const instance of invidiousInstances) {
-    try {
-      const controller = new AbortController()
-      const timeoutId = setTimeout(() => controller.abort(), 3500)
-      const res = await fetch(`${instance}/api/v1/search?q=${encodeURIComponent(query)}&type=video`, {
-        signal: controller.signal,
-      })
-      clearTimeout(timeoutId)
-      if (res.ok) {
-        const items = await res.json()
-        if (Array.isArray(items)) {
-          for (const item of items) {
-            const vid = item.videoId
-            if (vid && !excludeIds.includes(vid)) {
-              memoryCache.set(clean, vid)
-              try {
-                localStorage.setItem(`yt_id_${clean}`, vid)
-              } catch {}
-              return vid
-            }
-          }
-        }
-      }
-    } catch {
-      // try next instance
     }
   }
 
