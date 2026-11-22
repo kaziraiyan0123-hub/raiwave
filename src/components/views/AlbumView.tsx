@@ -1,5 +1,5 @@
 import React from 'react'
-import { Play, Pause, Clock, Heart } from 'lucide-react'
+import { Play, Pause, Clock, Heart, ListPlus } from 'lucide-react'
 import { usePlayer } from '../../context/PlayerContext'
 import { EqualizerBars } from '../EqualizerBars'
 
@@ -12,6 +12,8 @@ export const AlbumView: React.FC = () => {
     togglePlay,
     isLiked,
     toggleLike,
+    addToQueue,
+    addAlbumToQueue,
   } = usePlayer()
 
   if (!selectedAlbum) {
@@ -71,16 +73,27 @@ export const AlbumView: React.FC = () => {
       </div>
 
       {/* Controls */}
-      <div className="px-8 py-5 flex items-center gap-6 bg-[#0B0D13]">
+      <div className="px-8 py-5 flex items-center gap-4 bg-[#0B0D13]">
         <button
           onClick={handlePlayAll}
-          className="w-14 h-14 rounded-full bg-[#8B5CF6] hover:bg-[#a3e655] text-black flex items-center justify-center transition-transform hover:scale-105 active:scale-95 shadow-xl shadow-[#8B5CF6]/20"
+          className="w-14 h-14 rounded-full bg-[#8B5CF6] hover:bg-[#a3e655] text-black flex items-center justify-center transition-transform hover:scale-105 active:scale-95 shadow-xl shadow-[#8B5CF6]/20 cursor-pointer"
+          title={isAlbumPlaying ? 'Pause album' : 'Play album'}
         >
           {isAlbumPlaying ? (
             <Pause className="w-6 h-6 fill-black text-black" />
           ) : (
             <Play className="w-6 h-6 fill-black text-black ml-1" />
           )}
+        </button>
+
+        {/* Add Entire Album to Queue */}
+        <button
+          onClick={() => addAlbumToQueue(selectedAlbum)}
+          className="flex items-center gap-2 px-4 py-2.5 rounded-full bg-white/10 hover:bg-white/15 border border-white/15 text-white text-xs font-semibold tracking-wide transition-all active:scale-95 cursor-pointer"
+          title="Add all songs from this album to queue"
+        >
+          <ListPlus className="w-4 h-4 text-purple-400" />
+          <span>Add Album to Queue</span>
         </button>
       </div>
 
@@ -140,7 +153,18 @@ export const AlbumView: React.FC = () => {
                   <p className="text-xs text-[#94A3B8] truncate">{track.artist}</p>
                 </div>
 
-                <div className="col-span-3 md:col-span-1 flex items-center justify-end gap-3 text-xs text-[#94A3B8] pr-2">
+                <div className="col-span-3 md:col-span-1 flex items-center justify-end gap-2.5 text-xs text-[#94A3B8] pr-2">
+                  {/* Add Track to Queue */}
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      addToQueue(track)
+                    }}
+                    className="opacity-0 group-hover:opacity-100 transition-all p-1 hover:text-purple-300 hover:scale-110 active:scale-90 cursor-pointer"
+                    title="Add track to queue"
+                  >
+                    <ListPlus className="w-4 h-4" />
+                  </button>
                   <button
                     onClick={(e) => {
                       e.stopPropagation()

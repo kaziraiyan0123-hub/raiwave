@@ -61,7 +61,16 @@ interface PlayerContextType {
   toggleLike: (trackId: string) => void
   isLiked: (trackId: string) => boolean
   addToQueue: (track: Track) => void
+  addAlbumToQueue: (album: Album) => void
+  addPlaylistToQueue: (playlist: Playlist) => void
+  reorderQueue: (fromIndex: number, toIndex: number) => void
+  reorderUpcoming: (fromUpcomingIdx: number, toUpcomingIdx: number) => void
   removeFromQueue: (index: number) => void
+  clearQueue: () => void
+  playQueuedTrackImmediately: (index: number) => void
+  isQueuePanelOpen: boolean
+  setIsQueuePanelOpen: (open: boolean) => void
+  toggleQueuePanel: () => void
 
   // Navigation actions
   navigateTo: (view: ViewMode) => void
@@ -275,6 +284,10 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       isMounted = false
     }
   }, [currentTrack?.coverUrl, currentTrack?.color, currentTrack?.title])
+
+  // UP NEXT Queue Panel State
+  const [isQueuePanelOpen, setIsQueuePanelOpen] = useState<boolean>(false)
+  const toggleQueuePanel = () => setIsQueuePanelOpen((prev) => !prev)
 
   // Android Music Notification Card State
   const [isNotificationOpen, setIsNotificationOpen] = useState<boolean>(true)
@@ -1133,10 +1146,82 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
   const isLiked = (trackId: string) => likedTrackIds.includes(trackId)
 
-  const addToQueue = (track: Track) => setQueue((prev) => [...prev, track])
+  const addToQueue = (track: Track) => {
+    setQueue((prev) => [...prev, track])
+    showToast(`Added "${track.title}" to queue`)
+  }
+
+  const addAlbumToQueue = (album: Album) => {
+    if (!album.tracks || album.tracks.length === 0) return
+    setQueue((prev) => [...prev, ...album.tracks])
+    showToast(`Added ${album.tracks.length} songs from "${album.title}" to queue`)
+  }
+
+  const addPlaylistToQueue = (playlist: Playlist) => {
+    if (!playlist.tracks || playlist.tracks.length === 0) return
+    setQueue((prev) => [...prev, ...playlist.tracks])
+    showToast(`Added ${playlist.tracks.length} songs from "${playlist.name}" to queue`)
+  }
+
+  const reorderQueue = (fromIndex: number, toIndex: number) => {
+    if (fromIndex === toIndex || fromIndex < 0 || toIndex < 0) return
+    setQueue((prev) => {
+      if (fromIndex >= prev.length || toIndex >= prev.length) return prev
+      const updated = [...prev]
+      const [moved] = updated.splice(fromIndex, 1)
+      updated.splice(toIndex, 0, moved)
+      return updated
+    })
+    setQueueIndex((currentIdx) => {
+      if (fromIndex === currentIdx) return toIndex
+      if (fromIndex < currentIdx && toIndex >= currentIdx) return currentIdx - 1
+      if (fromIndex > currentIdx && toIndex <= currentIdx) return currentIdx + 1
+      return currentIdx
+    })
+  }
+
+  const reorderUpcoming = (fromUpcomingIdx: number, toUpcomingIdx: number) => {
+    const fromIndex = queueIndex + 1 + fromUpcomingIdx
+    const toIndex = queueIndex + 1 + toUpcomingIdx
+    reorderQueue(fromIndex, toIndex)
+  }
 
   const removeFromQueue = (index: number) => {
+    if (index < 0 || index >= queue.length) return
+    const removedTrack = queue[index]
     setQueue((prev) => prev.filter((_, i) => i !== index))
+    if (index < queueIndex) {
+      setQueueIndex((prev) => Math.max(0, prev - 1))
+    } else if (index === queueIndex) {
+      if (queue.length > 1) {
+        const nextIdx = index < queue.length - 1 ? index : index - 1
+        const nextT = queue[nextIdx]
+        setQueueIndex(nextIdx)
+        loadAndPlayTrack(nextT, isPlaying)
+      }
+    }
+    if (removedTrack) {
+      showToast(`Removed "${removedTrack.title}" from queue`)
+    }
+  }
+
+  const clearQueue = () => {
+    if (currentTrack) {
+      setQueue([currentTrack])
+      setQueueIndex(0)
+    } else {
+      setQueue([])
+      setQueueIndex(0)
+    }
+    showToast('🧹 Upcoming queue cleared')
+  }
+
+  const playQueuedTrackImmediately = (index: number) => {
+    if (index < 0 || index >= queue.length) return
+    const track = queue[index]
+    setQueueIndex(index)
+    loadAndPlayTrack(track, true)
+    showToast(`▶ Now playing "${track.title}"`)
   }
 
   const navigateTo = (view: ViewMode) => setCurrentView(view)
@@ -1262,7 +1347,16 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         toggleLike,
         isLiked,
         addToQueue,
+        addAlbumToQueue,
+        addPlaylistToQueue,
+        reorderQueue,
+        reorderUpcoming,
         removeFromQueue,
+        clearQueue,
+        playQueuedTrackImmediately,
+        isQueuePanelOpen,
+        setIsQueuePanelOpen,
+        toggleQueuePanel,
         navigateTo,
         openPlaylist,
         openAlbum,

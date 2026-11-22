@@ -50,6 +50,8 @@ export const PlayerBar: React.FC = () => {
     saveOffline,
     isOffline,
     dynamicTheme,
+    isQueuePanelOpen,
+    toggleQueuePanel,
   } = usePlayer()
 
   const [isFullscreen, setIsFullscreen] = useState(false)
@@ -311,12 +313,14 @@ export const PlayerBar: React.FC = () => {
           <Mic2 className="w-4 h-4" />
         </button>
 
-        {/* Queue Toggle */}
+        {/* UP NEXT Queue Toggle */}
         <button
-          onClick={() => navigateTo(currentView === 'queue' ? 'home' : 'queue')}
-          title="Queue"
+          onClick={toggleQueuePanel}
+          title="UP NEXT Queue"
           className={`p-1.5 rounded-xl transition-all hover:scale-105 active:scale-95 ${
-            currentView === 'queue' ? 'text-[#A78BFA] bg-purple-500/10' : 'text-[#94A3B8] hover:text-white'
+            isQueuePanelOpen || currentView === 'queue'
+              ? 'text-white bg-purple-500/25 border border-purple-500/40 shadow-[0_0_12px_rgba(168,85,247,0.3)]'
+              : 'text-[#94A3B8] hover:text-white'
           }`}
         >
           <ListMusic className="w-4 h-4" />

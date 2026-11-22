@@ -13,6 +13,7 @@ import {
   X,
   Volume2,
   VolumeX,
+  ListMusic,
   Speaker,
   Headphones,
   Laptop,
@@ -54,6 +55,10 @@ export const AndroidMediaNotificationCard: React.FC = () => {
     toggleNotificationExpanded,
     showToast,
     dynamicTheme,
+    queue,
+    queueIndex,
+    isQueuePanelOpen,
+    toggleQueuePanel,
   } = usePlayer()
 
   // Audio Output Selector state
@@ -439,22 +444,43 @@ export const AndroidMediaNotificationCard: React.FC = () => {
               </button>
             </div>
 
-            {/* Bottom Row: Favorite Heart (Left) + Volume Slider (Right) */}
+            {/* Bottom Row: Favorite Heart & Up Next Queue (Left) + Volume Slider (Right) */}
             <div className="flex items-center justify-between pt-2 px-1 sm:px-3 border-t border-white/10">
-              {/* Left: Heart Favorite Button */}
-              <button
-                onClick={() => toggleLike(currentTrack.id)}
-                className={`p-1.5 rounded-full transition-all active:scale-90 cursor-pointer ${
-                  liked
-                    ? 'text-[#EC4899] drop-shadow-[0_0_8px_rgba(236,72,153,0.6)]'
-                    : 'text-white/70 hover:text-white'
-                }`}
-                title={liked ? 'Remove from favorites' : 'Add to favorites'}
-              >
-                <Heart
-                  className={`w-5 h-5 sm:w-5.5 sm:h-5.5 stroke-[1.8] ${liked ? 'fill-[#EC4899]' : ''}`}
-                />
-              </button>
+              {/* Left Group: Heart + UP NEXT queue button */}
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => toggleLike(currentTrack.id)}
+                  className={`p-1.5 rounded-full transition-all active:scale-90 cursor-pointer ${
+                    liked
+                      ? 'text-[#EC4899] drop-shadow-[0_0_8px_rgba(236,72,153,0.6)]'
+                      : 'text-white/70 hover:text-white'
+                  }`}
+                  title={liked ? 'Remove from favorites' : 'Add to favorites'}
+                >
+                  <Heart
+                    className={`w-5 h-5 sm:w-5.5 sm:h-5.5 stroke-[1.8] ${liked ? 'fill-[#EC4899]' : ''}`}
+                  />
+                </button>
+
+                {/* UP NEXT Queue Button */}
+                <button
+                  onClick={toggleQueuePanel}
+                  className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold transition-all active:scale-95 cursor-pointer ${
+                    isQueuePanelOpen
+                      ? 'bg-purple-600/30 text-[#C084FC] border border-purple-500/40 shadow-[0_0_12px_rgba(168,85,247,0.3)]'
+                      : 'text-white/70 hover:text-white hover:bg-white/10 border border-white/10'
+                  }`}
+                  title="Open UP NEXT Queue panel"
+                >
+                  <ListMusic className="w-3.5 h-3.5 text-purple-300" />
+                  <span className="hidden sm:inline">Up Next</span>
+                  {queue.length > queueIndex + 1 && (
+                    <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-white/15 text-white/90 font-mono">
+                      {queue.length - queueIndex - 1}
+                    </span>
+                  )}
+                </button>
+              </div>
 
               {/* Right: Speaker Volume Icon + Volume Slider */}
               <div className="flex items-center gap-2.5">

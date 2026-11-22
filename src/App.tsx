@@ -12,6 +12,7 @@ import { YouTubeIframeContainer } from './components/YouTubeIframeContainer'
 import { ToastNotification } from './components/ToastNotification'
 import { ProfileModal } from './components/ProfileModal'
 import { AndroidMediaNotificationCard } from './components/AndroidMediaNotificationCard'
+import { UpNextPanel } from './components/UpNextPanel'
 
 function MainAppShell() {
   const { dynamicTheme } = usePlayer()
@@ -40,6 +41,9 @@ function MainAppShell() {
 
       {/* Premium Android-Style Music Notification Card (Compact & Expanded) */}
       <AndroidMediaNotificationCard />
+
+      {/* Premium "UP NEXT" Slide-over Queue Management Panel */}
+      <UpNextPanel />
 
       {/* Mobile Top Header (hidden on desktop) */}
       <MobileTopBar />

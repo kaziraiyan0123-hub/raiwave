@@ -7,6 +7,7 @@ import {
   Shuffle,
   MoreHorizontal,
   Music,
+  ListPlus,
 } from 'lucide-react'
 import { usePlayer } from '../../context/PlayerContext'
 import { EqualizerBars } from '../EqualizerBars'
@@ -23,6 +24,8 @@ export const PlaylistView: React.FC = () => {
     isShuffle,
     toggleShuffle,
     toggleMobilePlayer,
+    addToQueue,
+    addPlaylistToQueue,
   } = usePlayer()
 
   if (!selectedPlaylist) {
@@ -86,11 +89,11 @@ export const PlaylistView: React.FC = () => {
       </div>
 
       {/* 2. Action Controls Bar */}
-      <div className="px-6 sm:px-8 py-5 flex items-center gap-6 bg-[#0B0D13]">
+      <div className="px-6 sm:px-8 py-5 flex items-center gap-4 sm:gap-6 bg-[#0B0D13]">
         <button
           onClick={handlePlayAll}
           disabled={tracks.length === 0}
-          className="w-14 h-14 rounded-full bg-[#8B5CF6] hover:bg-[#c4f885] disabled:bg-gray-700 text-[#0B0D13] flex items-center justify-center transition-transform hover:scale-105 active:scale-95 shadow-[0_0_20px_rgba(182,243,107,0.35)]"
+          className="w-14 h-14 rounded-full bg-[#8B5CF6] hover:bg-[#c4f885] disabled:bg-gray-700 text-[#0B0D13] flex items-center justify-center transition-transform hover:scale-105 active:scale-95 shadow-[0_0_20px_rgba(182,243,107,0.35)] cursor-pointer"
         >
           {isCurrentPlaylistPlaying ? (
             <Pause className="w-6 h-6 fill-current" />
@@ -101,7 +104,7 @@ export const PlaylistView: React.FC = () => {
 
         <button
           onClick={toggleShuffle}
-          className={`transition-colors ${
+          className={`transition-colors cursor-pointer ${
             isShuffle ? 'text-[#8B5CF6]' : 'text-[#94A3B8] hover:text-white'
           }`}
           title="Shuffle Playlist"
@@ -109,7 +112,17 @@ export const PlaylistView: React.FC = () => {
           <Shuffle className="w-6 h-6" />
         </button>
 
-        <button className="text-[#94A3B8] hover:text-white transition-colors" title="More options">
+        {/* Add Entire Playlist to Queue */}
+        <button
+          onClick={() => addPlaylistToQueue(selectedPlaylist)}
+          className="flex items-center gap-2 px-4 py-2.5 rounded-full bg-white/10 hover:bg-white/15 border border-white/15 text-white text-xs font-semibold tracking-wide transition-all active:scale-95 cursor-pointer"
+          title="Add all songs from this playlist to queue"
+        >
+          <ListPlus className="w-4 h-4 text-purple-400" />
+          <span>Add Playlist to Queue</span>
+        </button>
+
+        <button className="text-[#94A3B8] hover:text-white transition-colors cursor-pointer" title="More options">
           <MoreHorizontal className="w-6 h-6" />
         </button>
       </div>
@@ -220,14 +233,24 @@ export const PlaylistView: React.FC = () => {
                     {track.releaseYear}
                   </div>
 
-                  {/* Heart Like & Duration */}
-                  <div className="col-span-5 sm:col-span-3 md:col-span-1 flex items-center justify-end gap-3 text-xs text-[#b3b3b3] pr-2">
+                  {/* Add to Queue + Heart Like + Duration */}
+                  <div className="col-span-5 sm:col-span-3 md:col-span-1 flex items-center justify-end gap-2.5 text-xs text-[#b3b3b3] pr-2">
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        addToQueue(track)
+                      }}
+                      className="opacity-0 group-hover:opacity-100 transition-all p-1 hover:text-purple-300 hover:scale-110 active:scale-90 cursor-pointer"
+                      title="Add to queue"
+                    >
+                      <ListPlus className="w-4 h-4" />
+                    </button>
                     <button
                       onClick={(e) => {
                         e.stopPropagation()
                         toggleLike(track.id)
                       }}
-                      className="opacity-0 group-hover:opacity-100 transition-opacity hover:scale-110"
+                      className="opacity-0 group-hover:opacity-100 transition-opacity hover:scale-110 cursor-pointer"
                     >
                       <Heart
                         className={`w-4 h-4 ${
