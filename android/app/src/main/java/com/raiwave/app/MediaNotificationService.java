@@ -7,10 +7,13 @@ import android.app.PendingIntent;
 import android.app.Service;
 import android.content.Context;
 import android.content.Intent;
+import android.content.pm.ServiceInfo;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.os.Build;
 import android.os.IBinder;
+import android.os.PowerManager;
+import android.support.v4.media.MediaMetadataCompat;
 import android.support.v4.media.session.MediaSessionCompat;
 import android.support.v4.media.session.PlaybackStateCompat;
 import androidx.annotation.Nullable;
@@ -33,6 +36,7 @@ public class MediaNotificationService extends Service {
 
     private MediaSessionCompat mediaSession;
     private NotificationManager notificationManager;
+    private PowerManager.WakeLock wakeLock;
     private Bitmap cachedArtwork = null;
     private String lastCoverUrl = "";
 
@@ -41,6 +45,12 @@ public class MediaNotificationService extends Service {
         super.onCreate();
         notificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
         createNotificationChannel();
+
+        PowerManager powerManager = (PowerManager) getSystemService(Context.POWER_SERVICE);
+        if (powerManager != null) {
+            wakeLock = powerManager.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "RAIWAVE:MediaPlaybackWakeLock");
+            wakeLock.setReferenceCounted(false);
+        }
 
         mediaSession = new MediaSessionCompat(this, "RAIWAVE_MediaSession");
         mediaSession.setActive(true);
@@ -66,8 +76,17 @@ public class MediaNotificationService extends Service {
             }
 
             @Override
+            public void onSeekTo(long pos) {
+                long posSec = pos / 1000L;
+                MainActivity.handleMediaAction("seek:" + posSec);
+            }
+
+            @Override
             public void onStop() {
                 MainActivity.handleMediaAction("pause");
+                if (wakeLock != null && wakeLock.isHeld()) {
+                    wakeLock.release();
+                }
                 stopForeground(true);
                 stopSelf();
             }
@@ -81,7 +100,7 @@ public class MediaNotificationService extends Service {
                     "RAIWAVE Music Playback",
                     NotificationManager.IMPORTANCE_LOW
             );
-            channel.setDescription("Shows active playback controls on lock screen and notification drawer");
+            channel.setDescription("Shows active Spotify-style playback controls on lock screen and notification shade");
             channel.setShowBadge(false);
             channel.setLockscreenVisibility(Notification.VISIBILITY_PUBLIC);
             if (notificationManager != null) {
@@ -103,48 +122,70 @@ public class MediaNotificationService extends Service {
             MainActivity.handleMediaAction("next");
         } else if (ACTION_STOP.equals(action)) {
             MainActivity.handleMediaAction("pause");
+            if (wakeLock != null && wakeLock.isHeld()) {
+                wakeLock.release();
+            }
             stopForeground(true);
             stopSelf();
         } else if (ACTION_UPDATE.equals(action)) {
             String title = intent.getStringExtra("title");
             String artist = intent.getStringExtra("artist");
+            String album = intent.getStringExtra("album");
             String coverUrl = intent.getStringExtra("coverUrl");
             boolean isPlaying = intent.getBooleanExtra("isPlaying", false);
+            long durationMs = intent.getLongExtra("durationMs", 0);
+            long positionMs = intent.getLongExtra("positionMs", 0);
 
-            if (title == null || title.isEmpty()) {
-                title = "RAIWAVE Music";
-            }
-            if (artist == null || artist.isEmpty()) {
-                artist = "Universal Stream";
+            if (title == null || title.isEmpty()) title = "RAIWAVE Music";
+            if (artist == null || artist.isEmpty()) artist = "Universal Stream";
+            if (album == null || album.isEmpty()) album = "RAIWAVE Lossless";
+
+            if (isPlaying) {
+                if (wakeLock != null && !wakeLock.isHeld()) {
+                    wakeLock.acquire(1000 * 60 * 180); // 3 hours timeout
+                }
+            } else {
+                if (wakeLock != null && wakeLock.isHeld()) {
+                    wakeLock.release();
+                }
             }
 
-            updatePlaybackState(isPlaying);
-            buildAndShowNotification(title, artist, coverUrl, isPlaying);
+            updatePlaybackState(isPlaying, positionMs);
+            buildAndShowNotification(title, artist, album, coverUrl, isPlaying, durationMs, positionMs);
         }
 
         return START_NOT_STICKY;
     }
 
-    private void updatePlaybackState(boolean isPlaying) {
+    private void updatePlaybackState(boolean isPlaying, long positionMs) {
         if (mediaSession == null) return;
         long actions = PlaybackStateCompat.ACTION_PLAY |
                 PlaybackStateCompat.ACTION_PAUSE |
                 PlaybackStateCompat.ACTION_SKIP_TO_NEXT |
                 PlaybackStateCompat.ACTION_SKIP_TO_PREVIOUS |
-                PlaybackStateCompat.ACTION_PLAY_PAUSE;
+                PlaybackStateCompat.ACTION_PLAY_PAUSE |
+                PlaybackStateCompat.ACTION_SEEK_TO;
 
         PlaybackStateCompat state = new PlaybackStateCompat.Builder()
                 .setActions(actions)
                 .setState(
                         isPlaying ? PlaybackStateCompat.STATE_PLAYING : PlaybackStateCompat.STATE_PAUSED,
-                        PlaybackStateCompat.PLAYBACK_POSITION_UNKNOWN,
+                        positionMs > 0 ? positionMs : PlaybackStateCompat.PLAYBACK_POSITION_UNKNOWN,
                         1.0f
                 )
                 .build();
         mediaSession.setPlaybackState(state);
     }
 
-    private void buildAndShowNotification(final String title, final String artist, final String coverUrl, final boolean isPlaying) {
+    private void buildAndShowNotification(
+            final String title,
+            final String artist,
+            final String album,
+            final String coverUrl,
+            final boolean isPlaying,
+            final long durationMs,
+            final long positionMs
+    ) {
         // Pending intent to return to main activity
         Intent openAppIntent = new Intent(this, MainActivity.class);
         openAppIntent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
@@ -163,12 +204,34 @@ public class MediaNotificationService extends Service {
         Intent nextIntent = new Intent(this, MediaNotificationService.class).setAction(ACTION_NEXT);
         PendingIntent pNext = PendingIntent.getService(this, 3, nextIntent, PendingIntent.FLAG_IMMUTABLE | PendingIntent.FLAG_UPDATE_CURRENT);
 
+        // Set Media Metadata on MediaSession (Critical for Android 11+ Quick Settings / Lockscreen Media Card)
+        MediaMetadataCompat.Builder metaBuilder = new MediaMetadataCompat.Builder()
+                .putString(MediaMetadataCompat.METADATA_KEY_TITLE, title)
+                .putString(MediaMetadataCompat.METADATA_KEY_ARTIST, artist)
+                .putString(MediaMetadataCompat.METADATA_KEY_ALBUM, album);
+
+        if (durationMs > 0) {
+            metaBuilder.putLong(MediaMetadataCompat.METADATA_KEY_DURATION, durationMs);
+        }
+
+        if (cachedArtwork != null && coverUrl != null && coverUrl.equals(lastCoverUrl)) {
+            metaBuilder.putBitmap(MediaMetadataCompat.METADATA_KEY_ALBUM_ART, cachedArtwork);
+            metaBuilder.putBitmap(MediaMetadataCompat.METADATA_KEY_ART, cachedArtwork);
+        }
+
+        if (mediaSession != null) {
+            mediaSession.setMetadata(metaBuilder.build());
+        }
+
         NotificationCompat.Builder builder = new NotificationCompat.Builder(this, CHANNEL_ID)
                 .setSmallIcon(R.drawable.ic_launcher)
                 .setContentTitle(title)
                 .setContentText(artist)
+                .setSubText(album)
                 .setContentIntent(pOpenApp)
                 .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
+                .setPriority(NotificationCompat.PRIORITY_LOW)
+                .setCategory(NotificationCompat.CATEGORY_TRANSPORT)
                 .setOngoing(isPlaying)
                 .addAction(android.R.drawable.ic_media_previous, "Previous", pPrev)
                 .addAction(
@@ -186,7 +249,13 @@ public class MediaNotificationService extends Service {
         }
 
         Notification notification = builder.build();
-        startForeground(NOTIFICATION_ID, notification);
+
+        // Android 10+ (API 29+) and Android 14+ (API 34+) require foregroundServiceType parameter
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            startForeground(NOTIFICATION_ID, notification, ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PLAYBACK);
+        } else {
+            startForeground(NOTIFICATION_ID, notification);
+        }
 
         // Fetch artwork in background thread if changed
         if (coverUrl != null && !coverUrl.isEmpty() && !coverUrl.equals(lastCoverUrl)) {
@@ -204,6 +273,11 @@ public class MediaNotificationService extends Service {
                     if (bitmap != null) {
                         cachedArtwork = bitmap;
                         builder.setLargeIcon(bitmap);
+                        metaBuilder.putBitmap(MediaMetadataCompat.METADATA_KEY_ALBUM_ART, bitmap);
+                        metaBuilder.putBitmap(MediaMetadataCompat.METADATA_KEY_ART, bitmap);
+                        if (mediaSession != null) {
+                            mediaSession.setMetadata(metaBuilder.build());
+                        }
                         notificationManager.notify(NOTIFICATION_ID, builder.build());
                     }
                 } catch (Exception ignored) {}
@@ -213,6 +287,9 @@ public class MediaNotificationService extends Service {
 
     @Override
     public void onDestroy() {
+        if (wakeLock != null && wakeLock.isHeld()) {
+            wakeLock.release();
+        }
         if (mediaSession != null) {
             mediaSession.release();
         }

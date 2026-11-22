@@ -1,11 +1,13 @@
 package com.raiwave.app;
 
 import android.Manifest;
+import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.graphics.Color;
 import android.os.Build;
 import android.os.Bundle;
+import android.view.View;
 import android.view.Window;
 import android.view.WindowManager;
 import android.webkit.JavascriptInterface;
@@ -27,7 +29,7 @@ public class MainActivity extends AppCompatActivity {
     private static final String APP_URL = "https://raiwave.vercel.app";
 
     private static MainActivity instance;
-    private WebView webView;
+    private BackgroundAudioWebView webView;
     private PermissionRequest pendingPermissionRequest;
 
     public static void handleMediaAction(String action) {
@@ -38,6 +40,22 @@ public class MainActivity extends AppCompatActivity {
                         null
                 );
             });
+        }
+    }
+
+    /**
+     * Custom WebView that keeps Chromium rendering and timers active in background
+     * by reporting VISIBLE to prevent background throttling or pausing.
+     */
+    private static class BackgroundAudioWebView extends WebView {
+        public BackgroundAudioWebView(Context context) {
+            super(context);
+        }
+
+        @Override
+        protected void onWindowVisibilityChanged(int visibility) {
+            // Keep Chromium's audio, video, and JS timers running when app is minimized or phone locked
+            super.onWindowVisibilityChanged(View.VISIBLE);
         }
     }
 
@@ -53,7 +71,7 @@ public class MainActivity extends AppCompatActivity {
         window.setStatusBarColor(Color.parseColor("#090D13"));
         window.setNavigationBarColor(Color.parseColor("#090D13"));
 
-        webView = new WebView(this);
+        webView = new BackgroundAudioWebView(this);
         webView.setBackgroundColor(Color.parseColor("#090D13"));
         setContentView(webView);
 
@@ -127,12 +145,20 @@ public class MainActivity extends AppCompatActivity {
     public class RaiwaveMediaBridge {
         @JavascriptInterface
         public void updateMedia(String title, String artist, String coverUrl, boolean isPlaying) {
+            updateMediaWithDetails(title, artist, "RAIWAVE Universal Stream", coverUrl, isPlaying, 0, 0);
+        }
+
+        @JavascriptInterface
+        public void updateMediaWithDetails(String title, String artist, String album, String coverUrl, boolean isPlaying, long durationSec, long positionSec) {
             Intent intent = new Intent(MainActivity.this, MediaNotificationService.class);
             intent.setAction(MediaNotificationService.ACTION_UPDATE);
             intent.putExtra("title", title);
             intent.putExtra("artist", artist);
+            intent.putExtra("album", album);
             intent.putExtra("coverUrl", coverUrl);
             intent.putExtra("isPlaying", isPlaying);
+            intent.putExtra("durationMs", durationSec * 1000L);
+            intent.putExtra("positionMs", positionSec * 1000L);
 
             try {
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
@@ -147,7 +173,7 @@ public class MainActivity extends AppCompatActivity {
 
         @JavascriptInterface
         public String getNativeVersion() {
-            return "1.2.2";
+            return "1.2.3";
         }
     }
 

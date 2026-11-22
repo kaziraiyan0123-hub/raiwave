@@ -218,21 +218,8 @@ class YouTubeService {
       return resolvedId
     }
 
-    // Direct YouTube Player search playlist fallback
-    if (this.player && this.isReady && typeof this.player.loadPlaylist === 'function') {
-      try {
-        this.player.loadPlaylist({
-          listType: 'search',
-          list: query,
-          index: 0,
-        })
-        return 'search-playlist'
-      } catch (err) {
-        console.warn('YouTube loadPlaylist search fallback failed:', err)
-      }
-    }
-
-    console.warn('Could not resolve embeddable video ID for query:', query)
+    // Never play ambiguous/random search playlists
+    console.warn('Could not resolve embeddable video ID for exact query:', query)
     return null
   }
 

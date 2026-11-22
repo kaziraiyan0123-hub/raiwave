@@ -28,6 +28,27 @@ function parseRunText(runs?: Run[]): string {
   return runs.map((r) => r.text || '').join('')
 }
 
+function extractKeywords(str: string): string[] {
+  return str
+    .toLowerCase()
+    .split(/[\s|•\-_,()]+/)
+    .map((w) => w.replace(/[^a-z0-9\u0980-\u09FF]/g, ''))
+    .filter((w) => w.length >= 2)
+}
+
+// Quick embeddability check to ensure top recommendations don't crash with 150/101
+async function checkEmbeddable(videoId: string): Promise<boolean> {
+  try {
+    const res = await fetch(`https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=${videoId}&format=json`, {
+      headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)' },
+      signal: AbortSignal.timeout(2000),
+    })
+    return res.status === 200
+  } catch {
+    return true
+  }
+}
+
 export default async function handler(req: any, res: any) {
   // CORS Headers
   res.setHeader('Access-Control-Allow-Origin', '*')
@@ -81,7 +102,30 @@ export default async function handler(req: any, res: any) {
     const tracks: ParsedTrack[] = []
     const seenIds = new Set<string>()
 
-    // 1. First priority: Check YouTube Music Top Result Card
+    const queryKeywords = extractKeywords(query)
+
+    // Helper to clean artist names
+    function cleanArtist(rawArtist: string, title: string): string {
+      let a = rawArtist.trim()
+      // If artist is a date or view count or generic, try extracting from title
+      if (/^\w+\s+\d{1,2},\s+\d{4}$/.test(a) || /^\d+(\.\d+)?[KM]?\s+views$/i.test(a) || a.toLowerCase() === 'artist') {
+        const segments = title.split(/[|•\-–]+/).map((s) => s.trim())
+        for (const seg of segments) {
+          const segLower = seg.toLowerCase()
+          if (!segLower.includes('remix') && !segLower.includes('cover') && !segLower.includes('lofi') && !segLower.includes('lyrics') && !segLower.includes('album')) {
+            for (const qw of queryKeywords) {
+              if (segLower.includes(qw)) {
+                return seg
+              }
+            }
+          }
+        }
+        return 'Various Artists'
+      }
+      return a
+    }
+
+    // 1. Scan YouTube Music Top Result Card
     function scanCards(node: any) {
       if (!node || typeof node !== 'object') return
       if (node.musicCardShelfRenderer) {
@@ -110,6 +154,8 @@ export default async function handler(req: any, res: any) {
         } else if (parts.length >= 1) {
           artist = parts[0]
         }
+
+        artist = cleanArtist(artist, title)
 
         if (vid && vid.length === 11 && title) {
           tracks.push({
@@ -150,7 +196,6 @@ export default async function handler(req: any, res: any) {
         let album = 'Single'
         let durationSec = 210
 
-        // Find artist run with browseEndpoint or following 'Song • '
         const artistRun = runs.find(
           (r: any) =>
             r.navigationEndpoint?.browseEndpoint?.browseEndpointContextSupportedConfigs
@@ -170,16 +215,15 @@ export default async function handler(req: any, res: any) {
           }
         }
 
-        // Extract album if present
+        artist = cleanArtist(artist, title)
+
         const albumRun = runs.find(
-          (r: any) =>
-            r.navigationEndpoint?.browseEndpoint?.browseId?.startsWith('MPREb_')
+          (r: any) => r.navigationEndpoint?.browseEndpoint?.browseId?.startsWith('MPREb_')
         )
         if (albumRun && albumRun.text) {
           album = albumRun.text
         }
 
-        // Check for duration string: e.g. 3:45
         const durRun = runs.find((r: any) => /^\d+:\d+$/.test(r.text))
         if (durRun && durRun.text) {
           const [m, s] = durRun.text.split(':').map(Number)
@@ -212,38 +256,95 @@ export default async function handler(req: any, res: any) {
     }
     scanItems(data)
 
-    // 3. Precision Relevance Ranking (Prioritize Exact Matches)
-    const normQ = query.toLowerCase().replace(/[^a-z0-9]/g, '')
-    tracks.sort((a, b) => {
-      const normA = a.title.toLowerCase().replace(/[^a-z0-9]/g, '')
-      const normB = b.title.toLowerCase().replace(/[^a-z0-9]/g, '')
+    // 3. Strict Relevance & Quality Filter
+    // Discard non-music items (talks, sermons, lectures, news)
+    const validMusicTracks = tracks.filter((t) => {
+      const titleLower = t.title.toLowerCase()
+      if (
+        titleLower.includes('news') ||
+        titleLower.includes('পুরস্কার') ||
+        titleLower.includes('দোয়া') ||
+        titleLower.includes('ওয়াজ') ||
+        titleLower.includes('talk show') ||
+        titleLower.includes('interview') ||
+        titleLower.includes('podcast') ||
+        titleLower.includes('behind the fame')
+      ) {
+        return false
+      }
+
+      // Check if at least one keyword matches
+      const tWords = extractKeywords(t.title + ' ' + t.artist)
+      const matchesAnyKeyword = queryKeywords.some((qw) =>
+        tWords.some((tw) => tw.includes(qw) || qw.includes(tw))
+      )
+      return matchesAnyKeyword
+    })
+
+    // 4. Precision Relevance Scoring
+    const wantsRemix =
+      query.toLowerCase().includes('remix') ||
+      query.toLowerCase().includes('cover') ||
+      query.toLowerCase().includes('lofi')
+
+    validMusicTracks.sort((a, b) => {
+      const titleA = a.title.toLowerCase()
+      const titleB = b.title.toLowerCase()
+      const artistA = a.artist.toLowerCase()
+      const artistB = b.artist.toLowerCase()
+
+      const aWords = extractKeywords(a.title)
+      const bWords = extractKeywords(b.title)
 
       let scoreA = 0
       let scoreB = 0
 
-      // Exact title match gets utmost priority (+300)
-      if (normA === normQ) scoreA += 300
-      if (normB === normQ) scoreB += 300
+      // Count query word matches in title
+      for (const qw of queryKeywords) {
+        if (aWords.some((w) => w.includes(qw) || qw.includes(w))) scoreA += 150
+        if (bWords.some((w) => w.includes(qw) || qw.includes(w))) scoreB += 150
 
-      // Title starts with query (+150)
-      if (normA.startsWith(normQ)) scoreA += 150
-      if (normB.startsWith(normQ)) scoreB += 150
+        if (artistA.includes(qw)) scoreA += 100
+        if (artistB.includes(qw)) scoreB += 100
+      }
 
-      // Artist exact match (+120)
-      const normArtistA = a.artist.toLowerCase().replace(/[^a-z0-9]/g, '')
-      const normArtistB = b.artist.toLowerCase().replace(/[^a-z0-9]/g, '')
-      if (normArtistA === normQ) scoreA += 120
-      if (normArtistB === normQ) scoreB += 120
+      // Official / Studio track bonuses
+      if (titleA.includes('official') || a.album !== 'Single') scoreA += 50
+      if (titleB.includes('official') || b.album !== 'Single') scoreB += 50
 
-      // Contains query (+80)
-      if (normA.includes(normQ)) scoreA += 80
-      if (normB.includes(normQ)) scoreB += 80
+      // Penalize remixes and covers if user didn't ask for them
+      if (!wantsRemix) {
+        if (titleA.includes('cover')) scoreA -= 150
+        if (titleB.includes('cover')) scoreB -= 150
+
+        if (titleA.includes('lofi') || titleA.includes('lo-fi')) scoreA -= 90
+        if (titleB.includes('lofi') || titleB.includes('lo-fi')) scoreB -= 90
+
+        if (titleA.includes('remix')) scoreA -= 80
+        if (titleB.includes('remix')) scoreB -= 80
+
+        if (titleA.includes('slowed') || titleA.includes('reverb')) scoreA -= 90
+        if (titleB.includes('slowed') || titleB.includes('reverb')) scoreB -= 90
+      }
 
       return scoreB - scoreA
     })
 
-    searchCache.set(cacheKey, { timestamp: Date.now(), tracks })
-    return res.status(200).json({ query, results: tracks })
+    // 5. Ensure Top 3 tracks are embeddable so user never clicks a dead/401 track
+    const finalResults: ParsedTrack[] = []
+    for (const t of validMusicTracks) {
+      if (finalResults.length < 3) {
+        const embeddable = await checkEmbeddable(t.youtubeId)
+        if (embeddable) {
+          finalResults.push(t)
+        }
+      } else {
+        finalResults.push(t)
+      }
+    }
+
+    searchCache.set(cacheKey, { timestamp: Date.now(), tracks: finalResults })
+    return res.status(200).json({ query, results: finalResults })
   } catch (error: any) {
     console.error('API /api/yt-search error:', error)
     return res.status(500).json({ error: error.message || 'Internal Search Error' })

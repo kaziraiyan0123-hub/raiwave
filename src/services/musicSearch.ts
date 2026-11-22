@@ -252,38 +252,54 @@ export async function searchGlobalMusic(query: string): Promise<Track[]> {
   }
 
   // 4. Spotify-Grade Exact Match Priority Scoring (guarantees searched song is #1)
+  const wantsRemix =
+    cleanQuery.toLowerCase().includes('remix') ||
+    cleanQuery.toLowerCase().includes('cover') ||
+    cleanQuery.toLowerCase().includes('lofi')
+
   merged.sort((a, b) => {
-    const normTitleA = normalizeStr(a.title)
-    const normTitleB = normalizeStr(b.title)
-    const normArtistA = normalizeStr(a.artist)
-    const normArtistB = normalizeStr(b.artist)
+    const titleA = a.title.toLowerCase()
+    const titleB = b.title.toLowerCase()
+    const artistA = a.artist.toLowerCase()
+    const artistB = b.artist.toLowerCase()
+
+    const titleWordsA = extractKeywords(a.title)
+    const titleWordsB = extractKeywords(b.title)
 
     let scoreA = 0
     let scoreB = 0
 
+    // Keyword presence
+    for (const qw of queryKeywords) {
+      if (titleWordsA.some((w) => w === qw || w.includes(qw))) scoreA += 180
+      if (titleWordsB.some((w) => w === qw || w.includes(qw))) scoreB += 180
+
+      if (artistA.includes(qw)) scoreA += 120
+      if (artistB.includes(qw)) scoreB += 120
+    }
+
     // Exact Title match (+350)
-    if (normTitleA === normQuery) scoreA += 350
-    if (normTitleB === normQuery) scoreB += 350
-
-    // Starts with Query (+180)
-    if (normTitleA.startsWith(normQuery)) scoreA += 180
-    if (normTitleB.startsWith(normQuery)) scoreB += 180
-
-    // Artist exact match (+150)
-    if (normArtistA === normQuery) scoreA += 150
-    if (normArtistB === normQuery) scoreB += 150
-
-    // Title contains query (+100)
-    if (normTitleA.includes(normQuery)) scoreA += 100
-    if (normTitleB.includes(normQuery)) scoreB += 100
-
-    // Artist contains query (+70)
-    if (normArtistA.includes(normQuery)) scoreA += 70
-    if (normArtistB.includes(normQuery)) scoreB += 70
+    if (normalizeStr(a.title) === normQuery) scoreA += 350
+    if (normalizeStr(b.title) === normQuery) scoreB += 350
 
     // YouTube verified track bonus (+30)
     if (a.youtubeId) scoreA += 30
     if (b.youtubeId) scoreB += 30
+
+    // Penalize covers and remixes if not requested
+    if (!wantsRemix) {
+      if (titleA.includes('cover')) scoreA -= 150
+      if (titleB.includes('cover')) scoreB -= 150
+
+      if (titleA.includes('lofi') || titleA.includes('lo-fi')) scoreA -= 90
+      if (titleB.includes('lofi') || titleB.includes('lo-fi')) scoreB -= 90
+
+      if (titleA.includes('remix')) scoreA -= 80
+      if (titleB.includes('remix')) scoreB -= 80
+
+      if (titleA.includes('slowed') || titleA.includes('reverb')) scoreA -= 90
+      if (titleB.includes('slowed') || titleB.includes('reverb')) scoreB -= 90
+    }
 
     return scoreB - scoreA
   })

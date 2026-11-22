@@ -37,6 +37,11 @@ const PREMAPPED_CATALOG: Record<string, string> = {
   'miley cyrus - flowers': 'G7KNmW9a75Y',
   'pritom hasan - bhenge porona ebhabe': '0KPtvk32ob0',
   'tahsan - prematal': 'EyBL9Jq1pxg',
+  'prematal - tahsan': 'EyBL9Jq1pxg',
+  'tahsan - alo': 'Bwf4trcMoMA',
+  'alo - tahsan': 'Bwf4trcMoMA',
+  'tahsan alo': 'Bwf4trcMoMA',
+  'alo tahsan': 'Bwf4trcMoMA',
   'chris lake - beggin': '6i0HqJ1tRn8',
   'chris lake, aluna - beggin': '6i0HqJ1tRn8',
 }

@@ -137,6 +137,7 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const queueIndexRef = useRef<number>(0)
   const isShuffleRef = useRef<boolean>(false)
   const blockedVideoIdsRef = useRef<Set<string>>(new Set())
+  const playRequestIdRef = useRef<number>(0)
 
   // Current track & queue state (Default idle - never autoplay on load)
   const [currentTrack, setCurrentTrack] = useState<Track | null>(null)
@@ -521,7 +522,7 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
           blockedVideoIdsRef.current.add(track.youtubeId)
         }
 
-        // If embed is restricted (101/150) or failed, search for alternative embeddable stream excluding bad IDs
+        // If embed is restricted (101/150) or failed, search for verified alternative embeddable stream
         const excludeList = Array.from(blockedVideoIdsRef.current)
         youtubeService
           .loadSearchQuery(`${track.artist} - ${track.title}`, excludeList)
@@ -537,7 +538,12 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
               audioRef.current.src = track.audioUrl
               audioRef.current.currentTime = 0
               audioRef.current.play().catch(() => {})
+              return
             }
+
+            // Never silently play an unrelated song
+            setIsPlaying(false)
+            showToast(`⚠️ "${track.title}" cannot be embedded. Please select an alternate version.`)
           })
       },
     })
@@ -669,13 +675,25 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     try {
       if (currentTrack) {
         const androidBridge = (window as any).AndroidMedia
-        if (androidBridge && typeof androidBridge.updateMedia === 'function') {
-          androidBridge.updateMedia(
-            currentTrack.title,
-            currentTrack.artist,
-            currentTrack.coverUrl,
-            isPlaying
-          )
+        if (androidBridge) {
+          if (typeof androidBridge.updateMediaWithDetails === 'function') {
+            androidBridge.updateMediaWithDetails(
+              currentTrack.title,
+              currentTrack.artist,
+              currentTrack.album || 'RAIWAVE Universal Stream',
+              currentTrack.coverUrl,
+              isPlaying,
+              Math.round(duration || 0),
+              Math.round(currentTime || 0)
+            )
+          } else if (typeof androidBridge.updateMedia === 'function') {
+            androidBridge.updateMedia(
+              currentTrack.title,
+              currentTrack.artist,
+              currentTrack.coverUrl,
+              isPlaying
+            )
+          }
         }
       }
     } catch {}
@@ -683,6 +701,7 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
   // Central Playback Engine Router
   const loadAndPlayTrack = (track: Track, shouldPlay = true) => {
+    const reqId = ++playRequestIdRef.current
     setCurrentTrack(track)
     currentTrackRef.current = track
     setCurrentTime(0)
@@ -706,6 +725,7 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       } else {
         showToast(`▶ Loading full song: ${track.title}`)
         youtubeService.loadSearchQuery(`${track.artist} - ${track.title}`).then((vid) => {
+          if (playRequestIdRef.current !== reqId) return
           if (vid) {
             track.youtubeId = vid
             if (currentTrackRef.current?.id === track.id) {
@@ -719,6 +739,9 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
               youtubeService.loadVideo(vid, shouldPlay)
               setIsPlaying(shouldPlay)
             }
+          } else {
+            setIsPlaying(false)
+            showToast(`⚠️ No stream found for "${track.title}". Please try an alternative.`)
           }
         })
       }
@@ -973,6 +996,9 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         nextTrack()
       } else if (action === 'prev') {
         prevTrack()
+      } else if (action.startsWith('seek:')) {
+        const sec = parseFloat(action.replace('seek:', ''))
+        if (!isNaN(sec)) seek(sec)
       }
     }
     return () => {

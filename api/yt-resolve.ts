@@ -6,8 +6,16 @@ const cache = new Map<string, string>()
 interface Candidate {
   videoId: string
   title: string
-  artist: string
+  subtitle: string
   isOfficialSong: boolean
+}
+
+function extractKeywords(str: string): string[] {
+  return str
+    .toLowerCase()
+    .split(/[\s|•\-_,()]+/)
+    .map((w) => w.replace(/[^a-z0-9\u0980-\u09FF]/g, ''))
+    .filter((w) => w.length >= 2)
 }
 
 async function resolveViaYouTubeMusic(query: string, excludeSet: Set<string>): Promise<Candidate[]> {
@@ -53,7 +61,7 @@ async function resolveViaYouTubeMusic(query: string, excludeSet: Set<string>): P
           flexCols[0]?.musicResponsiveListItemFlexColumnRenderer?.text?.runs
             ?.map((r: any) => r.text)
             .join('') || ''
-        const artist =
+        const subtitle =
           flexCols[1]?.musicResponsiveListItemFlexColumnRenderer?.text?.runs
             ?.map((r: any) => r.text)
             .join('') || ''
@@ -62,8 +70,8 @@ async function resolveViaYouTubeMusic(query: string, excludeSet: Set<string>): P
           candidates.push({
             videoId: vid,
             title,
-            artist,
-            isOfficialSong: artist.toLowerCase().includes('song •'),
+            subtitle,
+            isOfficialSong: subtitle.toLowerCase().includes('song •'),
           })
         }
       }
@@ -80,43 +88,108 @@ async function resolveViaYouTubeMusic(query: string, excludeSet: Set<string>): P
   }
 }
 
-async function checkThumbnailExists(videoId: string): Promise<boolean> {
+async function checkEmbeddable(videoId: string): Promise<boolean> {
   try {
-    const res = await fetch(`https://img.youtube.com/vi/${videoId}/mqdefault.jpg`, {
-      method: 'HEAD',
+    const res = await fetch(`https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=${videoId}&format=json`, {
+      method: 'GET',
+      headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)' },
+      signal: AbortSignal.timeout(2500),
     })
     return res.status === 200
   } catch {
-    return true // Assume true on network error
+    return true
   }
 }
 
 async function findExactSongVideoId(query: string, excludeIds: string[] = []): Promise<string | null> {
   const excludeSet = new Set(excludeIds)
+  const qWords = extractKeywords(query)
 
-  // 1. First priority: Search exact song via YouTube Music WEB_REMIX API
-  const musicCandidates = await resolveViaYouTubeMusic(query, excludeSet)
-  if (musicCandidates.length > 0) {
-    // Prefer official studio song track
-    const official = musicCandidates.find((c) => c.isOfficialSong)
-    if (official && (await checkThumbnailExists(official.videoId))) {
-      return official.videoId
+  // 1. Search YouTube Music WEB_REMIX
+  const candidates = await resolveViaYouTubeMusic(query, excludeSet)
+
+  // Strict Title Matching: Candidates MUST have words matching the requested title!
+  const scored: Array<Candidate & { score: number }> = []
+
+  const wantsRemix =
+    query.toLowerCase().includes('remix') ||
+    query.toLowerCase().includes('cover') ||
+    query.toLowerCase().includes('lofi')
+
+  for (const c of candidates) {
+    const titleLower = c.title.toLowerCase()
+    const subtitleLower = c.subtitle.toLowerCase()
+
+    // Filter out non-song items
+    if (
+      titleLower.includes('news') ||
+      titleLower.includes('পুরস্কার') ||
+      titleLower.includes('দোয়া') ||
+      titleLower.includes('ওয়াজ') ||
+      titleLower.includes('talk show')
+    ) {
+      continue
     }
 
-    for (const cand of musicCandidates) {
-      if (await checkThumbnailExists(cand.videoId)) {
-        return cand.videoId
+    const tWords = extractKeywords(c.title)
+    const sWords = extractKeywords(c.subtitle)
+    const allWords = [...tWords, ...sWords]
+
+    let matched = 0
+    for (const qw of qWords) {
+      if (allWords.some((w) => w.includes(qw) || qw.includes(w))) {
+        matched++
       }
+    }
+
+    // Must match at least one keyword
+    if (matched === 0) continue
+
+    // CRITICAL: Ensure at least one query keyword matches the TITLE itself if multi-word query
+    // This prevents "Amar Golpe Tumi" from being selected when searching for "Alo Tahsan"
+    const titleMatchesQuery = qWords.some((qw) =>
+      tWords.some((tw) => tw === qw || tw.includes(qw) || qw.includes(tw))
+    )
+    if (!titleMatchesQuery && qWords.length > 1) {
+      continue
+    }
+
+    let score = matched * 100
+    if (c.isOfficialSong) score += 150
+    if (subtitleLower.includes('video •')) score += 80
+    if (titleLower.includes('official')) score += 100
+    if (titleLower.includes('lyrics') || titleLower.includes('lyrical')) score += 60
+
+    if (!wantsRemix) {
+      if (titleLower.includes('cover')) score -= 150
+      if (titleLower.includes('lofi') || titleLower.includes('lo-fi')) score -= 90
+      if (titleLower.includes('remix')) score -= 70
+      if (titleLower.includes('slowed') || titleLower.includes('reverb')) score -= 80
+    }
+
+    scored.push({ ...c, score })
+  }
+
+  scored.sort((a, b) => b.score - a.score)
+
+  // Test embeddability on the top candidates
+  for (const item of scored) {
+    const ok = await checkEmbeddable(item.videoId)
+    if (ok) {
+      return item.videoId
     }
   }
 
-  // 2. Secondary priority: Search with query + "official audio"
+  // 2. Secondary fallback: Search with query + "official audio"
   const audioCandidates = await resolveViaYouTubeMusic(`${query} official audio`, excludeSet)
-  if (audioCandidates.length > 0) {
-    for (const cand of audioCandidates) {
-      if (await checkThumbnailExists(cand.videoId)) {
-        return cand.videoId
-      }
+  for (const c of audioCandidates) {
+    const tWords = extractKeywords(c.title)
+    const titleMatches = qWords.some((qw) =>
+      tWords.some((tw) => tw === qw || tw.includes(qw) || qw.includes(tw))
+    )
+    if (titleMatches) {
+      const ok = await checkEmbeddable(c.videoId)
+      if (ok) return c.videoId
     }
   }
 
