@@ -13,8 +13,6 @@ import {
   X,
   Volume2,
   VolumeX,
-  Sun,
-  Moon,
   Radio,
 } from 'lucide-react'
 import { usePlayer } from '../context/PlayerContext'
@@ -43,14 +41,12 @@ export const AndroidMediaNotificationCard: React.FC = () => {
     toggleNotification,
     isNotificationExpanded,
     toggleNotificationExpanded,
-    notificationTheme,
-    toggleNotificationTheme,
   } = usePlayer()
 
   if (!currentTrack || !isNotificationOpen) return null
 
   const formatTime = (secs: number) => {
-    if (isNaN(secs)) return '0:00'
+    if (isNaN(secs) || secs < 0) return '0:00'
     const m = Math.floor(secs / 60)
     const s = Math.floor(secs % 60)
     return `${m}:${s < 10 ? '0' : ''}${s}`
@@ -58,38 +54,40 @@ export const AndroidMediaNotificationCard: React.FC = () => {
 
   const progressPercent = duration > 0 ? (currentTime / duration) * 100 : 0
   const liked = isLiked(currentTrack.id)
-  const isDark = notificationTheme === 'dark'
   const accentColor = currentTrack.color || '#8B5CF6'
 
   return (
     <div
       id="android-media-notification-card"
       data-testid="android-media-notification-card"
-      className="hidden md:block fixed top-20 right-6 z-40 w-[410px] max-w-[430px] select-none transition-all duration-300 ease-in-out animate-in fade-in slide-in-from-top-4"
+      className="fixed top-4 right-4 sm:top-5 sm:right-6 z-50 w-[calc(100vw-2rem)] sm:w-[410px] max-w-[430px] select-none transition-all duration-300 ease-out animate-in fade-in slide-in-from-top-4"
     >
-      {/* Outer Card with Dynamic Theme & Frosted Blur */}
+      {/* Outer Floating Glass Card with Dynamic Artwork Ambient Wash */}
       <div
-        className={`relative overflow-hidden rounded-3xl border transition-all duration-300 shadow-2xl ${
-          isDark
-            ? 'bg-[#12141D]/90 backdrop-blur-2xl border-white/10 text-white shadow-[0_25px_60px_rgba(0,0,0,0.7)]'
-            : 'bg-[#FFFFFF]/90 backdrop-blur-2xl border-black/10 text-[#0F172A] shadow-[0_20px_45px_rgba(0,0,0,0.18)]'
-        } ${isNotificationExpanded ? 'p-5' : 'p-3.5'}`}
+        className={`relative overflow-hidden border border-white/10 backdrop-blur-3xl transition-all duration-300 shadow-[0_20px_50px_rgba(0,0,0,0.7),0_0_40px_rgba(139,92,246,0.18)] hover:shadow-[0_25px_60px_rgba(0,0,0,0.8),0_0_50px_rgba(139,92,246,0.25)] hover:-translate-y-0.5 ${
+          isNotificationExpanded ? 'rounded-[32px] p-5' : 'rounded-[28px] p-3.5 sm:p-4'
+        }`}
+        style={{
+          background: `radial-gradient(ellipse at 25% 20%, ${accentColor}28 0%, rgba(18, 14, 30, 0.88) 100%)`,
+        }}
       >
         {/* Dynamic Subtle Ambient Tint from Track Artwork */}
         <div
-          className="absolute -top-14 -right-14 w-44 h-44 rounded-full opacity-25 blur-3xl pointer-events-none transition-all duration-700"
+          className="absolute -top-14 -right-14 w-48 h-48 rounded-full opacity-25 blur-3xl pointer-events-none transition-all duration-700"
           style={{ backgroundColor: accentColor }}
         />
         <div
-          className="absolute -bottom-14 -left-14 w-44 h-44 rounded-full opacity-20 blur-3xl pointer-events-none transition-all duration-700"
+          className="absolute -bottom-14 -left-14 w-48 h-48 rounded-full opacity-20 blur-3xl pointer-events-none transition-all duration-700"
           style={{ backgroundColor: accentColor }}
         />
 
-        {/* ---------------- COMPACT VIEW (Exact Match to Reference Image Top) ---------------- */}
+        {/* =========================================================================
+            COMPACT VIEW (Matches Reference Image Top)
+           ========================================================================= */}
         {!isNotificationExpanded ? (
-          <div className="flex items-center justify-between gap-3 relative z-10">
-            {/* Left: Album Artwork (~58x58px) with smooth artwork transition */}
-            <div className="relative w-14 h-14 flex-shrink-0 rounded-2xl overflow-hidden shadow-md border border-black/10 dark:border-white/10 group">
+          <div className="flex items-center justify-between gap-3.5 relative z-10">
+            {/* Left: Album Artwork (Rounded Square) */}
+            <div className="relative w-14 h-14 sm:w-15 sm:h-15 flex-shrink-0 rounded-2xl overflow-hidden shadow-lg border border-white/10 group">
               <img
                 src={currentTrack.coverUrl}
                 alt={currentTrack.title}
@@ -98,49 +96,37 @@ export const AndroidMediaNotificationCard: React.FC = () => {
               />
             </div>
 
-            {/* Center: Destination & Song Info */}
+            {/* Center: Indicator, Title & Artist */}
             <div className="flex-1 min-w-0 pr-1">
-              {/* Audio Destination / Device */}
+              {/* Music / Device Indicator */}
               <div className="flex items-center gap-1.5 mb-0.5">
-                <span className="w-2 h-2 rounded-full bg-[#8B5CF6] animate-pulse" />
-                <Radio className="w-3 h-3 text-[#A78BFA]" />
-                <span
-                  className={`text-[11px] font-semibold tracking-wide truncate ${
-                    isDark ? 'text-white/70' : 'text-neutral-500'
-                  }`}
-                >
+                <span className="w-2 h-2 rounded-full bg-[#8B5CF6] animate-pulse flex-shrink-0" />
+                <Radio className="w-3.5 h-3.5 text-[#A78BFA] flex-shrink-0" />
+                <span className="text-[11px] font-medium text-white/70 tracking-wide truncate">
                   This device
                 </span>
               </div>
 
-              {/* Prominent Song Title */}
-              <h4 className="text-sm font-extrabold tracking-tight truncate font-heading leading-tight">
+              {/* Song Title */}
+              <h4 className="text-sm sm:text-base font-extrabold tracking-tight truncate font-heading text-white leading-tight">
                 {currentTrack.title}
               </h4>
 
               {/* Artist Name */}
-              <p
-                className={`text-xs font-medium truncate mt-0.5 ${
-                  isDark ? 'text-white/60' : 'text-neutral-500'
-                }`}
-              >
+              <p className="text-xs font-medium text-[#94A3B8] truncate mt-0.5">
                 {currentTrack.artist}
               </p>
             </div>
 
             {/* Right: Solid Circular Play/Pause & Expand Arrow */}
             <div className="flex items-center gap-2 flex-shrink-0">
-              {/* Play / Pause Circular Button */}
+              {/* Solid White Circular Play / Pause Button */}
               <button
                 onClick={(e) => {
                   e.stopPropagation()
                   togglePlay()
                 }}
-                className={`w-11 h-11 rounded-full flex items-center justify-center transition-all duration-200 hover:scale-105 active:scale-95 shadow-md ${
-                  isDark
-                    ? 'bg-white text-[#090D13] hover:bg-neutral-100 shadow-white/10'
-                    : 'bg-[#090D13] text-white hover:bg-neutral-800 shadow-black/20'
-                }`}
+                className="w-11 h-11 sm:w-12 sm:h-12 rounded-full bg-white text-[#0B0D13] flex items-center justify-center transition-all duration-200 hover:scale-105 active:scale-95 shadow-[0_4px_16px_rgba(0,0,0,0.35)] flex-shrink-0 cursor-pointer"
                 title={isPlaying ? 'Pause' : 'Play'}
               >
                 {isPlaying ? (
@@ -150,46 +136,40 @@ export const AndroidMediaNotificationCard: React.FC = () => {
                 )}
               </button>
 
-              {/* Expand Chevron Arrow (v) */}
+              {/* Expand Chevron Down (v) */}
               <button
                 onClick={(e) => {
                   e.stopPropagation()
                   toggleNotificationExpanded()
                 }}
-                className={`p-1.5 rounded-full transition-colors active:scale-95 ${
-                  isDark
-                    ? 'text-white/70 hover:text-white hover:bg-white/10'
-                    : 'text-neutral-500 hover:text-neutral-900 hover:bg-black/5'
-                }`}
+                className="p-1.5 rounded-full text-white/70 hover:text-white transition-colors active:scale-95 cursor-pointer"
                 title="Expand notification"
               >
                 <ChevronDown className="w-5 h-5" />
               </button>
 
-              {/* Close / Dismiss (X) */}
+              {/* Subtle Dismiss (X) */}
               <button
                 onClick={(e) => {
                   e.stopPropagation()
                   toggleNotification()
                 }}
-                className={`p-1.5 rounded-full transition-colors active:scale-95 ${
-                  isDark
-                    ? 'text-white/60 hover:text-white hover:bg-white/10'
-                    : 'text-neutral-400 hover:text-neutral-900 hover:bg-black/5'
-                }`}
-                title="Dismiss notification"
+                className="p-1.5 rounded-full text-white/40 hover:text-white/80 transition-colors active:scale-95 cursor-pointer"
+                title="Dismiss floating card"
               >
-                <X className="w-4 h-4" />
+                <X className="w-3.5 h-3.5" />
               </button>
             </div>
           </div>
         ) : (
-          /* ---------------- EXPANDED VIEW (Exact Match to Reference Image Bottom) ---------------- */
+          /* =========================================================================
+              EXPANDED VIEW (Matches Reference Image Bottom)
+             ========================================================================= */
           <div className="flex flex-col gap-4 relative z-10 animate-in fade-in duration-200">
-            {/* Top Row: Large Artwork + Info + Expand/Collapse & Theme Header */}
+            {/* Top Row: Large Artwork + Info + Collapse Arrow */}
             <div className="flex items-start gap-4">
-              {/* Left: Large Artwork (~100-112px) */}
-              <div className="relative w-24 h-24 sm:w-28 sm:h-28 flex-shrink-0 rounded-2xl overflow-hidden shadow-lg border border-black/10 dark:border-white/10">
+              {/* Left: Large Album Artwork (~96-104px) */}
+              <div className="relative w-24 h-24 sm:w-26 sm:h-26 flex-shrink-0 rounded-2xl overflow-hidden shadow-xl border border-white/10 group">
                 <img
                   src={currentTrack.coverUrl}
                   alt={currentTrack.title}
@@ -198,94 +178,62 @@ export const AndroidMediaNotificationCard: React.FC = () => {
                 />
               </div>
 
-              {/* Right: Destination, Title, Artist & Header Controls */}
-              <div className="flex-1 min-w-0 flex flex-col justify-between h-24 sm:h-28">
-                {/* Header Row: Device Label + Theme Toggle + Collapse Chevron (^) + Close (x) */}
-                <div className="flex items-center justify-between gap-1">
+              {/* Right: Destination, Title, Artist & Header Collapse */}
+              <div className="flex-1 min-w-0 flex flex-col justify-between h-24 sm:h-26">
+                {/* Header: Device Indicator + Collapse Arrow (^) */}
+                <div className="flex items-center justify-between">
                   <div className="flex items-center gap-1.5">
-                    <span className="w-2 h-2 rounded-full bg-[#B6F36B] animate-pulse" />
-                    <Radio className="w-3.5 h-3.5 text-[#52D6C9]" />
-                    <span
-                      className={`text-xs font-semibold tracking-wide truncate ${
-                        isDark ? 'text-white/70' : 'text-neutral-500'
-                      }`}
-                    >
+                    <span className="w-2 h-2 rounded-full bg-[#8B5CF6] animate-pulse" />
+                    <Radio className="w-3.5 h-3.5 text-[#A78BFA]" />
+                    <span className="text-xs font-medium text-white/70 tracking-wide truncate">
                       This device
                     </span>
                   </div>
 
                   <div className="flex items-center gap-1">
-                    {/* Theme Toggle (Light / Dark) */}
-                    <button
-                      onClick={toggleNotificationTheme}
-                      className={`p-1.5 rounded-full transition-colors ${
-                        isDark
-                          ? 'text-white/60 hover:text-white hover:bg-white/10'
-                          : 'text-neutral-500 hover:text-neutral-900 hover:bg-black/5'
-                      }`}
-                      title={isDark ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
-                    >
-                      {isDark ? <Sun className="w-4 h-4 text-amber-300" /> : <Moon className="w-4 h-4 text-indigo-600" />}
-                    </button>
-
-                    {/* Collapse Chevron Arrow (^) */}
+                    {/* Collapse Chevron Up (^) */}
                     <button
                       onClick={toggleNotificationExpanded}
-                      className={`p-1.5 rounded-full transition-colors active:scale-95 ${
-                        isDark
-                          ? 'text-white/70 hover:text-white hover:bg-white/10'
-                          : 'text-neutral-500 hover:text-neutral-900 hover:bg-black/5'
-                      }`}
+                      className="p-1.5 rounded-full text-white/70 hover:text-white transition-colors active:scale-95 cursor-pointer"
                       title="Collapse notification"
                     >
                       <ChevronUp className="w-5 h-5" />
                     </button>
 
-                    {/* Close (X) button */}
+                    {/* Subtle Dismiss (X) */}
                     <button
                       onClick={toggleNotification}
-                      className={`p-1.5 rounded-full transition-colors active:scale-95 ${
-                        isDark
-                          ? 'text-white/60 hover:text-white hover:bg-white/10'
-                          : 'text-neutral-400 hover:text-neutral-900 hover:bg-black/5'
-                      }`}
-                      title="Dismiss notification"
+                      className="p-1.5 rounded-full text-white/40 hover:text-white/80 transition-colors active:scale-95 cursor-pointer"
+                      title="Dismiss floating card"
                     >
-                      <X className="w-4 h-4" />
+                      <X className="w-3.5 h-3.5" />
                     </button>
                   </div>
                 </div>
 
                 {/* Song Title & Artist */}
                 <div className="my-auto pr-1">
-                  <h3 className="text-lg sm:text-xl font-black tracking-tight truncate font-heading leading-tight">
+                  <h3 className="text-lg sm:text-xl font-black tracking-tight truncate font-heading text-white leading-tight">
                     {currentTrack.title}
                   </h3>
-                  <p
-                    className={`text-xs sm:text-sm font-medium truncate mt-0.5 ${
-                      isDark ? 'text-white/70' : 'text-neutral-600'
-                    }`}
-                  >
+                  <p className="text-xs sm:text-sm font-medium text-[#94A3B8] truncate mt-0.5">
                     {currentTrack.artist}
                   </p>
                 </div>
               </div>
             </div>
 
-            {/* Playback Progress Slider & Time Labels */}
-            <div className="space-y-1.5 px-1 pt-1">
+            {/* Middle Row: Playback Progress Scrubber & Time Labels */}
+            <div className="space-y-1.5 px-0.5 pt-1">
               <div className="relative flex items-center group cursor-pointer h-3">
-                {/* Background Track */}
-                <div
-                  className={`absolute inset-x-0 h-1.5 rounded-full overflow-hidden transition-colors ${
-                    isDark ? 'bg-white/15' : 'bg-black/10'
-                  }`}
-                >
+                {/* Background Unplayed Track */}
+                <div className="absolute inset-x-0 h-1.5 rounded-full bg-white/15 overflow-hidden">
+                  {/* Played Portion with Purple Gradient */}
                   <div
                     className="h-full rounded-full transition-all duration-100"
                     style={{
                       width: `${progressPercent}%`,
-                      background: `linear-gradient(90deg, #52D6C9, ${accentColor})`,
+                      background: `linear-gradient(90deg, #A78BFA 0%, ${accentColor} 100%)`,
                     }}
                   />
                 </div>
@@ -301,35 +249,27 @@ export const AndroidMediaNotificationCard: React.FC = () => {
                   className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
                 />
 
-                {/* Scrub Thumb Indicator */}
+                {/* Scrubber Circular White Thumb Indicator */}
                 <div
                   className="absolute w-3.5 h-3.5 rounded-full bg-white shadow-md border border-black/10 pointer-events-none -translate-x-1/2 transition-transform duration-75 group-hover:scale-125"
                   style={{ left: `${progressPercent}%` }}
                 />
               </div>
 
-              {/* Time Indicators: 1:24 on left, 3:42 on right */}
-              <div
-                className={`flex items-center justify-between text-[11px] font-mono font-medium ${
-                  isDark ? 'text-white/50' : 'text-neutral-500'
-                }`}
-              >
+              {/* Time Indicators: e.g. 1:24 on left, 3:42 on right */}
+              <div className="flex items-center justify-between text-[11px] font-mono font-medium text-white/60">
                 <span>{formatTime(currentTime)}</span>
                 <span>{formatTime(duration)}</span>
               </div>
             </div>
 
-            {/* Primary Controls Row: Shuffle, Prev, Play/Pause, Next, Repeat */}
-            <div className="flex items-center justify-between px-3 pt-1">
+            {/* Primary Controls Row: Shuffle, Prev, Center Play/Pause, Next, Repeat */}
+            <div className="flex items-center justify-between px-2 pt-1">
               {/* Shuffle */}
               <button
                 onClick={toggleShuffle}
-                className={`p-2 rounded-full transition-all active:scale-90 ${
-                  isShuffle
-                    ? 'text-[#8B5CF6] font-bold'
-                    : isDark
-                    ? 'text-white/60 hover:text-white'
-                    : 'text-neutral-500 hover:text-neutral-900'
+                className={`p-2 rounded-full transition-all active:scale-90 cursor-pointer ${
+                  isShuffle ? 'text-[#8B5CF6] font-bold' : 'text-white/60 hover:text-white'
                 }`}
                 title="Shuffle"
               >
@@ -339,22 +279,16 @@ export const AndroidMediaNotificationCard: React.FC = () => {
               {/* Previous Track */}
               <button
                 onClick={prevTrack}
-                className={`p-2 rounded-full transition-all active:scale-90 ${
-                  isDark ? 'text-white hover:text-[#A78BFA]' : 'text-neutral-800 hover:text-black'
-                }`}
+                className="p-2 rounded-full text-white/80 hover:text-white transition-all active:scale-90 cursor-pointer"
                 title="Previous track"
               >
                 <SkipBack className="w-6 h-6 fill-current" />
               </button>
 
-              {/* Play / Pause Circular Center Button */}
+              {/* Center Play / Pause Translucent Circle Button */}
               <button
                 onClick={togglePlay}
-                className={`w-14 h-14 rounded-full flex items-center justify-center transition-all duration-200 hover:scale-105 active:scale-95 shadow-xl ${
-                  isDark
-                    ? 'bg-white/10 hover:bg-white/20 border border-white/25 text-white'
-                    : 'bg-black/10 hover:bg-black/15 border border-black/15 text-neutral-900'
-                }`}
+                className="w-14 h-14 rounded-full bg-white/10 hover:bg-white/20 border border-white/20 text-white flex items-center justify-center transition-all duration-200 hover:scale-105 active:scale-95 shadow-xl cursor-pointer"
                 style={{
                   boxShadow: `0 0 25px ${accentColor}35`,
                 }}
@@ -370,9 +304,7 @@ export const AndroidMediaNotificationCard: React.FC = () => {
               {/* Next Track */}
               <button
                 onClick={nextTrack}
-                className={`p-2 rounded-full transition-all active:scale-90 ${
-                  isDark ? 'text-white hover:text-[#A78BFA]' : 'text-neutral-800 hover:text-black'
-                }`}
+                className="p-2 rounded-full text-white/80 hover:text-white transition-all active:scale-90 cursor-pointer"
                 title="Next track"
               >
                 <SkipForward className="w-6 h-6 fill-current" />
@@ -381,12 +313,8 @@ export const AndroidMediaNotificationCard: React.FC = () => {
               {/* Repeat */}
               <button
                 onClick={toggleRepeat}
-                className={`p-2 rounded-full transition-all active:scale-90 ${
-                  repeatMode !== 'off'
-                    ? 'text-[#8B5CF6] font-bold'
-                    : isDark
-                    ? 'text-white/60 hover:text-white'
-                    : 'text-neutral-500 hover:text-neutral-900'
+                className={`p-2 rounded-full transition-all active:scale-90 cursor-pointer ${
+                  repeatMode !== 'off' ? 'text-[#8B5CF6] font-bold' : 'text-white/60 hover:text-white'
                 }`}
                 title={`Repeat: ${repeatMode}`}
               >
@@ -398,21 +326,13 @@ export const AndroidMediaNotificationCard: React.FC = () => {
               </button>
             </div>
 
-            {/* Bottom Row: Favorite Heart & Volume Slider */}
-            <div
-              className={`flex items-center justify-between px-2 pt-2.5 border-t transition-colors ${
-                isDark ? 'border-white/10' : 'border-black/10'
-              }`}
-            >
+            {/* Bottom Row: Hairline Divider + Favorite Heart + Volume Slider */}
+            <div className="flex items-center justify-between px-2 pt-3 border-t border-white/10">
               {/* Favorite / Like Heart Button */}
               <button
                 onClick={() => toggleLike(currentTrack.id)}
-                className={`p-1.5 rounded-full transition-all active:scale-90 flex items-center gap-1.5 text-xs font-semibold ${
-                  liked
-                    ? 'text-[#8B5CF6]'
-                    : isDark
-                    ? 'text-white/60 hover:text-white'
-                    : 'text-neutral-500 hover:text-neutral-900'
+                className={`p-1.5 rounded-full transition-all active:scale-90 flex items-center gap-1.5 text-xs font-semibold cursor-pointer ${
+                  liked ? 'text-[#8B5CF6]' : 'text-white/60 hover:text-white'
                 }`}
                 title={liked ? 'Unlike track' : 'Add to favorites'}
               >
@@ -423,9 +343,7 @@ export const AndroidMediaNotificationCard: React.FC = () => {
               <div className="flex items-center gap-2">
                 <button
                   onClick={toggleMute}
-                  className={`p-1 rounded-full transition-colors ${
-                    isDark ? 'text-white/60 hover:text-white' : 'text-neutral-500 hover:text-neutral-900'
-                  }`}
+                  className="p-1 rounded-full text-white/60 hover:text-white transition-colors cursor-pointer"
                   title={isMuted ? 'Unmute' : 'Mute'}
                 >
                   {isMuted || volume === 0 ? (
@@ -435,13 +353,9 @@ export const AndroidMediaNotificationCard: React.FC = () => {
                   )}
                 </button>
                 <div className="relative flex items-center w-24 sm:w-28 group">
-                  <div
-                    className={`h-1.5 w-full rounded-full overflow-hidden ${
-                      isDark ? 'bg-white/15' : 'bg-black/10'
-                    }`}
-                  >
+                  <div className="h-1.5 w-full rounded-full bg-white/15 overflow-hidden">
                     <div
-                      className="h-full bg-[#8B5CF6] rounded-full"
+                      className="h-full bg-gradient-to-r from-purple-400 to-[#8B5CF6] rounded-full"
                       style={{ width: `${(isMuted ? 0 : volume) * 100}%` }}
                     />
                   </div>
@@ -454,6 +368,11 @@ export const AndroidMediaNotificationCard: React.FC = () => {
                     onChange={(e) => setVolume(Number(e.target.value))}
                     className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
                     title="Volume slider"
+                  />
+                  {/* Volume Thumb */}
+                  <div
+                    className="absolute w-3 h-3 rounded-full bg-white shadow-sm pointer-events-none -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity"
+                    style={{ left: `${(isMuted ? 0 : volume) * 100}%` }}
                   />
                 </div>
               </div>

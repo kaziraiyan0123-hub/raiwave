@@ -4,6 +4,7 @@ import {
   ChevronRight,
   Search,
   X,
+  Radio,
 } from 'lucide-react'
 import { usePlayer } from '../context/PlayerContext'
 
@@ -16,6 +17,8 @@ export const TopNav: React.FC = () => {
     playCustomUrlOrId,
     userProfile,
     toggleProfile,
+    isNotificationOpen,
+    toggleNotification,
   } = usePlayer()
   const [urlMessage, setUrlMessage] = useState('')
 
@@ -89,8 +92,22 @@ export const TopNav: React.FC = () => {
         </div>
       </div>
 
-      {/* Right side: User Profile Avatar */}
+      {/* Right side: Floating Notification Card Toggle & User Profile Avatar */}
       <div className="flex items-center gap-2.5">
+        {/* Floating Notification Card Toggle Button */}
+        <button
+          onClick={toggleNotification}
+          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-heading font-semibold transition-all border cursor-pointer ${
+            isNotificationOpen
+              ? 'bg-purple-500/15 border-purple-500/30 text-[#A78BFA] shadow-[0_0_12px_rgba(139,92,246,0.25)]'
+              : 'bg-[#12141D] border-white/10 text-[#94A3B8] hover:text-white'
+          }`}
+          title={isNotificationOpen ? 'Hide Floating Notification Card' : 'Show Floating Notification Card'}
+        >
+          <Radio className="w-3.5 h-3.5 text-[#8B5CF6]" />
+          <span className="hidden sm:inline">Notification Card</span>
+        </button>
+
         <button
           data-testid="profile-trigger"
           onClick={toggleProfile}

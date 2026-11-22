@@ -73,9 +73,9 @@ export const MobileTopBar: React.FC = () => {
           <img
             src={userProfile.avatarUrl}
             alt="Profile"
-            className="w-8 h-8 rounded-full object-cover border border-[#B6F36B]/50 shadow-sm"
+            className="w-8 h-8 rounded-full object-cover border border-[#8B5CF6]/50 shadow-sm"
           />
-          <span className="absolute bottom-0 right-0 w-2 h-2 rounded-full bg-[#B6F36B] ring-2 ring-[#090D13]" />
+          <span className="absolute bottom-0 right-0 w-2 h-2 rounded-full bg-[#8B5CF6] ring-2 ring-[#0B0D13]" />
         </div>
       </div>
     </header>
