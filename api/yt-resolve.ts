@@ -111,6 +111,8 @@ async function findExactSongVideoId(query: string, excludeIds: string[] = []): P
   // Strict Title Matching: Candidates MUST have words matching the requested title!
   const scored: Array<Candidate & { score: number }> = []
 
+  const queryParts = query.split(/[-–|]+/).map((s) => s.trim()).filter(Boolean)
+
   const wantsRemix =
     query.toLowerCase().includes('remix') ||
     query.toLowerCase().includes('cover') ||
@@ -159,6 +161,20 @@ async function findExactSongVideoId(query: string, excludeIds: string[] = []): P
     if (subtitleLower.includes('video •')) score += 80
     if (titleLower.includes('official')) score += 100
     if (titleLower.includes('lyrics') || titleLower.includes('lyrical')) score += 60
+
+    // Exact or Core title match bonus
+    const coreTitle = c.title.split(/[-–|:(\[]+/)[0].trim().toLowerCase()
+    const normCore = coreTitle.replace(/[^a-z0-9]/g, '')
+    if (queryParts.some((p) => p.toLowerCase().replace(/[^a-z0-9]/g, '') === normCore)) {
+      score += 350
+    }
+
+    // Divergent words penalty in core title (prevents picking tracks with completely different extra words)
+    const coreWords = extractKeywords(c.title.split(/[-–|:(\[]+/)[0])
+    const extraWords = coreWords.filter(
+      (tw) => !qWords.some((qw) => qw === tw || qw.includes(tw) || tw.includes(qw))
+    )
+    score -= extraWords.length * 60
 
     if (!wantsRemix) {
       if (titleLower.includes('cover')) score -= 150

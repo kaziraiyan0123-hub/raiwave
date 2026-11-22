@@ -233,7 +233,7 @@ export async function searchGlobalMusic(query: string): Promise<Track[]> {
   const merged: Track[] = []
   const seenKeys = new Set<string>()
 
-  // Insert YouTube Music tracks first (already verified official media)
+  // Insert YouTube Music tracks first (already verified official media with direct playback IDs)
   for (const t of ytTracks) {
     const key = `${normalizeStr(t.title)}_${normalizeStr(t.artist)}`
     if (!seenKeys.has(key)) {
@@ -242,12 +242,15 @@ export async function searchGlobalMusic(query: string): Promise<Track[]> {
     }
   }
 
-  // Merge iTunes tracks
-  for (const t of itunesTracks) {
-    const key = `${normalizeStr(t.title)}_${normalizeStr(t.artist)}`
-    if (!seenKeys.has(key)) {
-      seenKeys.add(key)
-      merged.push(t)
+  // Only append iTunes tracks if we have fewer than 10 verified YouTube tracks,
+  // preventing obscure outsider songs from burying real official studio releases.
+  if (ytTracks.length < 10) {
+    for (const t of itunesTracks) {
+      const key = `${normalizeStr(t.title)}_${normalizeStr(t.artist)}`
+      if (!seenKeys.has(key)) {
+        seenKeys.add(key)
+        merged.push(t)
+      }
     }
   }
 
@@ -274,28 +277,31 @@ export async function searchGlobalMusic(query: string): Promise<Track[]> {
       if (titleWordsA.some((w) => w === qw || w.includes(qw))) scoreA += 180
       if (titleWordsB.some((w) => w === qw || w.includes(qw))) scoreB += 180
 
-      if (artistA.includes(qw)) scoreA += 120
-      if (artistB.includes(qw)) scoreB += 120
+      if (artistA.includes(qw)) scoreA += 140
+      if (artistB.includes(qw)) scoreB += 140
     }
 
-    // Exact Title match (+350)
-    if (normalizeStr(a.title) === normQuery) scoreA += 350
-    if (normalizeStr(b.title) === normQuery) scoreB += 350
+    // Exact Title match or Core Title match (handles "SHEI TUMI - AYUB BACHCHU", "Alo - Tahsan", etc.)
+    const coreTitlesA = a.title.split(/[-–|:(\[]+/).map((p) => normalizeStr(p.trim())).filter(Boolean)
+    const coreTitlesB = b.title.split(/[-–|:(\[]+/).map((p) => normalizeStr(p.trim())).filter(Boolean)
 
-    // YouTube verified track bonus (+30)
-    if (a.youtubeId) scoreA += 30
-    if (b.youtubeId) scoreB += 30
+    if (normalizeStr(a.title) === normQuery || coreTitlesA.includes(normQuery)) scoreA += 400
+    if (normalizeStr(b.title) === normQuery || coreTitlesB.includes(normQuery)) scoreB += 400
+
+    // Direct YouTube verified stream bonus (+300) so verified playable tracks ALWAYS take priority over unverified tracks
+    if (a.youtubeId) scoreA += 300
+    if (b.youtubeId) scoreB += 300
 
     // Penalize covers and remixes if not requested
     if (!wantsRemix) {
-      if (titleA.includes('cover')) scoreA -= 150
-      if (titleB.includes('cover')) scoreB -= 150
+      if (titleA.includes('cover')) scoreA -= 200
+      if (titleB.includes('cover')) scoreB -= 200
 
-      if (titleA.includes('lofi') || titleA.includes('lo-fi')) scoreA -= 90
-      if (titleB.includes('lofi') || titleB.includes('lo-fi')) scoreB -= 90
+      if (titleA.includes('lofi') || titleA.includes('lo-fi')) scoreA -= 100
+      if (titleB.includes('lofi') || titleB.includes('lo-fi')) scoreB -= 100
 
-      if (titleA.includes('remix')) scoreA -= 80
-      if (titleB.includes('remix')) scoreB -= 80
+      if (titleA.includes('remix')) scoreA -= 90
+      if (titleB.includes('remix')) scoreB -= 90
 
       if (titleA.includes('slowed') || titleA.includes('reverb')) scoreA -= 90
       if (titleB.includes('slowed') || titleB.includes('reverb')) scoreB -= 90

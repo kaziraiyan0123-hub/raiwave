@@ -580,12 +580,14 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   }, [])
 
   useEffect(() => {
-    if (isPlaying) {
+    // Only use background silent audio if in standard HTML5 audio engine.
+    // When YouTube engine is active, playing backgroundAudioRef steals Android audio focus from the YouTube iframe!
+    if (isPlaying && currentEngineRef.current === 'audio') {
       backgroundAudioRef.current?.play().catch(() => {})
     } else {
       backgroundAudioRef.current?.pause()
     }
-  }, [isPlaying])
+  }, [isPlaying, activeEngine])
 
   // Live Synced Lyrics fetcher
   useEffect(() => {
@@ -715,6 +717,9 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     currentTrackRef.current = track
     setCurrentTime(0)
     setDuration(track.duration || 180)
+    if (shouldPlay) {
+      setIsPlaying(true)
+    }
 
     showToast(`▶ Now Playing: ${track.title} • ${track.artist}`)
 

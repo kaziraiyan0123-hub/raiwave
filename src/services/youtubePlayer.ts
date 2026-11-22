@@ -132,12 +132,20 @@ class YouTubeService {
               this.pendingVideoId = null
               this.pendingPlayOnReady = false
               event.target.loadVideoById(vid)
+              try {
+                event.target.playVideo()
+              } catch {}
             } else if (this.pendingPlayOnReady && this.pendingSearchQuery) {
               const q = this.pendingSearchQuery
               this.pendingSearchQuery = null
               this.pendingPlayOnReady = false
               this.loadSearchQuery(q).then((vid) => {
-                if (vid) event.target.loadVideoById(vid)
+                if (vid) {
+                  event.target.loadVideoById(vid)
+                  try {
+                    event.target.playVideo()
+                  } catch {}
+                }
               })
             }
           },
@@ -157,6 +165,12 @@ class YouTubeService {
                 return
               }
               this.onStateChangeCb?.('paused')
+            } else if (event.data === ps.CUED) {
+              if (!this.isExplicitlyPaused) {
+                try {
+                  this.player?.playVideo()
+                } catch {}
+              }
             } else if (event.data === ps.ENDED) {
               this.onStateChangeCb?.('ended')
             } else if (event.data === ps.BUFFERING) {

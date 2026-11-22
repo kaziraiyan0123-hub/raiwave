@@ -57,13 +57,16 @@ public class MediaNotificationService extends Service {
         audioManager = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
         audioFocusChangeListener = focusChange -> {
             switch (focusChange) {
-                case AudioManager.AUDIOFOCUS_LOSS_TRANSIENT:
-                case AudioManager.AUDIOFOCUS_LOSS_TRANSIENT_CAN_DUCK:
                 case AudioManager.AUDIOFOCUS_LOSS:
+                    // Genuine permanent focus loss to another application (e.g. Phone call)
                     MainActivity.handleMediaAction("pause");
                     break;
+                case AudioManager.AUDIOFOCUS_LOSS_TRANSIENT:
+                case AudioManager.AUDIOFOCUS_LOSS_TRANSIENT_CAN_DUCK:
+                    // Transient loss (notifications, system chimes, or internal WebView handshake)
+                    // Never pause the music! Let audio continue smoothly.
+                    break;
                 case AudioManager.AUDIOFOCUS_GAIN:
-                    MainActivity.handleMediaAction("play");
                     break;
             }
         };

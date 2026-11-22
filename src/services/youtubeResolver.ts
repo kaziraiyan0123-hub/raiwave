@@ -44,6 +44,23 @@ const PREMAPPED_CATALOG: Record<string, string> = {
   'alo tahsan': 'Bwf4trcMoMA',
   'chris lake - beggin': '6i0HqJ1tRn8',
   'chris lake, aluna - beggin': '6i0HqJ1tRn8',
+  'shei tumi': '04FxMouVtic',
+  'shei tumi - ayub bachchu': '04FxMouVtic',
+  'ayub bachchu - shei tumi': '04FxMouVtic',
+  'shei tumi ayub bachchu': '04FxMouVtic',
+  'ayub bachchu shei tumi': '04FxMouVtic',
+  'lrb - shei tumi': '04FxMouVtic',
+  'shei tumi - lrb': '04FxMouVtic',
+  'sidhu - shei tumi': 'DqVlwhZe4zc',
+  'shei tumi - sidhu': 'DqVlwhZe4zc',
+  'shei tumi sidhu': 'DqVlwhZe4zc',
+  'sidhu shei tumi': 'DqVlwhZe4zc',
+  'musicana - shei tumi': '04FxMouVtic',
+  'shei tumi - musicana': '04FxMouVtic',
+  'shei tumi musicana': '04FxMouVtic',
+  'tanisha aziz - shei tumi': 'kYKzhFo2RKQ',
+  'shei tumi - tanisha aziz': 'kYKzhFo2RKQ',
+  'shei tumi tanisha aziz': 'kYKzhFo2RKQ',
 }
 
 function normalizeKey(str: string): string {
