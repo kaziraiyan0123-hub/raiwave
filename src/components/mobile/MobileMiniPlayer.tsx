@@ -4,7 +4,15 @@ import { usePlayer } from '../../context/PlayerContext'
 import { EqualizerBars } from '../EqualizerBars'
 
 export const MobileMiniPlayer: React.FC = () => {
-  const { currentTrack, isPlaying, togglePlay, toggleMobilePlayer, currentTime, duration } = usePlayer()
+  const {
+    currentTrack,
+    isPlaying,
+    togglePlay,
+    toggleMobilePlayer,
+    currentTime,
+    duration,
+    dynamicTheme,
+  } = usePlayer()
 
   if (!currentTrack) return null
 
@@ -17,11 +25,18 @@ export const MobileMiniPlayer: React.FC = () => {
       onClick={toggleMobilePlayer}
       className="md:hidden fixed bottom-[84px] left-3.5 right-3.5 z-30 cursor-pointer select-none group transition-all"
     >
-      <div className="bg-[#131520]/95 backdrop-blur-2xl border border-white/10 rounded-2xl p-2.5 shadow-2xl shadow-black/90 flex items-center justify-between gap-3 relative overflow-hidden transition-all duration-200 active:scale-[0.99]">
+      <div
+        className="bg-[#131520]/95 backdrop-blur-2xl border rounded-2xl p-2.5 flex items-center justify-between gap-3 relative overflow-hidden transition-all duration-200 active:scale-[0.99]"
+        style={{
+          borderColor: dynamicTheme.borderColor,
+          boxShadow: `0 10px 30px rgba(0,0,0,0.85), 0 0 20px ${dynamicTheme.surfaceGlow}`,
+          transition: 'border-color 800ms ease, box-shadow 800ms ease',
+        }}
+      >
         {/* Subtle Ambient Color Glow */}
         <div
           className="absolute -inset-1 opacity-20 blur-xl pointer-events-none transition-all duration-700"
-          style={{ backgroundColor: currentTrack.color || '#8B5CF6' }}
+          style={{ backgroundColor: dynamicTheme.primary }}
         />
 
         {/* Track Artwork + Details */}
@@ -40,7 +55,7 @@ export const MobileMiniPlayer: React.FC = () => {
           </div>
 
           <div className="flex flex-col min-w-0">
-            <span className="text-xs font-bold text-white truncate font-heading group-hover:text-[#A78BFA] transition-colors">
+            <span className="text-xs font-bold text-white truncate font-heading group-hover:text-white/80 transition-colors">
               {currentTrack.title}
             </span>
             <span className="text-[11px] text-[#94A3B8] truncate">
@@ -56,7 +71,12 @@ export const MobileMiniPlayer: React.FC = () => {
               e.stopPropagation()
               togglePlay()
             }}
-            className="w-9 h-9 rounded-full bg-gradient-to-r from-[#8B5CF6] to-[#7C3AED] text-white flex items-center justify-center hover:scale-105 active:scale-95 transition-transform shadow-lg shadow-purple-500/30"
+            className="w-9 h-9 rounded-full text-white flex items-center justify-center hover:scale-105 active:scale-95 transition-all"
+            style={{
+              background: `linear-gradient(135deg, ${dynamicTheme.primary} 0%, ${dynamicTheme.secondary} 100%)`,
+              boxShadow: `0 4px 14px ${dynamicTheme.accentGlow}`,
+              transition: 'all 600ms ease',
+            }}
             title={isPlaying ? 'Pause' : 'Play'}
           >
             {isPlaying ? (
@@ -70,8 +90,11 @@ export const MobileMiniPlayer: React.FC = () => {
         {/* Slim Bottom Progress Line */}
         <div className="absolute bottom-0 inset-x-0 h-0.5 bg-white/10">
           <div
-            className="h-full bg-gradient-to-r from-[#8B5CF6] to-[#A78BFA] transition-all duration-300"
-            style={{ width: `${progressPercent}%` }}
+            className="h-full transition-all duration-300"
+            style={{
+              width: `${progressPercent}%`,
+              background: `linear-gradient(90deg, ${dynamicTheme.secondary} 0%, ${dynamicTheme.primary} 100%)`,
+            }}
           />
         </div>
       </div>

@@ -8,6 +8,11 @@ import { realtimeMusicService } from '../services/realtimeMusicService'
 import { fetchLiveLyrics } from '../services/lyricsService'
 import { offlineService } from '../services/offlineService'
 import { smartQueueService } from '../services/smartQueueService'
+import {
+  extractPaletteFromImage,
+  generatePaletteFromColor,
+  type DynamicPalette,
+} from '../services/colorExtractionService'
 import type { LyricLine } from '../types'
 
 interface PlayerContextType {
@@ -125,6 +130,9 @@ interface PlayerContextType {
 
   // Mood Stations
   playMoodStation: (moodTitle: string, tag: string) => Promise<void>
+
+  // Dynamic Album-Art Theme
+  dynamicTheme: DynamicPalette
 }
 
 const PlayerContext = createContext<PlayerContextType | null>(null)
@@ -234,6 +242,38 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   })
   const [isProfileOpen, setIsProfileOpen] = useState<boolean>(false)
   const toggleProfile = () => setIsProfileOpen((prev) => !prev)
+
+  // Dynamic Album-Art-Based Theme Palette
+  const [dynamicTheme, setDynamicTheme] = useState<DynamicPalette>(() =>
+    generatePaletteFromColor('#8B5CF6')
+  )
+
+  // Extract and smoothly apply dynamic theme when currentTrack changes
+  useEffect(() => {
+    let isMounted = true
+    if (currentTrack) {
+      extractPaletteFromImage(
+        currentTrack.coverUrl,
+        currentTrack.color,
+        `${currentTrack.title}-${currentTrack.artist}`
+      ).then((palette) => {
+        if (isMounted) {
+          setDynamicTheme(palette)
+          if (typeof document !== 'undefined') {
+            const root = document.documentElement
+            root.style.setProperty('--accent-primary', palette.primary)
+            root.style.setProperty('--accent-secondary', palette.secondary)
+            root.style.setProperty('--accent-glow', palette.accentGlow)
+            root.style.setProperty('--accent-surface', palette.surfaceGlow)
+            root.style.setProperty('--accent-border', palette.borderColor)
+          }
+        }
+      })
+    }
+    return () => {
+      isMounted = false
+    }
+  }, [currentTrack?.coverUrl, currentTrack?.color, currentTrack?.title])
 
   // Android Music Notification Card State
   const [isNotificationOpen, setIsNotificationOpen] = useState<boolean>(true)
@@ -1255,6 +1295,7 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         realtimeRecommended,
         isLoadingRealtime,
         refreshRealtimeMusic,
+        dynamicTheme,
       }}
     >
       {children}

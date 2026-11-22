@@ -54,6 +54,7 @@ export const AndroidMediaNotificationCard: React.FC = () => {
     liveLyrics,
     queue,
     queueIndex,
+    dynamicTheme,
   } = usePlayer()
 
   // Audio Output Selector state
@@ -87,7 +88,7 @@ export const AndroidMediaNotificationCard: React.FC = () => {
 
   const progressPercent = duration > 0 ? (currentTime / duration) * 100 : 0
   const liked = isLiked(currentTrack.id)
-  const accentColor = currentTrack.color || '#8B5CF6'
+  const accentColor = dynamicTheme.primary
 
   // Find active synchronized lyric line if available
   const activeLyric = liveLyrics?.length
@@ -124,8 +125,10 @@ export const AndroidMediaNotificationCard: React.FC = () => {
         }`}
         style={{
           background: isNotificationExpanded
-            ? `radial-gradient(ellipse at 50% 12%, ${accentColor}33 0%, rgba(15, 12, 24, 0.94) 80%, rgba(10, 8, 16, 0.98) 100%)`
-            : `radial-gradient(ellipse at 25% 20%, ${accentColor}28 0%, rgba(18, 14, 30, 0.88) 100%)`,
+            ? `radial-gradient(ellipse at 50% 12%, ${dynamicTheme.accentGlow} 0%, rgba(15, 12, 24, 0.94) 80%, rgba(10, 8, 16, 0.98) 100%)`
+            : `radial-gradient(ellipse at 25% 20%, ${dynamicTheme.surfaceGlow} 0%, rgba(18, 14, 30, 0.88) 100%)`,
+          borderColor: dynamicTheme.borderColor,
+          transition: 'background 800ms ease, border-color 800ms ease, box-shadow 800ms ease',
         }}
       >
         {/* Dynamic Ambient Background Glow */}
@@ -345,7 +348,7 @@ export const AndroidMediaNotificationCard: React.FC = () => {
                     className="h-full rounded-full transition-all duration-75"
                     style={{
                       width: `${progressPercent}%`,
-                      background: `linear-gradient(90deg, #A78BFA 0%, ${accentColor} 100%)`,
+                      background: `linear-gradient(90deg, ${dynamicTheme.secondary} 0%, ${dynamicTheme.primary} 100%)`,
                     }}
                   />
                 </div>
@@ -509,8 +512,11 @@ export const AndroidMediaNotificationCard: React.FC = () => {
                 <div className="relative flex items-center w-20 sm:w-24 group">
                   <div className="h-1.5 w-full rounded-full bg-white/15 overflow-hidden">
                     <div
-                      className="h-full bg-gradient-to-r from-purple-400 to-[#8B5CF6] rounded-full"
-                      style={{ width: `${(isMuted ? 0 : volume) * 100}%` }}
+                      className="h-full rounded-full transition-all"
+                      style={{
+                        width: `${(isMuted ? 0 : volume) * 100}%`,
+                        background: `linear-gradient(90deg, ${dynamicTheme.secondary} 0%, ${dynamicTheme.primary} 100%)`,
+                      }}
                     />
                   </div>
                   <input

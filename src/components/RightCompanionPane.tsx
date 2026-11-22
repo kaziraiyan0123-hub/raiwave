@@ -19,6 +19,7 @@ export const RightCompanionPane: React.FC = () => {
     toggleLike,
     playTrack,
     navigateTo,
+    dynamicTheme,
   } = usePlayer()
 
   const [activeTab, setActiveTab] = useState<'liked' | 'queue'>('liked')
@@ -48,7 +49,7 @@ export const RightCompanionPane: React.FC = () => {
         {/* Dynamic color glow */}
         <div
           className="absolute -top-10 -right-10 w-40 h-40 rounded-full opacity-25 blur-2xl pointer-events-none transition-all duration-700"
-          style={{ backgroundColor: activeTrack.color || '#8B5CF6' }}
+          style={{ backgroundColor: dynamicTheme.primary }}
         />
 
         <div className="flex items-center justify-between text-xs z-10">

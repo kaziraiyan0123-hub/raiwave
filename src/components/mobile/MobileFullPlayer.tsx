@@ -41,6 +41,7 @@ export const MobileFullPlayer: React.FC = () => {
     isLoadingLyrics,
     saveOffline,
     isOffline,
+    dynamicTheme,
   } = usePlayer()
 
   const [showInlineLyrics, setShowInlineLyrics] = useState(false)
@@ -163,7 +164,7 @@ export const MobileFullPlayer: React.FC = () => {
       {/* Dynamic Ambient Glow Background */}
       <div
         className="absolute -top-32 left-1/2 -translate-x-1/2 w-[420px] h-[420px] rounded-full opacity-35 blur-[120px] pointer-events-none transition-all duration-1000"
-        style={{ backgroundColor: currentTrack.color || '#8B5CF6' }}
+        style={{ backgroundColor: dynamicTheme.primary }}
       />
       <div className="absolute inset-0 bg-gradient-to-b from-transparent via-[#0B0D13]/75 to-[#0B0D13] pointer-events-none" />
 
@@ -179,8 +180,8 @@ export const MobileFullPlayer: React.FC = () => {
         </button>
 
         <div className="flex flex-col items-center">
-          <span className="text-[10px] font-bold uppercase tracking-widest text-[#A78BFA] font-heading flex items-center gap-1">
-            <Sparkles className="w-3 h-3 text-[#8B5CF6]" />
+          <span className="text-[10px] font-bold uppercase tracking-widest font-heading flex items-center gap-1" style={{ color: dynamicTheme.secondary }}>
+            <Sparkles className="w-3 h-3" style={{ color: dynamicTheme.primary }} />
             <span>LOSSLESS FREQUENCY</span>
           </span>
           <span className="text-xs font-semibold text-white/90 truncate max-w-[200px]">
@@ -190,11 +191,11 @@ export const MobileFullPlayer: React.FC = () => {
 
         <button
           onClick={() => saveOffline(currentTrack)}
-          className="w-10 h-10 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-white/80 hover:text-[#A78BFA] active:scale-95 transition-all"
+          className="w-10 h-10 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-white/80 hover:text-white active:scale-95 transition-all"
           title={downloaded ? 'Saved Offline' : 'Download Song Offline'}
         >
           {downloaded ? (
-            <CheckCircle2 className="w-5 h-5 text-[#8B5CF6]" />
+            <CheckCircle2 className="w-5 h-5" style={{ color: dynamicTheme.primary }} />
           ) : (
             <ArrowDownToLine className="w-5 h-5" />
           )}
@@ -207,28 +208,30 @@ export const MobileFullPlayer: React.FC = () => {
           <>
             {/* Dynamic Music Beat Waves & Radial Sound Spectrum */}
             <div className="relative w-72 h-72 sm:w-80 sm:h-80 flex items-center justify-center">
-              {/* Concentric Acoustic Shockwave Rings (replacing static green circle line) */}
+              {/* Concentric Acoustic Shockwave Rings */}
               {isPlaying && (
                 <>
                   <div
-                    className="absolute inset-2 rounded-full border border-purple-500/30 pointer-events-none transition-all duration-75"
+                    className="absolute inset-2 rounded-full border pointer-events-none transition-all duration-75"
                     style={{
                       transform: `scale(${1 + kickPulse * 0.12})`,
                       opacity: 0.3 + kickPulse * 0.7,
+                      borderColor: dynamicTheme.borderColor,
                     }}
                   />
                   <div
-                    className="absolute -inset-2 rounded-full border border-violet-400/25 pointer-events-none transition-all duration-100"
+                    className="absolute -inset-2 rounded-full border pointer-events-none transition-all duration-100"
                     style={{
                       transform: `scale(${1 + kickPulse * 0.08})`,
                       opacity: 0.2 + kickPulse * 0.5,
+                      borderColor: dynamicTheme.borderColor,
                     }}
                   />
                   <div className="absolute -inset-6 rounded-full border border-white/5 pointer-events-none" />
                 </>
               )}
 
-              {/* 40 Animated Radial Soundwave Beat Bars radiating outward */}
+              {/* 40 Animated Radial Soundwave Beat Bars radiating outward (Visualizer) */}
               <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
                 {barAngles.map((angle, idx) => {
                   const barHeight = visualizerHeights[idx] || 8
@@ -242,14 +245,16 @@ export const MobileFullPlayer: React.FC = () => {
                       }}
                     >
                       <div
-                        className={`w-1 rounded-full transition-all duration-75 ${
-                          isPlaying
+                        className="w-1 rounded-full transition-all duration-75"
+                        style={{
+                          height: `${barHeight}px`,
+                          backgroundColor: isPlaying
                             ? idx % 2 === 0
-                              ? 'bg-[#8B5CF6] shadow-[0_0_10px_#8B5CF6]'
-                              : 'bg-[#A78BFA] shadow-[0_0_10px_#A78BFA]'
-                            : 'bg-white/20'
-                        }`}
-                        style={{ height: `${barHeight}px` }}
+                              ? dynamicTheme.primary
+                              : dynamicTheme.secondary
+                            : 'rgba(255, 255, 255, 0.2)',
+                          boxShadow: isPlaying ? `0 0 10px ${dynamicTheme.primary}80` : undefined,
+                        }}
                       />
                     </div>
                   )
@@ -261,7 +266,7 @@ export const MobileFullPlayer: React.FC = () => {
                 className="w-52 h-52 sm:w-56 sm:h-56 rounded-full overflow-hidden p-2.5 border-2 border-white/10 shadow-[0_0_50px_rgba(0,0,0,0.9)] relative group transition-transform duration-75"
                 style={{
                   transform: isPlaying ? `scale(${1 + kickPulse * 0.045})` : 'scale(1)',
-                  boxShadow: isPlaying ? `0 0 ${35 + kickPulse * 30}px ${currentTrack.color || '#8B5CF6'}50` : undefined,
+                  boxShadow: isPlaying ? `0 0 ${35 + kickPulse * 30}px ${dynamicTheme.accentGlow}` : undefined,
                 }}
               >
                 <img
@@ -288,9 +293,8 @@ export const MobileFullPlayer: React.FC = () => {
                 title={liked ? 'Unlike' : 'Like song'}
               >
                 <Heart
-                  className={`w-5 h-5 transition-colors ${
-                    liked ? 'text-[#8B5CF6] fill-[#8B5CF6]' : 'text-[#94A3B8]'
-                  }`}
+                  className="w-5 h-5 transition-colors"
+                  style={liked ? { color: dynamicTheme.primary, fill: dynamicTheme.primary } : { color: '#94A3B8' }}
                 />
               </button>
             </div>
@@ -359,8 +363,11 @@ export const MobileFullPlayer: React.FC = () => {
           <div className="relative flex-1 h-3 flex items-center group slider-container">
             <div className="absolute inset-x-0 h-1.5 bg-[#181B27] rounded-full overflow-hidden">
               <div
-                className="h-full bg-gradient-to-r from-[#8B5CF6] to-[#A78BFA] transition-all duration-150"
-                style={{ width: `${progressPercent}%` }}
+                className="h-full transition-all duration-150"
+                style={{
+                  width: `${progressPercent}%`,
+                  background: `linear-gradient(90deg, ${dynamicTheme.secondary} 0%, ${dynamicTheme.primary} 100%)`,
+                }}
               />
             </div>
             <input
@@ -382,9 +389,8 @@ export const MobileFullPlayer: React.FC = () => {
         <div className="flex items-center justify-between px-4">
           <button
             onClick={toggleShuffle}
-            className={`p-2 transition-colors active:scale-90 ${
-              isShuffle ? 'text-[#8B5CF6]' : 'text-[#94A3B8] hover:text-white'
-            }`}
+            className="p-2 transition-colors active:scale-90"
+            style={isShuffle ? { color: dynamicTheme.primary } : { color: '#94A3B8' }}
             title="Shuffle"
           >
             <Shuffle className="w-5 h-5" />
@@ -392,7 +398,7 @@ export const MobileFullPlayer: React.FC = () => {
 
           <button
             onClick={prevTrack}
-            className="p-2 text-white hover:text-[#A78BFA] active:scale-90 transition-all"
+            className="p-2 text-white hover:text-white/80 active:scale-90 transition-all"
             title="Previous track"
           >
             <SkipBack className="w-7 h-7 fill-white" />
@@ -401,7 +407,12 @@ export const MobileFullPlayer: React.FC = () => {
           {/* Central Play Button */}
           <button
             onClick={togglePlay}
-            className="w-16 h-16 rounded-full bg-gradient-to-r from-[#8B5CF6] to-[#7C3AED] text-white flex items-center justify-center hover:scale-105 active:scale-95 transition-transform shadow-[0_0_30px_rgba(139,92,246,0.5)] z-10 border border-purple-400/30"
+            className="w-16 h-16 rounded-full text-white flex items-center justify-center hover:scale-105 active:scale-95 transition-all z-10 border"
+            style={{
+              background: `linear-gradient(135deg, ${dynamicTheme.primary} 0%, ${dynamicTheme.secondary} 100%)`,
+              boxShadow: `0 0 30px ${dynamicTheme.accentGlow}`,
+              borderColor: dynamicTheme.borderColor,
+            }}
             title={isPlaying ? 'Pause' : 'Play'}
           >
             {isPlaying ? (
@@ -413,7 +424,7 @@ export const MobileFullPlayer: React.FC = () => {
 
           <button
             onClick={nextTrack}
-            className="p-2 text-white hover:text-[#A78BFA] active:scale-90 transition-all"
+            className="p-2 text-white hover:text-white/80 active:scale-90 transition-all"
             title="Next track"
           >
             <SkipForward className="w-7 h-7 fill-white" />
@@ -421,9 +432,8 @@ export const MobileFullPlayer: React.FC = () => {
 
           <button
             onClick={toggleRepeat}
-            className={`p-2 transition-colors active:scale-90 ${
-              repeatMode !== 'off' ? 'text-[#8B5CF6]' : 'text-[#94A3B8] hover:text-white'
-            }`}
+            className="p-2 transition-colors active:scale-90"
+            style={repeatMode !== 'off' ? { color: dynamicTheme.primary } : { color: '#94A3B8' }}
             title={`Repeat: ${repeatMode}`}
           >
             {repeatMode === 'one' ? (
