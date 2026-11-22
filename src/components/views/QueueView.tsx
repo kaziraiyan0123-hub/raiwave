@@ -32,10 +32,10 @@ export const QueueView: React.FC = () => {
       {/* Queue Header with Smart Autoplay Switch */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-white/10 pb-4">
         <div className="flex items-center gap-3">
-          <ListMusic className="w-8 h-8 text-[#B6F36B]" />
+          <ListMusic className="w-8 h-8 text-[#8B5CF6]" />
           <div>
             <h1 className="text-3xl font-black text-white tracking-tight font-display">Play Queue</h1>
-            <p className="text-xs text-[#929DA8]">Up next on RAIWAVE lossless stream</p>
+            <p className="text-xs text-[#94A3B8]">Up next on RAIWAVE lossless stream</p>
           </div>
         </div>
 
@@ -44,8 +44,8 @@ export const QueueView: React.FC = () => {
           onClick={toggleSmartQueue}
           className={`flex items-center gap-2 px-4 py-2 rounded-full border text-xs font-bold font-heading transition-all ${
             isSmartQueueEnabled
-              ? 'bg-[#B6F36B]/15 border-[#B6F36B]/40 text-[#B6F36B] shadow-[0_0_15px_rgba(182,243,107,0.25)]'
-              : 'bg-white/5 border-white/10 text-[#929DA8]'
+              ? 'bg-[#8B5CF6]/15 border-[#8B5CF6]/40 text-[#8B5CF6] shadow-[0_0_15px_rgba(182,243,107,0.25)]'
+              : 'bg-white/5 border-white/10 text-[#94A3B8]'
           }`}
           title="Smart Queue automatically queues matching songs when queue ends"
         >
@@ -57,8 +57,8 @@ export const QueueView: React.FC = () => {
       {/* 1. Now Playing Section */}
       {currentTrack && (
         <section>
-          <h2 className="text-xs uppercase tracking-wider font-bold text-[#929DA8] mb-3">Now Playing</h2>
-          <div className="flex items-center justify-between p-4 bg-[#141A23] hover:bg-[#1B232E] rounded-xl group transition-colors border border-[#202A34]">
+          <h2 className="text-xs uppercase tracking-wider font-bold text-[#94A3B8] mb-3">Now Playing</h2>
+          <div className="flex items-center justify-between p-4 bg-[#12141D] hover:bg-[#181B27] rounded-xl group transition-colors border border-[#202A34]">
             <div className="flex items-center gap-4 min-w-0">
               <div className="relative w-14 h-14 rounded-lg overflow-hidden flex-shrink-0 shadow-md">
                 <img src={currentTrack.coverUrl} alt={currentTrack.title} className="w-full h-full object-cover" />
@@ -76,16 +76,16 @@ export const QueueView: React.FC = () => {
 
               <div className="truncate">
                 <div className="flex items-center gap-2">
-                  <p className="text-base font-bold text-[#B6F36B] truncate">{currentTrack.title}</p>
-                  {isPlaying && <EqualizerBars size="sm" color="bg-[#B6F36B]" />}
+                  <p className="text-base font-bold text-[#8B5CF6] truncate">{currentTrack.title}</p>
+                  {isPlaying && <EqualizerBars size="sm" color="bg-[#8B5CF6]" />}
                 </div>
-                <p className="text-sm text-[#929DA8] truncate">{currentTrack.artist}</p>
+                <p className="text-sm text-[#94A3B8] truncate">{currentTrack.artist}</p>
               </div>
             </div>
 
-            <div className="flex items-center gap-4 text-xs text-[#929DA8] font-mono flex-shrink-0">
-              <span className="text-xs px-2.5 py-1 rounded-full bg-[#B6F36B]/15 text-[#B6F36B] font-bold uppercase tracking-wider border border-[#B6F36B]/30 flex items-center gap-1.5">
-                <span className="w-2 h-2 rounded-full bg-[#B6F36B] animate-pulse" />
+            <div className="flex items-center gap-4 text-xs text-[#94A3B8] font-mono flex-shrink-0">
+              <span className="text-xs px-2.5 py-1 rounded-full bg-[#8B5CF6]/15 text-[#8B5CF6] font-bold uppercase tracking-wider border border-[#8B5CF6]/30 flex items-center gap-1.5">
+                <span className="w-2 h-2 rounded-full bg-[#8B5CF6] animate-pulse" />
                 Lossless
               </span>
               <span>{formatDuration(currentTrack.duration)}</span>
@@ -97,15 +97,15 @@ export const QueueView: React.FC = () => {
       {/* 2. Next Up Queue */}
       <section>
         <div className="flex items-center justify-between mb-3">
-          <h2 className="text-xs uppercase tracking-wider font-bold text-[#929DA8]">Next Up</h2>
-          <span className="text-xs text-[#929DA8] font-mono">{upcomingQueue.length} tracks</span>
+          <h2 className="text-xs uppercase tracking-wider font-bold text-[#94A3B8]">Next Up</h2>
+          <span className="text-xs text-[#94A3B8] font-mono">{upcomingQueue.length} tracks</span>
         </div>
 
         {upcomingQueue.length === 0 ? (
-          <div className="py-12 text-center text-[#929DA8] bg-[#141A23]/50 rounded-xl border border-dashed border-[#202A34]">
-            <Music className="w-8 h-8 mx-auto mb-2 text-[#929DA8]/60" />
+          <div className="py-12 text-center text-[#94A3B8] bg-[#12141D]/50 rounded-xl border border-dashed border-[#202A34]">
+            <Music className="w-8 h-8 mx-auto mb-2 text-[#94A3B8]/60" />
             <p className="text-sm font-semibold text-white">Queue is empty</p>
-            <p className="text-xs text-[#929DA8] mt-1">
+            <p className="text-xs text-[#94A3B8] mt-1">
               {isSmartQueueEnabled
                 ? 'Smart Autoplay will automatically play related tracks next.'
                 : 'Add tracks from Home, Explore, or Library.'}
@@ -119,24 +119,24 @@ export const QueueView: React.FC = () => {
                 <div
                   key={`${track.id}-${i}`}
                   onClick={() => playTrack(track, queue)}
-                  className="flex items-center justify-between p-3 rounded-xl bg-[#141A23]/60 hover:bg-[#1B232E] border border-transparent hover:border-[#202A34] cursor-pointer group transition-all"
+                  className="flex items-center justify-between p-3 rounded-xl bg-[#12141D]/60 hover:bg-[#181B27] border border-transparent hover:border-[#202A34] cursor-pointer group transition-all"
                 >
                   <div className="flex items-center gap-4 min-w-0">
-                    <span className="text-xs font-mono text-[#929DA8] w-4 text-center">{i + 1}</span>
+                    <span className="text-xs font-mono text-[#94A3B8] w-4 text-center">{i + 1}</span>
                     <img
                       src={track.coverUrl}
                       alt={track.title}
                       className="w-10 h-10 rounded-lg object-cover flex-shrink-0"
                     />
                     <div className="truncate">
-                      <p className="text-sm font-semibold text-white truncate group-hover:text-[#B6F36B] transition-colors">
+                      <p className="text-sm font-semibold text-white truncate group-hover:text-[#8B5CF6] transition-colors">
                         {track.title}
                       </p>
-                      <p className="text-xs text-[#929DA8] truncate">{track.artist}</p>
+                      <p className="text-xs text-[#94A3B8] truncate">{track.artist}</p>
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-4 text-xs text-[#929DA8] flex-shrink-0">
+                  <div className="flex items-center gap-4 text-xs text-[#94A3B8] flex-shrink-0">
                     <span className="font-mono">{formatDuration(track.duration)}</span>
                     <button
                       onClick={(e) => {
@@ -144,7 +144,7 @@ export const QueueView: React.FC = () => {
                         removeFromQueue(actualQueueIdx)
                       }}
                       title="Remove from queue"
-                      className="opacity-0 group-hover:opacity-100 p-1.5 rounded-lg hover:bg-white/10 text-[#929DA8] hover:text-red-400 transition-all"
+                      className="opacity-0 group-hover:opacity-100 p-1.5 rounded-lg hover:bg-white/10 text-[#94A3B8] hover:text-red-400 transition-all"
                     >
                       <Trash2 className="w-4 h-4" />
                     </button>
@@ -166,14 +166,14 @@ export const QueueView: React.FC = () => {
                 Smart Queue Recommendations
               </h2>
             </div>
-            <span className="text-[11px] text-[#929DA8]">Matched to your vibe</span>
+            <span className="text-[11px] text-[#94A3B8]">Matched to your vibe</span>
           </div>
 
           <div className="space-y-2">
             {smartSuggestions.slice(0, 5).map((sugTrack) => (
               <div
                 key={sugTrack.id}
-                className="flex items-center justify-between p-3 rounded-xl bg-[#141A23]/40 hover:bg-[#1B232E] border border-white/5 transition-all group"
+                className="flex items-center justify-between p-3 rounded-xl bg-[#12141D]/40 hover:bg-[#181B27] border border-white/5 transition-all group"
               >
                 <div
                   onClick={() => playTrack(sugTrack, [...queue, sugTrack])}
@@ -185,10 +185,10 @@ export const QueueView: React.FC = () => {
                     className="w-10 h-10 rounded-lg object-cover flex-shrink-0"
                   />
                   <div className="truncate">
-                    <p className="text-sm font-semibold text-white truncate group-hover:text-[#B6F36B] transition-colors">
+                    <p className="text-sm font-semibold text-white truncate group-hover:text-[#8B5CF6] transition-colors">
                       {sugTrack.title}
                     </p>
-                    <p className="text-xs text-[#929DA8] truncate">{sugTrack.artist}</p>
+                    <p className="text-xs text-[#94A3B8] truncate">{sugTrack.artist}</p>
                   </div>
                 </div>
 
@@ -199,7 +199,7 @@ export const QueueView: React.FC = () => {
 
                   <button
                     onClick={() => addToQueue(sugTrack)}
-                    className="p-1.5 rounded-lg bg-white/5 hover:bg-[#B6F36B] hover:text-[#090D13] text-[#929DA8] transition-all flex items-center gap-1 text-xs font-semibold"
+                    className="p-1.5 rounded-lg bg-white/5 hover:bg-[#8B5CF6] hover:text-[#0B0D13] text-[#94A3B8] transition-all flex items-center gap-1 text-xs font-semibold"
                     title="Add to queue"
                   >
                     <Plus className="w-4 h-4" />

@@ -8,7 +8,7 @@ interface EqualizerBarsProps {
 
 export const EqualizerBars: React.FC<EqualizerBarsProps> = ({
   size = 'md',
-  color = 'bg-[#B6F36B]',
+  color = 'bg-[#8B5CF6]',
   className = '',
 }) => {
   if (size === 'sm') {

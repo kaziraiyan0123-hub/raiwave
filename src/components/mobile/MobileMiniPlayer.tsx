@@ -17,11 +17,11 @@ export const MobileMiniPlayer: React.FC = () => {
       onClick={toggleMobilePlayer}
       className="md:hidden fixed bottom-[84px] left-3.5 right-3.5 z-30 cursor-pointer select-none group transition-all"
     >
-      <div className="bg-[#141A23]/95 backdrop-blur-2xl border border-white/10 rounded-2xl p-2.5 shadow-2xl shadow-black/90 flex items-center justify-between gap-3 relative overflow-hidden transition-all duration-200 active:scale-[0.99]">
+      <div className="bg-[#131520]/95 backdrop-blur-2xl border border-white/10 rounded-2xl p-2.5 shadow-2xl shadow-black/90 flex items-center justify-between gap-3 relative overflow-hidden transition-all duration-200 active:scale-[0.99]">
         {/* Subtle Ambient Color Glow */}
         <div
           className="absolute -inset-1 opacity-20 blur-xl pointer-events-none transition-all duration-700"
-          style={{ backgroundColor: currentTrack.color || '#B6F36B' }}
+          style={{ backgroundColor: currentTrack.color || '#8B5CF6' }}
         />
 
         {/* Track Artwork + Details */}
@@ -40,10 +40,10 @@ export const MobileMiniPlayer: React.FC = () => {
           </div>
 
           <div className="flex flex-col min-w-0">
-            <span className="text-xs font-bold text-white truncate font-heading group-hover:text-[#B6F36B] transition-colors">
+            <span className="text-xs font-bold text-white truncate font-heading group-hover:text-[#A78BFA] transition-colors">
               {currentTrack.title}
             </span>
-            <span className="text-[11px] text-[#929DA8] truncate">
+            <span className="text-[11px] text-[#94A3B8] truncate">
               {currentTrack.artist}
             </span>
           </div>
@@ -56,13 +56,13 @@ export const MobileMiniPlayer: React.FC = () => {
               e.stopPropagation()
               togglePlay()
             }}
-            className="w-9 h-9 rounded-full bg-[#B6F36B] text-[#090D13] flex items-center justify-center hover:scale-105 active:scale-95 transition-transform shadow-lg shadow-[#B6F36B]/20"
+            className="w-9 h-9 rounded-full bg-gradient-to-r from-[#8B5CF6] to-[#7C3AED] text-white flex items-center justify-center hover:scale-105 active:scale-95 transition-transform shadow-lg shadow-purple-500/30"
             title={isPlaying ? 'Pause' : 'Play'}
           >
             {isPlaying ? (
-              <Pause className="w-4 h-4 fill-[#090D13]" />
+              <Pause className="w-4 h-4 fill-white" />
             ) : (
-              <Play className="w-4 h-4 fill-[#090D13] ml-0.5" />
+              <Play className="w-4 h-4 fill-white ml-0.5" />
             )}
           </button>
         </div>
@@ -70,7 +70,7 @@ export const MobileMiniPlayer: React.FC = () => {
         {/* Slim Bottom Progress Line */}
         <div className="absolute bottom-0 inset-x-0 h-0.5 bg-white/10">
           <div
-            className="h-full bg-[#B6F36B] transition-all duration-300"
+            className="h-full bg-gradient-to-r from-[#8B5CF6] to-[#A78BFA] transition-all duration-300"
             style={{ width: `${progressPercent}%` }}
           />
         </div>

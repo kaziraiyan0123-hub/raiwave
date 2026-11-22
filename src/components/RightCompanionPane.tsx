@@ -42,18 +42,18 @@ export const RightCompanionPane: React.FC = () => {
       : queue
 
   return (
-    <aside className="hidden xl:flex flex-col w-72 bg-[#090D13] h-full p-3 gap-3 flex-shrink-0 select-none border-l border-white/5">
+    <aside className="hidden xl:flex flex-col w-72 bg-[#0B0D13] h-full p-3 gap-3 flex-shrink-0 select-none border-l border-white/5">
       {/* 1. Top Hits / Now Playing Card (from Image 5) */}
-      <div className="bg-[#141A23]/90 backdrop-blur-xl border border-white/10 rounded-2xl p-4 shadow-xl flex flex-col gap-3 relative overflow-hidden group">
+      <div className="bg-[#12141D]/90 backdrop-blur-xl border border-white/10 rounded-2xl p-4 shadow-xl flex flex-col gap-3 relative overflow-hidden group">
         {/* Dynamic color glow */}
         <div
           className="absolute -top-10 -right-10 w-40 h-40 rounded-full opacity-25 blur-2xl pointer-events-none transition-all duration-700"
-          style={{ backgroundColor: activeTrack.color || '#B6F36B' }}
+          style={{ backgroundColor: activeTrack.color || '#8B5CF6' }}
         />
 
         <div className="flex items-center justify-between text-xs z-10">
           <div className="flex items-center gap-1.5 font-bold font-heading text-white">
-            <Sparkles className="w-3.5 h-3.5 text-[#B6F36B]" />
+            <Sparkles className="w-3.5 h-3.5 text-[#A78BFA]" />
             <span>{currentTrack ? 'Now Playing' : 'Ready to Stream'}</span>
           </div>
           {isPlaying && <EqualizerBars size="sm" />}
@@ -66,14 +66,14 @@ export const RightCompanionPane: React.FC = () => {
             alt={activeTrack.title}
             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
           />
-          <div className="absolute inset-0 bg-gradient-to-t from-[#090D13]/80 via-transparent to-transparent pointer-events-none" />
+          <div className="absolute inset-0 bg-gradient-to-t from-[#0B0D13]/80 via-transparent to-transparent pointer-events-none" />
           <button
             onClick={() => toggleLike(activeTrack.id)}
             className="absolute top-2.5 right-2.5 w-8 h-8 rounded-full bg-black/60 backdrop-blur-md flex items-center justify-center text-white/80 hover:text-white transition-colors"
           >
             <Heart
               className={`w-4 h-4 ${
-                liked ? 'text-[#B6F36B] fill-[#B6F36B]' : 'hover:text-white'
+                liked ? 'text-[#8B5CF6] fill-[#8B5CF6]' : 'hover:text-white'
               }`}
             />
           </button>
@@ -81,18 +81,18 @@ export const RightCompanionPane: React.FC = () => {
 
         {/* Info */}
         <div className="flex flex-col z-10">
-          <h4 className="text-sm font-bold text-white truncate font-heading group-hover:text-[#B6F36B] transition-colors">
+          <h4 className="text-sm font-bold text-white truncate font-heading group-hover:text-[#A78BFA] transition-colors">
             {activeTrack.title}
           </h4>
-          <p className="text-xs text-[#929DA8] truncate">{activeTrack.artist}</p>
+          <p className="text-xs text-[#94A3B8] truncate">{activeTrack.artist}</p>
         </div>
 
         {/* Waveform Scrubber Slider */}
         <div className="flex flex-col gap-1 z-10">
           <div className="relative h-2 flex items-center group slider-container">
-            <div className="absolute inset-x-0 h-1 bg-[#202A34] rounded-full overflow-hidden">
+            <div className="absolute inset-x-0 h-1 bg-[#181B27] rounded-full overflow-hidden">
               <div
-                className="h-full bg-[#B6F36B] transition-all duration-150"
+                className="h-full bg-gradient-to-r from-[#8B5CF6] to-[#A78BFA] transition-all duration-150"
                 style={{ width: `${progressPercent}%` }}
               />
             </div>
@@ -106,7 +106,7 @@ export const RightCompanionPane: React.FC = () => {
               className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
             />
           </div>
-          <div className="flex items-center justify-between text-[10px] font-mono text-[#929DA8]">
+          <div className="flex items-center justify-between text-[10px] font-mono text-[#94A3B8]">
             <span>{formatTime(currentTime)}</span>
             <span>{formatTime(duration)}</span>
           </div>
@@ -116,7 +116,7 @@ export const RightCompanionPane: React.FC = () => {
         <div className="flex items-center justify-center gap-4 z-10 pt-1">
           <button
             onClick={prevTrack}
-            className="p-1.5 text-[#929DA8] hover:text-white transition-colors active:scale-95"
+            className="p-1.5 text-[#94A3B8] hover:text-white transition-colors active:scale-95"
             title="Previous"
           >
             <SkipBack className="w-4 h-4 fill-current" />
@@ -130,7 +130,7 @@ export const RightCompanionPane: React.FC = () => {
                 playTrack(activeTrack, queue)
               }
             }}
-            className="w-10 h-10 rounded-full bg-[#B6F36B] text-[#090D13] flex items-center justify-center hover:scale-105 active:scale-95 transition-transform shadow-lg shadow-[#B6F36B]/30"
+            className="w-10 h-10 rounded-full bg-gradient-to-r from-[#8B5CF6] to-[#7C3AED] text-white flex items-center justify-center hover:scale-105 active:scale-95 transition-transform shadow-lg shadow-purple-500/30"
             title={isPlaying ? 'Pause' : 'Play'}
           >
             {isPlaying ? (
@@ -142,7 +142,7 @@ export const RightCompanionPane: React.FC = () => {
 
           <button
             onClick={nextTrack}
-            className="p-1.5 text-[#929DA8] hover:text-white transition-colors active:scale-95"
+            className="p-1.5 text-[#94A3B8] hover:text-white transition-colors active:scale-95"
             title="Next"
           >
             <SkipForward className="w-4 h-4 fill-current" />
@@ -151,27 +151,27 @@ export const RightCompanionPane: React.FC = () => {
       </div>
 
       {/* 2. My Library / Quick List Section (from Image 5) */}
-      <div className="bg-[#141A23]/80 backdrop-blur-xl border border-white/5 rounded-2xl p-3 flex-1 flex flex-col overflow-hidden shadow-xl">
+      <div className="bg-[#12141D]/80 backdrop-blur-xl border border-white/5 rounded-2xl p-3 flex-1 flex flex-col overflow-hidden shadow-xl">
         <div className="flex items-center justify-between px-1 mb-2">
           <span className="text-xs font-bold text-white font-heading">
-            My Library <span className="text-[#929DA8] font-normal font-mono">({likedTrackIds.length})</span>
+            My Library <span className="text-[#94A3B8] font-normal font-mono">({likedTrackIds.length})</span>
           </span>
           <button
             onClick={() => navigateTo('library')}
-            className="text-[11px] text-[#B6F36B] hover:underline"
+            className="text-[11px] text-[#A78BFA] hover:underline"
           >
             View all
           </button>
         </div>
 
         {/* Tab Pills */}
-        <div className="flex items-center gap-1.5 p-1 bg-[#090D13] rounded-xl border border-white/5 mb-2">
+        <div className="flex items-center gap-1.5 p-1 bg-[#0B0D13] rounded-xl border border-white/5 mb-2">
           <button
             onClick={() => setActiveTab('liked')}
             className={`flex-1 py-1 rounded-lg text-[11px] font-semibold transition-all ${
               activeTab === 'liked'
-                ? 'bg-[#B6F36B] text-[#090D13]'
-                : 'text-[#929DA8] hover:text-white'
+                ? 'bg-gradient-to-r from-[#8B5CF6] to-[#7C3AED] text-white'
+                : 'text-[#94A3B8] hover:text-white'
             }`}
           >
             Liked
@@ -180,8 +180,8 @@ export const RightCompanionPane: React.FC = () => {
             onClick={() => setActiveTab('queue')}
             className={`flex-1 py-1 rounded-lg text-[11px] font-semibold transition-all ${
               activeTab === 'queue'
-                ? 'bg-[#B6F36B] text-[#090D13]'
-                : 'text-[#929DA8] hover:text-white'
+                ? 'bg-gradient-to-r from-[#8B5CF6] to-[#7C3AED] text-white'
+                : 'text-[#94A3B8] hover:text-white'
             }`}
           >
             Queue
@@ -211,16 +211,16 @@ export const RightCompanionPane: React.FC = () => {
                   <div className="flex flex-col truncate">
                     <span
                       className={`text-xs font-medium truncate ${
-                        isRowSelected ? 'text-[#B6F36B] font-bold' : 'text-white group-hover:text-[#B6F36B]'
+                        isRowSelected ? 'text-[#A78BFA] font-bold' : 'text-white group-hover:text-[#A78BFA]'
                       }`}
                     >
                       {track.title}
                     </span>
-                    <span className="text-[10px] text-[#929DA8] truncate">{track.artist}</span>
+                    <span className="text-[10px] text-[#94A3B8] truncate">{track.artist}</span>
                   </div>
                 </div>
 
-                <div className="flex items-center gap-1.5 flex-shrink-0 text-[10px] font-mono text-[#929DA8]">
+                <div className="flex items-center gap-1.5 flex-shrink-0 text-[10px] font-mono text-[#94A3B8]">
                   {isRowPlaying ? (
                     <EqualizerBars size="sm" />
                   ) : (

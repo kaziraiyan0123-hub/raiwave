@@ -24,7 +24,7 @@ export const MobileTopBar: React.FC = () => {
   }
 
   return (
-    <header className="md:hidden flex items-center justify-between gap-2.5 px-3.5 py-2.5 bg-[#090D13]/95 backdrop-blur-xl border-b border-white/5 sticky top-0 z-30 select-none">
+    <header className="md:hidden flex items-center justify-between gap-2.5 px-3.5 py-2.5 bg-[#0B0D13]/95 backdrop-blur-xl border-b border-white/5 sticky top-0 z-30 select-none">
       {/* Left: RAIWAVE Luminous Logo */}
       <div
         className="flex items-center cursor-pointer flex-shrink-0"
@@ -36,8 +36,8 @@ export const MobileTopBar: React.FC = () => {
 
       {/* Center: Real Full Search Bar (identical to PC version) */}
       <div className="relative flex-1">
-        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-[#929DA8]">
-          <Search className="w-3.5 h-3.5 text-[#B6F36B]" />
+        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-[#94A3B8]">
+          <Search className="w-3.5 h-3.5 text-[#8B5CF6]" />
         </div>
         <input
           type="text"
@@ -51,12 +51,12 @@ export const MobileTopBar: React.FC = () => {
             if (currentView !== 'search') navigateTo('search')
           }}
           onKeyDown={handleKeyDown}
-          className="w-full pl-8 pr-8 py-2 bg-[#141A23] focus:bg-[#1B232E] text-white text-xs font-medium rounded-full border border-white/10 focus:border-[#B6F36B] focus:outline-none transition-all placeholder-[#929DA8] shadow-inner"
+          className="w-full pl-8 pr-8 py-2 bg-[#12141D] focus:bg-[#181B27] text-white text-xs font-medium rounded-full border border-white/10 focus:border-[#8B5CF6] focus:outline-none transition-all placeholder-[#94A3B8] shadow-inner"
         />
         {searchQuery && (
           <button
             onClick={() => setSearchQuery('')}
-            className="absolute inset-y-0 right-0 pr-2.5 flex items-center text-[#929DA8] hover:text-white"
+            className="absolute inset-y-0 right-0 pr-2.5 flex items-center text-[#94A3B8] hover:text-white"
           >
             <X className="w-3.5 h-3.5" />
           </button>

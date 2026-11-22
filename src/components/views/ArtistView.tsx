@@ -59,17 +59,17 @@ export const ArtistView: React.FC = () => {
           <h1 className="text-5xl sm:text-7xl font-black text-white tracking-tight font-display">
             {selectedArtist.name}
           </h1>
-          <p className="text-sm font-semibold text-[#929DA8]">
+          <p className="text-sm font-semibold text-[#94A3B8]">
             {selectedArtist.monthlyListeners.toLocaleString()} monthly listeners
           </p>
         </div>
       </div>
 
       {/* Action Controls */}
-      <div className="px-8 py-5 flex items-center gap-6 bg-[#090D13]">
+      <div className="px-8 py-5 flex items-center gap-6 bg-[#0B0D13]">
         <button
           onClick={handlePlayAll}
-          className="w-14 h-14 rounded-full bg-[#B6F36B] hover:bg-[#a3e655] text-black flex items-center justify-center transition-transform hover:scale-105 active:scale-95 shadow-xl shadow-[#B6F36B]/20"
+          className="w-14 h-14 rounded-full bg-[#8B5CF6] hover:bg-[#a3e655] text-black flex items-center justify-center transition-transform hover:scale-105 active:scale-95 shadow-xl shadow-[#8B5CF6]/20"
         >
           {isArtistPlaying ? (
             <Pause className="w-6 h-6 fill-black text-black" />
@@ -82,8 +82,8 @@ export const ArtistView: React.FC = () => {
           onClick={() => setIsFollowing((prev) => !prev)}
           className={`px-5 py-2 rounded-full text-xs font-bold uppercase tracking-wider border transition-all ${
             isFollowing
-              ? 'border-[#B6F36B] text-[#B6F36B] bg-[#B6F36B]/10 hover:border-white hover:text-white'
-              : 'border-[#202A34] text-white hover:border-[#B6F36B] hover:text-[#B6F36B] hover:scale-105'
+              ? 'border-[#8B5CF6] text-[#8B5CF6] bg-[#8B5CF6]/10 hover:border-white hover:text-white'
+              : 'border-[#202A34] text-white hover:border-[#8B5CF6] hover:text-[#8B5CF6] hover:scale-105'
           }`}
         >
           {isFollowing ? 'Following' : 'Follow'}
@@ -91,7 +91,7 @@ export const ArtistView: React.FC = () => {
       </div>
 
       {/* Popular Tracks & Bio */}
-      <div className="px-8 bg-[#090D13] space-y-8">
+      <div className="px-8 bg-[#0B0D13] space-y-8">
         <section>
           <h2 className="text-2xl font-bold text-white mb-4 font-display">Popular Tracks</h2>
           <div className="space-y-1">
@@ -107,8 +107,8 @@ export const ArtistView: React.FC = () => {
                     if (isPlayingThis) togglePlay()
                     else playTrack(track, tracks)
                   }}
-                  className={`grid grid-cols-12 items-center px-4 py-2.5 rounded-xl hover:bg-[#141A23] group cursor-pointer transition-colors ${
-                    isSelectedThis ? 'bg-[#141A23]/80 border border-[#202A34]' : 'border border-transparent'
+                  className={`grid grid-cols-12 items-center px-4 py-2.5 rounded-xl hover:bg-[#12141D] group cursor-pointer transition-colors ${
+                    isSelectedThis ? 'bg-[#12141D]/80 border border-[#202A34]' : 'border border-transparent'
                   }`}
                 >
                   <div className="col-span-1 text-center text-sm font-medium flex items-center justify-center">
@@ -124,9 +124,9 @@ export const ArtistView: React.FC = () => {
                     </button>
                     <div className="group-hover:hidden flex items-center justify-center">
                       {isPlayingThis ? (
-                        <EqualizerBars size="sm" color="bg-[#B6F36B]" />
+                        <EqualizerBars size="sm" color="bg-[#8B5CF6]" />
                       ) : (
-                        <span className={`${isSelectedThis ? 'text-[#B6F36B] font-bold' : 'text-[#929DA8]'}`}>
+                        <span className={`${isSelectedThis ? 'text-[#8B5CF6] font-bold' : 'text-[#94A3B8]'}`}>
                           {idx + 1}
                         </span>
                       )}
@@ -136,14 +136,14 @@ export const ArtistView: React.FC = () => {
                   <div className="col-span-7 md:col-span-8 flex items-center gap-3 min-w-0 pr-2">
                     <img src={track.coverUrl} alt={track.title} className="w-10 h-10 rounded-lg object-cover flex-shrink-0" />
                     <div className="truncate">
-                      <p className={`text-sm font-semibold truncate ${isSelectedThis ? 'text-[#B6F36B]' : 'text-white'}`}>
+                      <p className={`text-sm font-semibold truncate ${isSelectedThis ? 'text-[#8B5CF6]' : 'text-white'}`}>
                         {track.title}
                       </p>
-                      <p className="text-xs text-[#929DA8] truncate">{track.genre}</p>
+                      <p className="text-xs text-[#94A3B8] truncate">{track.genre}</p>
                     </div>
                   </div>
 
-                  <div className="col-span-4 md:col-span-3 flex items-center justify-end gap-3 text-xs text-[#929DA8] pr-2">
+                  <div className="col-span-4 md:col-span-3 flex items-center justify-end gap-3 text-xs text-[#94A3B8] pr-2">
                     <button
                       onClick={(e) => {
                         e.stopPropagation()
@@ -151,7 +151,7 @@ export const ArtistView: React.FC = () => {
                       }}
                       className="opacity-0 group-hover:opacity-100 transition-opacity hover:scale-110"
                     >
-                      <Heart className={`w-4 h-4 ${liked ? 'text-[#B6F36B] fill-[#B6F36B] opacity-100' : 'hover:text-white'}`} />
+                      <Heart className={`w-4 h-4 ${liked ? 'text-[#8B5CF6] fill-[#8B5CF6] opacity-100' : 'hover:text-white'}`} />
                     </button>
                     <span className="font-mono">{formatDuration(track.duration)}</span>
                   </div>
@@ -164,15 +164,15 @@ export const ArtistView: React.FC = () => {
         {/* About Artist Section */}
         <section className="pb-12 border-t border-[#202A34] pt-8">
           <h3 className="text-xl font-bold text-white mb-3 font-display">About</h3>
-          <div className="bg-[#141A23] p-6 rounded-2xl border border-[#202A34] max-w-2xl space-y-3">
+          <div className="bg-[#12141D] p-6 rounded-2xl border border-[#202A34] max-w-2xl space-y-3">
             <div className="flex items-center gap-3">
               <img src={selectedArtist.avatarUrl} alt={selectedArtist.name} className="w-16 h-16 rounded-full object-cover border border-[#202A34]" />
               <div>
                 <p className="font-bold text-white text-lg font-display">{selectedArtist.name}</p>
-                <p className="text-xs text-[#929DA8]">Lossless Studio Artist • RAIWAVE Verified</p>
+                <p className="text-xs text-[#94A3B8]">Lossless Studio Artist • RAIWAVE Verified</p>
               </div>
             </div>
-            <p className="text-sm text-[#929DA8] leading-relaxed">
+            <p className="text-sm text-[#94A3B8] leading-relaxed">
               {selectedArtist.bio || `${selectedArtist.name} is one of the premier artists streamed on RAIWAVE with lossless studio audio quality and over ${selectedArtist.monthlyListeners.toLocaleString()} monthly listeners worldwide.`}
             </p>
           </div>

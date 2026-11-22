@@ -31,9 +31,9 @@ export const Sidebar: React.FC = () => {
 
   return (
     <>
-      <aside className="hidden md:flex flex-col w-64 bg-[#090D13] h-full select-none text-[#929DA8] p-3 gap-2 flex-shrink-0 border-r border-white/5">
+      <aside className="hidden md:flex flex-col w-64 bg-[#0B0D13] h-full select-none text-[#94A3B8] p-3 gap-2 flex-shrink-0 border-r border-white/5">
         {/* Top Brand & Navigation Block */}
-        <div className="bg-[#141A23]/80 backdrop-blur-xl border border-white/5 rounded-2xl p-4 flex flex-col gap-4 shadow-xl">
+        <div className="bg-[#12141D]/90 backdrop-blur-xl border border-white/5 rounded-2xl p-4 flex flex-col gap-4 shadow-xl">
           {/* Official RAIWAVE Logo */}
           <div
             onClick={() => navigateTo('home')}
@@ -47,11 +47,11 @@ export const Sidebar: React.FC = () => {
               onClick={() => navigateTo('home')}
               className={`flex items-center gap-3.5 px-3 py-2.5 rounded-xl font-medium text-xs font-heading transition-all ${
                 currentView === 'home'
-                  ? 'bg-[#B6F36B] text-[#090D13] font-bold shadow-[0_0_15px_rgba(182,243,107,0.3)]'
-                  : 'text-[#929DA8] hover:text-white hover:bg-white/5'
+                  ? 'bg-gradient-to-r from-[#8B5CF6] to-[#7C3AED] text-white font-bold shadow-[0_4px_16px_rgba(139,92,246,0.35)]'
+                  : 'text-[#94A3B8] hover:text-white hover:bg-white/5'
               }`}
             >
-              <Home className={`w-4 h-4 ${currentView === 'home' ? 'text-[#090D13] stroke-[2.5]' : ''}`} />
+              <Home className={`w-4 h-4 ${currentView === 'home' ? 'text-white stroke-[2.5]' : ''}`} />
               <span>Home</span>
             </button>
 
@@ -59,11 +59,11 @@ export const Sidebar: React.FC = () => {
               onClick={() => navigateTo('explore')}
               className={`flex items-center gap-3.5 px-3 py-2.5 rounded-xl font-medium text-xs font-heading transition-all ${
                 currentView === 'explore'
-                  ? 'bg-[#B6F36B] text-[#090D13] font-bold shadow-[0_0_15px_rgba(182,243,107,0.3)]'
-                  : 'text-[#929DA8] hover:text-white hover:bg-white/5'
+                  ? 'bg-gradient-to-r from-[#8B5CF6] to-[#7C3AED] text-white font-bold shadow-[0_4px_16px_rgba(139,92,246,0.35)]'
+                  : 'text-[#94A3B8] hover:text-white hover:bg-white/5'
               }`}
             >
-              <Compass className={`w-4 h-4 ${currentView === 'explore' ? 'text-[#090D13] stroke-[2.5]' : ''}`} />
+              <Compass className={`w-4 h-4 ${currentView === 'explore' ? 'text-white stroke-[2.5]' : ''}`} />
               <span>Explore</span>
             </button>
 
@@ -71,24 +71,24 @@ export const Sidebar: React.FC = () => {
               onClick={() => navigateTo('search')}
               className={`flex items-center gap-3.5 px-3 py-2.5 rounded-xl font-medium text-xs font-heading transition-all ${
                 currentView === 'search'
-                  ? 'bg-[#B6F36B] text-[#090D13] font-bold shadow-[0_0_15px_rgba(182,243,107,0.3)]'
-                  : 'text-[#929DA8] hover:text-white hover:bg-white/5'
+                  ? 'bg-gradient-to-r from-[#8B5CF6] to-[#7C3AED] text-white font-bold shadow-[0_4px_16px_rgba(139,92,246,0.35)]'
+                  : 'text-[#94A3B8] hover:text-white hover:bg-white/5'
               }`}
             >
-              <Search className={`w-4 h-4 ${currentView === 'search' ? 'text-[#090D13] stroke-[2.5]' : ''}`} />
+              <Search className={`w-4 h-4 ${currentView === 'search' ? 'text-white stroke-[2.5]' : ''}`} />
               <span>Search</span>
             </button>
           </nav>
         </div>
 
         {/* Library & Playlists Block */}
-        <div className="bg-[#141A23]/80 backdrop-blur-xl border border-white/5 rounded-2xl p-3 flex-1 flex flex-col overflow-hidden shadow-xl">
+        <div className="bg-[#12141D]/90 backdrop-blur-xl border border-white/5 rounded-2xl p-3 flex-1 flex flex-col overflow-hidden shadow-xl">
           {/* Header */}
           <div className="flex items-center justify-between px-2 py-2 mb-1">
             <button
               onClick={() => navigateTo('library')}
               className={`flex items-center gap-2.5 font-bold text-xs font-heading transition-colors ${
-                currentView === 'library' ? 'text-[#B6F36B]' : 'text-[#929DA8] hover:text-white'
+                currentView === 'library' ? 'text-[#A78BFA]' : 'text-[#94A3B8] hover:text-white'
               }`}
             >
               <Bookmark className="w-4 h-4" />
@@ -98,7 +98,7 @@ export const Sidebar: React.FC = () => {
             <button
               onClick={() => setIsModalOpen(true)}
               title="Create playlist"
-              className="w-7 h-7 rounded-lg text-[#929DA8] hover:text-white bg-white/5 hover:bg-white/10 flex items-center justify-center transition-all active:scale-95"
+              className="w-7 h-7 rounded-lg text-[#94A3B8] hover:text-white bg-white/5 hover:bg-white/10 flex items-center justify-center transition-all active:scale-95"
             >
               <Plus className="w-4 h-4" />
             </button>
@@ -110,16 +110,16 @@ export const Sidebar: React.FC = () => {
               onClick={() => navigateTo('liked')}
               className={`flex items-center gap-3 px-2 py-2 rounded-xl text-xs font-medium transition-all ${
                 isLikedActive
-                  ? 'bg-[#202A34] text-white font-semibold border border-white/10'
-                  : 'text-[#929DA8] hover:text-white hover:bg-white/5'
+                  ? 'bg-[#181B27] text-white font-semibold border border-purple-500/20'
+                  : 'text-[#94A3B8] hover:text-white hover:bg-white/5'
               }`}
             >
-              <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-[#52D6C9] to-[#8B5CF6] flex items-center justify-center flex-shrink-0 shadow-md">
+              <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-[#8B5CF6] to-[#6D28D9] flex items-center justify-center flex-shrink-0 shadow-md">
                 <Heart className="w-3.5 h-3.5 text-white fill-white" />
               </div>
               <div className="flex flex-col text-left truncate">
                 <span className="truncate">Liked Songs</span>
-                <span className="text-[10px] text-[#929DA8]">{likedTrackIds.length} tracks</span>
+                <span className="text-[10px] text-[#94A3B8]">{likedTrackIds.length} tracks</span>
               </div>
             </button>
           </div>
@@ -135,16 +135,16 @@ export const Sidebar: React.FC = () => {
                   onClick={() => openPlaylist(pl)}
                   className={`w-full flex items-center gap-3 px-2 py-2 rounded-xl text-left transition-colors text-xs ${
                     isSelected
-                      ? 'bg-[#202A34] text-[#B6F36B] font-semibold border border-white/10'
-                      : 'text-[#929DA8] hover:text-white hover:bg-white/5'
+                      ? 'bg-[#181B27] text-[#A78BFA] font-semibold border border-purple-500/20'
+                      : 'text-[#94A3B8] hover:text-white hover:bg-white/5'
                   }`}
                 >
-                  <div className="w-7 h-7 rounded-lg bg-[#202A34] flex items-center justify-center text-[#929DA8] flex-shrink-0">
+                  <div className="w-7 h-7 rounded-lg bg-[#181B27] flex items-center justify-center text-[#94A3B8] flex-shrink-0">
                     <Music2 className="w-3.5 h-3.5" />
                   </div>
                   <div className="flex flex-col truncate">
                     <span className="truncate">{pl.name}</span>
-                    <span className="text-[10px] text-[#929DA8]">{pl.tracks.length} tracks</span>
+                    <span className="text-[10px] text-[#94A3B8]">{pl.tracks.length} tracks</span>
                   </div>
                 </button>
               )
@@ -159,8 +159,8 @@ export const Sidebar: React.FC = () => {
                   onClick={() => openPlaylist(pl)}
                   className={`w-full flex items-center gap-3 px-2 py-2 rounded-xl text-left transition-colors text-xs ${
                     isSelected
-                      ? 'bg-[#202A34] text-[#B6F36B] font-semibold border border-white/10'
-                      : 'text-[#929DA8] hover:text-white hover:bg-white/5'
+                      ? 'bg-[#181B27] text-[#A78BFA] font-semibold border border-purple-500/20'
+                      : 'text-[#94A3B8] hover:text-white hover:bg-white/5'
                   }`}
                 >
                   <img
@@ -170,7 +170,7 @@ export const Sidebar: React.FC = () => {
                   />
                   <div className="flex flex-col truncate">
                     <span className="truncate">{pl.name}</span>
-                    <span className="text-[10px] text-[#929DA8] truncate">{pl.owner}</span>
+                    <span className="text-[10px] text-[#94A3B8] truncate">{pl.owner}</span>
                   </div>
                 </button>
               )
@@ -186,20 +186,20 @@ export const Sidebar: React.FC = () => {
               title="Direct 1-tap download of RAIWAVE.apk for Android (no GitHub required)"
             >
               <div className="flex items-center gap-2">
-                <Smartphone className="w-3.5 h-3.5 text-[#B6F36B] group-hover:scale-110 transition-transform" />
+                <Smartphone className="w-3.5 h-3.5 text-[#A78BFA] group-hover:scale-110 transition-transform" />
                 <span>Get Mobile App</span>
               </div>
-              <span className="text-[10px] text-[#52D6C9] font-mono font-bold">APK (5MB)</span>
+              <span className="text-[10px] text-[#A78BFA] font-mono font-bold">APK (5MB)</span>
             </a>
           </div>
 
           {/* Bottom High-Res Audio Badge */}
-          <div className="mt-2 pt-2 border-t border-white/5 flex items-center justify-between text-[10px] text-[#929DA8] px-2 font-mono">
+          <div className="mt-2 pt-2 border-t border-white/5 flex items-center justify-between text-[10px] text-[#94A3B8] px-2 font-mono">
             <span className="flex items-center gap-1">
-              <Sparkles className="w-3 h-3 text-[#B6F36B]" />
+              <Sparkles className="w-3 h-3 text-[#A78BFA]" />
               <span>LOSSLESS AUDIO</span>
             </span>
-            <span className="text-[#B6F36B] font-bold">320kbps</span>
+            <span className="text-[#A78BFA] font-bold">320kbps</span>
           </div>
         </div>
       </aside>

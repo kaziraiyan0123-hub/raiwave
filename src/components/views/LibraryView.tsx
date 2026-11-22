@@ -38,19 +38,19 @@ export const LibraryView: React.FC = () => {
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-[#B6F36B]/15 border border-[#B6F36B]/30 flex items-center justify-center text-[#B6F36B]">
+            <div className="w-10 h-10 rounded-2xl bg-[#8B5CF6]/15 border border-[#8B5CF6]/30 flex items-center justify-center text-[#8B5CF6]">
               <Bookmark className="w-5 h-5" />
             </div>
             <div>
               <h1 className="text-2xl sm:text-3xl font-black text-white font-display tracking-tight">Your Library</h1>
-              <p className="text-xs text-[#929DA8]">Maintained under {userProfile.email}</p>
+              <p className="text-xs text-[#94A3B8]">Maintained under {userProfile.email}</p>
             </div>
           </div>
 
           <div className="flex items-center gap-2">
             <button
               onClick={() => setIsModalOpen(true)}
-              className="flex items-center gap-1.5 px-4 py-2 bg-[#B6F36B] hover:bg-[#a3e655] text-[#090D13] rounded-full text-xs font-bold font-display transition-all hover:scale-105 active:scale-95 shadow-md shadow-[#B6F36B]/20"
+              className="flex items-center gap-1.5 px-4 py-2 bg-[#8B5CF6] hover:bg-[#a3e655] text-[#0B0D13] rounded-full text-xs font-bold font-display transition-all hover:scale-105 active:scale-95 shadow-md shadow-[#8B5CF6]/20"
             >
               <Plus className="w-4 h-4" />
               <span>New Playlist</span>
@@ -66,8 +66,8 @@ export const LibraryView: React.FC = () => {
               onClick={() => setActiveFilter(filter)}
               className={`px-4 py-1.5 rounded-full text-xs font-display capitalize transition-all ${
                 activeFilter === filter
-                  ? 'bg-[#B6F36B] text-[#090D13] font-bold shadow-[0_0_15px_rgba(182,243,107,0.3)]'
-                  : 'bg-[#141A23] hover:bg-[#1B232E] text-[#929DA8] hover:text-white border border-[#202A34] font-semibold'
+                  ? 'bg-[#8B5CF6] text-[#0B0D13] font-bold shadow-[0_0_15px_rgba(182,243,107,0.3)]'
+                  : 'bg-[#12141D] hover:bg-[#181B27] text-[#94A3B8] hover:text-white border border-[#202A34] font-semibold'
               }`}
             >
               {filter === 'offline' ? `Offline (${offlineTrackIds.length})` : filter}
@@ -89,10 +89,10 @@ export const LibraryView: React.FC = () => {
             </div>
 
             {savedOfflineTracks.length === 0 ? (
-              <div className="p-6 rounded-2xl bg-[#141A23]/50 border border-dashed border-[#202A34] text-center space-y-1">
-                <Music className="w-8 h-8 text-[#929DA8] mx-auto mb-2" />
+              <div className="p-6 rounded-2xl bg-[#12141D]/50 border border-dashed border-[#202A34] text-center space-y-1">
+                <Music className="w-8 h-8 text-[#94A3B8] mx-auto mb-2" />
                 <p className="text-sm font-semibold text-white font-heading">No offline tracks saved yet</p>
-                <p className="text-xs text-[#929DA8]">
+                <p className="text-xs text-[#94A3B8]">
                   Tap the download icon on any song to save and listen without internet.
                 </p>
               </div>
@@ -102,7 +102,7 @@ export const LibraryView: React.FC = () => {
                   <div
                     key={track.id}
                     onClick={() => playTrack(track, savedOfflineTracks)}
-                    className="flex items-center gap-3 p-3 rounded-2xl bg-[#141A23] hover:bg-[#1B232E] border border-white/5 cursor-pointer group transition-all"
+                    className="flex items-center gap-3 p-3 rounded-2xl bg-[#12141D] hover:bg-[#181B27] border border-white/5 cursor-pointer group transition-all"
                   >
                     <img
                       src={track.coverUrl}
@@ -110,12 +110,12 @@ export const LibraryView: React.FC = () => {
                       className="w-12 h-12 rounded-xl object-cover flex-shrink-0"
                     />
                     <div className="truncate flex-1 min-w-0">
-                      <p className="text-xs sm:text-sm font-bold text-white truncate group-hover:text-[#B6F36B] transition-colors">
+                      <p className="text-xs sm:text-sm font-bold text-white truncate group-hover:text-[#8B5CF6] transition-colors">
                         {track.title}
                       </p>
-                      <p className="text-[11px] text-[#929DA8] truncate">{track.artist}</p>
+                      <p className="text-[11px] text-[#94A3B8] truncate">{track.artist}</p>
                     </div>
-                    <CheckCircle2 className="w-4 h-4 text-[#B6F36B] flex-shrink-0" />
+                    <CheckCircle2 className="w-4 h-4 text-[#8B5CF6] flex-shrink-0" />
                   </div>
                 ))}
               </div>
@@ -127,7 +127,7 @@ export const LibraryView: React.FC = () => {
         {(activeFilter === 'all' || activeFilter === 'playlists') && (
           <div
             onClick={() => navigateTo('liked')}
-            className="p-5 rounded-3xl bg-gradient-to-r from-[#52D6C9]/20 via-[#1B232E] to-[#141A23] border border-[#52D6C9]/30 cursor-pointer group transition-all hover:border-[#52D6C9]/60 flex items-center justify-between"
+            className="p-5 rounded-3xl bg-gradient-to-r from-[#52D6C9]/20 via-[#181B27] to-[#12141D] border border-[#52D6C9]/30 cursor-pointer group transition-all hover:border-[#52D6C9]/60 flex items-center justify-between"
           >
             <div className="flex items-center gap-4">
               <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-[#52D6C9] to-[#8B5CF6] flex items-center justify-center shadow-lg group-hover:scale-105 transition-transform">
@@ -137,7 +137,7 @@ export const LibraryView: React.FC = () => {
                 <h3 className="text-base font-bold text-white font-display group-hover:text-[#52D6C9] transition-colors">
                   Liked Songs
                 </h3>
-                <p className="text-xs text-[#929DA8]">{likedTrackIds.length} tracks favorited</p>
+                <p className="text-xs text-[#94A3B8]">{likedTrackIds.length} tracks favorited</p>
               </div>
             </div>
             <span className="text-xs font-bold text-[#52D6C9] font-display uppercase tracking-wider group-hover:translate-x-1 transition-transform">
@@ -155,17 +155,17 @@ export const LibraryView: React.FC = () => {
                 <div
                   key={pl.id}
                   onClick={() => openPlaylist(pl)}
-                  className="p-3.5 rounded-2xl bg-[#141A23] hover:bg-[#1B232E] border border-[#202A34] cursor-pointer group transition-all hover:-translate-y-1 shadow-lg"
+                  className="p-3.5 rounded-2xl bg-[#12141D] hover:bg-[#181B27] border border-[#202A34] cursor-pointer group transition-all hover:-translate-y-1 shadow-lg"
                 >
                   <img
                     src={pl.coverUrl}
                     alt={pl.name}
                     className="w-full aspect-square object-cover rounded-xl mb-3 shadow group-hover:scale-105 transition-transform duration-300"
                   />
-                  <h4 className="text-sm font-bold text-white font-display truncate group-hover:text-[#B6F36B] transition-colors">
+                  <h4 className="text-sm font-bold text-white font-display truncate group-hover:text-[#8B5CF6] transition-colors">
                     {pl.name}
                   </h4>
-                  <p className="text-xs text-[#929DA8] truncate">{pl.tracks.length} tracks</p>
+                  <p className="text-xs text-[#94A3B8] truncate">{pl.tracks.length} tracks</p>
                 </div>
               ))}
             </div>
@@ -181,17 +181,17 @@ export const LibraryView: React.FC = () => {
                 <div
                   key={alb.id}
                   onClick={() => openAlbum(alb)}
-                  className="p-3.5 rounded-2xl bg-[#141A23] hover:bg-[#1B232E] border border-[#202A34] cursor-pointer group transition-all hover:-translate-y-1 shadow-lg"
+                  className="p-3.5 rounded-2xl bg-[#12141D] hover:bg-[#181B27] border border-[#202A34] cursor-pointer group transition-all hover:-translate-y-1 shadow-lg"
                 >
                   <img
                     src={alb.coverUrl}
                     alt={alb.title}
                     className="w-full aspect-square object-cover rounded-xl mb-3 shadow group-hover:scale-105 transition-transform duration-300"
                   />
-                  <h4 className="text-sm font-bold text-white font-display truncate group-hover:text-[#B6F36B] transition-colors">
+                  <h4 className="text-sm font-bold text-white font-display truncate group-hover:text-[#8B5CF6] transition-colors">
                     {alb.title}
                   </h4>
-                  <p className="text-xs text-[#929DA8] truncate">{alb.artist}</p>
+                  <p className="text-xs text-[#94A3B8] truncate">{alb.artist}</p>
                 </div>
               ))}
             </div>
@@ -207,17 +207,17 @@ export const LibraryView: React.FC = () => {
                 <div
                   key={art.id}
                   onClick={() => openArtist(art)}
-                  className="p-3.5 rounded-2xl bg-[#141A23] hover:bg-[#1B232E] border border-[#202A34] cursor-pointer group transition-all hover:-translate-y-1 text-center shadow-lg"
+                  className="p-3.5 rounded-2xl bg-[#12141D] hover:bg-[#181B27] border border-[#202A34] cursor-pointer group transition-all hover:-translate-y-1 text-center shadow-lg"
                 >
                   <img
                     src={art.avatarUrl}
                     alt={art.name}
                     className="w-24 h-24 mx-auto rounded-full object-cover mb-3 shadow-md group-hover:scale-105 transition-transform duration-300 border-2 border-[#202A34]"
                   />
-                  <h4 className="text-sm font-bold text-white font-display truncate group-hover:text-[#B6F36B] transition-colors">
+                  <h4 className="text-sm font-bold text-white font-display truncate group-hover:text-[#8B5CF6] transition-colors">
                     {art.name}
                   </h4>
-                  <p className="text-[11px] text-[#929DA8]">Artist</p>
+                  <p className="text-[11px] text-[#94A3B8]">Artist</p>
                 </div>
               ))}
             </div>

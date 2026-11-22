@@ -59,7 +59,7 @@ export const AndroidMediaNotificationCard: React.FC = () => {
   const progressPercent = duration > 0 ? (currentTime / duration) * 100 : 0
   const liked = isLiked(currentTrack.id)
   const isDark = notificationTheme === 'dark'
-  const accentColor = currentTrack.color || '#B6F36B'
+  const accentColor = currentTrack.color || '#8B5CF6'
 
   return (
     <div
@@ -71,7 +71,7 @@ export const AndroidMediaNotificationCard: React.FC = () => {
       <div
         className={`relative overflow-hidden rounded-3xl border transition-all duration-300 shadow-2xl ${
           isDark
-            ? 'bg-[#121620]/85 backdrop-blur-2xl border-white/10 text-white shadow-[0_25px_60px_rgba(0,0,0,0.7)]'
+            ? 'bg-[#12141D]/90 backdrop-blur-2xl border-white/10 text-white shadow-[0_25px_60px_rgba(0,0,0,0.7)]'
             : 'bg-[#FFFFFF]/90 backdrop-blur-2xl border-black/10 text-[#0F172A] shadow-[0_20px_45px_rgba(0,0,0,0.18)]'
         } ${isNotificationExpanded ? 'p-5' : 'p-3.5'}`}
       >
@@ -102,8 +102,8 @@ export const AndroidMediaNotificationCard: React.FC = () => {
             <div className="flex-1 min-w-0 pr-1">
               {/* Audio Destination / Device */}
               <div className="flex items-center gap-1.5 mb-0.5">
-                <span className="w-2 h-2 rounded-full bg-[#B6F36B] animate-pulse" />
-                <Radio className="w-3 h-3 text-[#52D6C9]" />
+                <span className="w-2 h-2 rounded-full bg-[#8B5CF6] animate-pulse" />
+                <Radio className="w-3 h-3 text-[#A78BFA]" />
                 <span
                   className={`text-[11px] font-semibold tracking-wide truncate ${
                     isDark ? 'text-white/70' : 'text-neutral-500'
@@ -326,7 +326,7 @@ export const AndroidMediaNotificationCard: React.FC = () => {
                 onClick={toggleShuffle}
                 className={`p-2 rounded-full transition-all active:scale-90 ${
                   isShuffle
-                    ? 'text-[#B6F36B] font-bold'
+                    ? 'text-[#8B5CF6] font-bold'
                     : isDark
                     ? 'text-white/60 hover:text-white'
                     : 'text-neutral-500 hover:text-neutral-900'
@@ -340,7 +340,7 @@ export const AndroidMediaNotificationCard: React.FC = () => {
               <button
                 onClick={prevTrack}
                 className={`p-2 rounded-full transition-all active:scale-90 ${
-                  isDark ? 'text-white hover:text-[#B6F36B]' : 'text-neutral-800 hover:text-black'
+                  isDark ? 'text-white hover:text-[#A78BFA]' : 'text-neutral-800 hover:text-black'
                 }`}
                 title="Previous track"
               >
@@ -371,7 +371,7 @@ export const AndroidMediaNotificationCard: React.FC = () => {
               <button
                 onClick={nextTrack}
                 className={`p-2 rounded-full transition-all active:scale-90 ${
-                  isDark ? 'text-white hover:text-[#B6F36B]' : 'text-neutral-800 hover:text-black'
+                  isDark ? 'text-white hover:text-[#A78BFA]' : 'text-neutral-800 hover:text-black'
                 }`}
                 title="Next track"
               >
@@ -383,7 +383,7 @@ export const AndroidMediaNotificationCard: React.FC = () => {
                 onClick={toggleRepeat}
                 className={`p-2 rounded-full transition-all active:scale-90 ${
                   repeatMode !== 'off'
-                    ? 'text-[#B6F36B] font-bold'
+                    ? 'text-[#8B5CF6] font-bold'
                     : isDark
                     ? 'text-white/60 hover:text-white'
                     : 'text-neutral-500 hover:text-neutral-900'
@@ -391,7 +391,7 @@ export const AndroidMediaNotificationCard: React.FC = () => {
                 title={`Repeat: ${repeatMode}`}
               >
                 {repeatMode === 'one' ? (
-                  <Repeat1 className="w-5 h-5 text-[#B6F36B]" />
+                  <Repeat1 className="w-5 h-5 text-[#8B5CF6]" />
                 ) : (
                   <Repeat className="w-5 h-5" />
                 )}
@@ -409,14 +409,14 @@ export const AndroidMediaNotificationCard: React.FC = () => {
                 onClick={() => toggleLike(currentTrack.id)}
                 className={`p-1.5 rounded-full transition-all active:scale-90 flex items-center gap-1.5 text-xs font-semibold ${
                   liked
-                    ? 'text-[#B6F36B]'
+                    ? 'text-[#8B5CF6]'
                     : isDark
                     ? 'text-white/60 hover:text-white'
                     : 'text-neutral-500 hover:text-neutral-900'
                 }`}
                 title={liked ? 'Unlike track' : 'Add to favorites'}
               >
-                <Heart className={`w-5 h-5 ${liked ? 'fill-[#B6F36B] text-[#B6F36B]' : ''}`} />
+                <Heart className={`w-5 h-5 ${liked ? 'fill-[#8B5CF6] text-[#8B5CF6]' : ''}`} />
               </button>
 
               {/* Volume Speaker Icon & Mini Slider */}
@@ -441,7 +441,7 @@ export const AndroidMediaNotificationCard: React.FC = () => {
                     }`}
                   >
                     <div
-                      className="h-full bg-[#B6F36B] rounded-full"
+                      className="h-full bg-[#8B5CF6] rounded-full"
                       style={{ width: `${(isMuted ? 0 : volume) * 100}%` }}
                     />
                   </div>

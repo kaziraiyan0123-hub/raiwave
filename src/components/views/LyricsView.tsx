@@ -37,7 +37,7 @@ export const LyricsView: React.FC = () => {
       ref={containerRef}
       className="h-full overflow-y-auto px-8 py-16 select-none relative transition-colors duration-700"
       style={{
-        background: `linear-gradient(180deg, ${currentTrack.color || '#141A23'} 0%, #090D13 90%)`,
+        background: `linear-gradient(180deg, ${currentTrack.color || '#12141D'} 0%, #0B0D13 90%)`,
       }}
     >
       <div className="max-w-2xl mx-auto space-y-6 pb-28 md:pb-20">
@@ -50,24 +50,24 @@ export const LyricsView: React.FC = () => {
           />
           <div>
             <h2 className="text-2xl font-black text-white font-heading">{currentTrack.title}</h2>
-            <p className="text-sm font-semibold text-[#929DA8]">{currentTrack.artist}</p>
+            <p className="text-sm font-semibold text-[#94A3B8]">{currentTrack.artist}</p>
           </div>
         </div>
 
         {/* Lyrics Lines */}
         {isLoadingLyrics ? (
-          <div className="py-24 text-center text-[#929DA8] space-y-3">
-            <Music2 className="w-12 h-12 mx-auto text-[#B6F36B] animate-bounce" />
+          <div className="py-24 text-center text-[#94A3B8] space-y-3">
+            <Music2 className="w-12 h-12 mx-auto text-[#8B5CF6] animate-bounce" />
             <p className="text-xl font-bold text-white font-heading">
               Tuning into live synchronized karaoke lyrics...
             </p>
-            <p className="text-xs text-[#929DA8]">Connecting to real-time lyrical frequency</p>
+            <p className="text-xs text-[#94A3B8]">Connecting to real-time lyrical frequency</p>
           </div>
         ) : lyrics.length === 0 ? (
-          <div className="py-24 text-center text-[#929DA8] space-y-3">
+          <div className="py-24 text-center text-[#94A3B8] space-y-3">
             <Music2 className="w-12 h-12 mx-auto text-[#202A34]" />
             <p className="text-xl font-bold text-white font-heading">Instrumental / No lyrics available</p>
-            <p className="text-xs text-[#929DA8]">Enjoy the full studio lossless soundscape!</p>
+            <p className="text-xs text-[#94A3B8]">Enjoy the full studio lossless soundscape!</p>
           </div>
         ) : (
           lyrics.map((line, idx) => {
@@ -81,7 +81,7 @@ export const LyricsView: React.FC = () => {
                 onClick={() => seek(line.time)}
                 className={`text-2xl sm:text-3xl font-extrabold cursor-pointer transition-all duration-300 transform font-heading ${
                   isActive
-                    ? 'text-[#B6F36B] scale-105 drop-shadow-[0_0_20px_rgba(182,243,107,0.5)]'
+                    ? 'text-[#8B5CF6] scale-105 drop-shadow-[0_0_20px_rgba(182,243,107,0.5)]'
                     : isPast
                     ? 'text-white/40 hover:text-white/70'
                     : 'text-white/20 hover:text-white/60'

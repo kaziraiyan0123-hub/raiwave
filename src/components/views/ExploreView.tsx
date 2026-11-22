@@ -23,7 +23,7 @@ export const ExploreView: React.FC = () => {
       title: 'Midnight Drive',
       subtitle: 'Atmospheric synths and nighttime basslines',
       icon: Moon,
-      gradient: 'from-blue-600 via-indigo-900 to-[#090D13]',
+      gradient: 'from-blue-600 via-indigo-900 to-[#0B0D13]',
       tag: 'Synthwave',
       vibeColor: '#6366F1',
     },
@@ -31,7 +31,7 @@ export const ExploreView: React.FC = () => {
       title: 'Energy Boost',
       subtitle: 'High-octane anthems to supercharge your day',
       icon: Zap,
-      gradient: 'from-amber-500 via-rose-700 to-[#090D13]',
+      gradient: 'from-amber-500 via-rose-700 to-[#0B0D13]',
       tag: 'Pop',
       vibeColor: '#F59E0B',
     },
@@ -39,7 +39,7 @@ export const ExploreView: React.FC = () => {
       title: 'Deep Focus & Lofi',
       subtitle: 'Mellow beats for studying and coding',
       icon: Headphones,
-      gradient: 'from-emerald-600 via-teal-900 to-[#090D13]',
+      gradient: 'from-emerald-600 via-teal-900 to-[#0B0D13]',
       tag: 'Lo-Fi',
       vibeColor: '#10B981',
     },
@@ -47,7 +47,7 @@ export const ExploreView: React.FC = () => {
       title: 'Workout & Power',
       subtitle: 'Heavy beats and pulse-pounding rhythms',
       icon: Dumbbell,
-      gradient: 'from-red-600 via-orange-800 to-[#090D13]',
+      gradient: 'from-red-600 via-orange-800 to-[#0B0D13]',
       tag: 'Hip-Hop',
       vibeColor: '#EF4444',
     },
@@ -55,7 +55,7 @@ export const ExploreView: React.FC = () => {
       title: 'Melancholy & Blues',
       subtitle: 'Soulful chords and deep emotions',
       icon: HeartHandshake,
-      gradient: 'from-purple-700 via-slate-900 to-[#090D13]',
+      gradient: 'from-purple-700 via-slate-900 to-[#0B0D13]',
       tag: 'Blues',
       vibeColor: '#8B5CF6',
     },
@@ -63,7 +63,7 @@ export const ExploreView: React.FC = () => {
       title: 'Live Frequencies',
       subtitle: 'Concerts, stadiums, and acoustic sessions',
       icon: Radio,
-      gradient: 'from-teal-500 via-cyan-800 to-[#090D13]',
+      gradient: 'from-teal-500 via-cyan-800 to-[#0B0D13]',
       tag: 'Rock',
       vibeColor: '#14B8A6',
     },
@@ -71,7 +71,7 @@ export const ExploreView: React.FC = () => {
       title: 'Romantic & Soul',
       subtitle: 'Intimate melodies and heartfelt serenades',
       icon: Heart,
-      gradient: 'from-rose-600 via-pink-900 to-[#090D13]',
+      gradient: 'from-rose-600 via-pink-900 to-[#0B0D13]',
       tag: 'Soul',
       vibeColor: '#EC4899',
     },
@@ -79,7 +79,7 @@ export const ExploreView: React.FC = () => {
       title: 'Chill & Relax',
       subtitle: 'Calm soundscapes and acoustic warmth',
       icon: Sparkles,
-      gradient: 'from-sky-600 via-blue-900 to-[#090D13]',
+      gradient: 'from-sky-600 via-blue-900 to-[#0B0D13]',
       tag: 'Acoustic',
       vibeColor: '#0EA5E9',
     },
@@ -99,14 +99,14 @@ export const ExploreView: React.FC = () => {
     <div className="p-4 sm:p-6 space-y-8 select-none pb-40 md:pb-24">
       {/* Header */}
       <div className="flex flex-col gap-1">
-        <div className="inline-flex items-center gap-2 text-xs font-bold text-[#B6F36B] font-heading">
+        <div className="inline-flex items-center gap-2 text-xs font-bold text-[#8B5CF6] font-heading">
           <Compass className="w-4 h-4" />
           <span>EXPLORE FREQUENCIES</span>
         </div>
         <h1 className="text-3xl sm:text-4xl font-black text-white font-heading tracking-tight">
           Browse All Music & Moods
         </h1>
-        <p className="text-xs sm:text-sm text-[#929DA8]">
+        <p className="text-xs sm:text-sm text-[#94A3B8]">
           Discover curated soundscapes, live mood stations, and global genres tailored to your taste.
         </p>
       </div>
@@ -115,12 +115,12 @@ export const ExploreView: React.FC = () => {
       <section className="space-y-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <Flame className="w-4 h-4 text-[#B6F36B]" />
+            <Flame className="w-4 h-4 text-[#8B5CF6]" />
             <h2 className="text-xl font-bold text-white font-heading tracking-tight">
               Curated Mood Stations & Vibes
             </h2>
           </div>
-          <span className="text-xs text-[#929DA8]">Tap play to launch station</span>
+          <span className="text-xs text-[#94A3B8]">Tap play to launch station</span>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -140,16 +140,16 @@ export const ExploreView: React.FC = () => {
 
                   <button
                     onClick={(e) => handleLaunchMood(mood, e)}
-                    className="w-10 h-10 rounded-full bg-[#B6F36B] text-[#090D13] flex items-center justify-center shadow-lg shadow-black/50 hover:scale-110 active:scale-95 transition-transform"
+                    className="w-10 h-10 rounded-full bg-[#8B5CF6] text-[#0B0D13] flex items-center justify-center shadow-lg shadow-black/50 hover:scale-110 active:scale-95 transition-transform"
                     title={`Play ${mood.title} station`}
                   >
-                    <Play className="w-4 h-4 fill-[#090D13] ml-0.5" />
+                    <Play className="w-4 h-4 fill-[#0B0D13] ml-0.5" />
                   </button>
                 </div>
 
                 {/* Bottom Details */}
                 <div className="relative z-10">
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-[#B6F36B] font-mono">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-[#8B5CF6] font-mono">
                     {mood.tag} Frequency
                   </span>
                   <h3 className="text-lg font-black text-white font-heading truncate">
@@ -180,7 +180,7 @@ export const ExploreView: React.FC = () => {
             <div
               key={genre.id}
               onClick={() => handleExploreTag(genre.name)}
-              className="p-5 rounded-2xl bg-[#141A23] hover:bg-[#1B232E] border border-white/5 hover:border-[#B6F36B]/30 cursor-pointer transition-all duration-200 group flex flex-col justify-between h-32 relative overflow-hidden shadow-md"
+              className="p-5 rounded-2xl bg-[#12141D] hover:bg-[#181B27] border border-white/5 hover:border-[#8B5CF6]/30 cursor-pointer transition-all duration-200 group flex flex-col justify-between h-32 relative overflow-hidden shadow-md"
             >
               <div
                 className="w-3 h-3 rounded-full shadow-[0_0_10px_currentColor]"
@@ -188,10 +188,10 @@ export const ExploreView: React.FC = () => {
               />
 
               <div className="relative z-10">
-                <h4 className="text-base font-bold text-white font-heading group-hover:text-[#B6F36B] transition-colors">
+                <h4 className="text-base font-bold text-white font-heading group-hover:text-[#8B5CF6] transition-colors">
                   {genre.name}
                 </h4>
-                <span className="text-[11px] text-[#929DA8]">Discover hits</span>
+                <span className="text-[11px] text-[#94A3B8]">Discover hits</span>
               </div>
 
               <div
@@ -214,7 +214,7 @@ export const ExploreView: React.FC = () => {
             <div
               key={track.id}
               onClick={() => playTrack(track, SAMPLE_TRACKS)}
-              className="flex items-center gap-3 p-3 rounded-xl bg-[#141A23]/60 hover:bg-[#1B232E] border border-white/5 cursor-pointer transition-all group"
+              className="flex items-center gap-3 p-3 rounded-xl bg-[#12141D]/60 hover:bg-[#181B27] border border-white/5 cursor-pointer transition-all group"
             >
               <img
                 src={track.coverUrl}
@@ -222,12 +222,12 @@ export const ExploreView: React.FC = () => {
                 className="w-12 h-12 rounded-xl object-cover shadow"
               />
               <div className="flex flex-col min-w-0 flex-1">
-                <span className="text-xs sm:text-sm font-semibold text-white font-heading truncate group-hover:text-[#B6F36B] transition-colors">
+                <span className="text-xs sm:text-sm font-semibold text-white font-heading truncate group-hover:text-[#8B5CF6] transition-colors">
                   {track.title}
                 </span>
-                <span className="text-[11px] text-[#929DA8] truncate">{track.artist}</span>
+                <span className="text-[11px] text-[#94A3B8] truncate">{track.artist}</span>
               </div>
-              <span className="text-[10px] font-bold text-[#B6F36B] uppercase tracking-wider px-2 py-0.5 rounded-full bg-[#B6F36B]/10 border border-[#B6F36B]/20">
+              <span className="text-[10px] font-bold text-[#8B5CF6] uppercase tracking-wider px-2 py-0.5 rounded-full bg-[#8B5CF6]/10 border border-[#8B5CF6]/20">
                 {track.genre}
               </span>
             </div>

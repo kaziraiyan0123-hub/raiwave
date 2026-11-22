@@ -86,11 +86,11 @@ export const PlaylistView: React.FC = () => {
       </div>
 
       {/* 2. Action Controls Bar */}
-      <div className="px-6 sm:px-8 py-5 flex items-center gap-6 bg-[#090D13]">
+      <div className="px-6 sm:px-8 py-5 flex items-center gap-6 bg-[#0B0D13]">
         <button
           onClick={handlePlayAll}
           disabled={tracks.length === 0}
-          className="w-14 h-14 rounded-full bg-[#B6F36B] hover:bg-[#c4f885] disabled:bg-gray-700 text-[#090D13] flex items-center justify-center transition-transform hover:scale-105 active:scale-95 shadow-[0_0_20px_rgba(182,243,107,0.35)]"
+          className="w-14 h-14 rounded-full bg-[#8B5CF6] hover:bg-[#c4f885] disabled:bg-gray-700 text-[#0B0D13] flex items-center justify-center transition-transform hover:scale-105 active:scale-95 shadow-[0_0_20px_rgba(182,243,107,0.35)]"
         >
           {isCurrentPlaylistPlaying ? (
             <Pause className="w-6 h-6 fill-current" />
@@ -102,22 +102,22 @@ export const PlaylistView: React.FC = () => {
         <button
           onClick={toggleShuffle}
           className={`transition-colors ${
-            isShuffle ? 'text-[#B6F36B]' : 'text-[#929DA8] hover:text-white'
+            isShuffle ? 'text-[#8B5CF6]' : 'text-[#94A3B8] hover:text-white'
           }`}
           title="Shuffle Playlist"
         >
           <Shuffle className="w-6 h-6" />
         </button>
 
-        <button className="text-[#929DA8] hover:text-white transition-colors" title="More options">
+        <button className="text-[#94A3B8] hover:text-white transition-colors" title="More options">
           <MoreHorizontal className="w-6 h-6" />
         </button>
       </div>
 
       {/* 3. Track List Table */}
-      <div className="px-6 sm:px-8 bg-[#090D13]">
+      <div className="px-6 sm:px-8 bg-[#0B0D13]">
         {/* Table Header */}
-        <div className="grid grid-cols-12 text-xs font-semibold uppercase text-[#929DA8] border-b border-white/10 pb-2 px-4 mb-2 tracking-wider font-heading">
+        <div className="grid grid-cols-12 text-xs font-semibold uppercase text-[#94A3B8] border-b border-white/10 pb-2 px-4 mb-2 tracking-wider font-heading">
           <div className="col-span-1 text-center">#</div>
           <div className="col-span-6 md:col-span-5">Title</div>
           <div className="hidden md:block col-span-3">Album</div>
@@ -166,7 +166,7 @@ export const PlaylistView: React.FC = () => {
                           playTrack(track, tracks)
                         }
                       }}
-                      className="hidden group-hover:flex items-center justify-center text-[#B6F36B]"
+                      className="hidden group-hover:flex items-center justify-center text-[#8B5CF6]"
                     >
                       {isThisTrackPlaying ? (
                         <Pause className="w-4 h-4 fill-current" />
@@ -180,7 +180,7 @@ export const PlaylistView: React.FC = () => {
                       ) : (
                         <span
                           className={`font-mono text-xs ${
-                            isThisTrackSelected ? 'text-[#B6F36B] font-bold' : 'text-[#929DA8]'
+                            isThisTrackSelected ? 'text-[#8B5CF6] font-bold' : 'text-[#94A3B8]'
                           }`}
                         >
                           {idx + 1}

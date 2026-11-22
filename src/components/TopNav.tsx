@@ -33,20 +33,20 @@ export const TopNav: React.FC = () => {
   }
 
   return (
-    <header className="hidden md:flex h-16 px-6 items-center justify-between sticky top-0 z-30 bg-[#090D13]/85 backdrop-blur-xl border-b border-white/5 select-none">
+    <header className="hidden md:flex h-16 px-6 items-center justify-between sticky top-0 z-30 bg-[#0B0D13]/85 backdrop-blur-xl border-b border-white/5 select-none">
       {/* Navigation History & Search */}
       <div className="flex items-center gap-4 flex-1 max-w-xl">
         {/* Back/Forward buttons */}
         <div className="flex items-center gap-2">
           <button
             onClick={() => navigateTo('home')}
-            className="w-8 h-8 rounded-full bg-[#141A23] hover:bg-[#202A34] border border-white/5 flex items-center justify-center text-[#929DA8] hover:text-white transition-all active:scale-95"
+            className="w-8 h-8 rounded-full bg-[#12141D] hover:bg-[#181B27] border border-white/5 flex items-center justify-center text-[#94A3B8] hover:text-white transition-all active:scale-95"
             title="Go to Home"
           >
             <ChevronLeft className="w-4 h-4" />
           </button>
           <button
-            className="w-8 h-8 rounded-full bg-[#141A23]/40 border border-white/5 flex items-center justify-center text-white/20 cursor-not-allowed"
+            className="w-8 h-8 rounded-full bg-[#12141D]/40 border border-white/5 flex items-center justify-center text-white/20 cursor-not-allowed"
             title="Next"
             disabled
           >
@@ -56,8 +56,8 @@ export const TopNav: React.FC = () => {
 
         {/* Global Fast Search Bar */}
         <div className="relative flex-1 max-w-md">
-          <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-[#929DA8]">
-            <Search className="w-4 h-4 text-[#B6F36B]" />
+          <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-[#94A3B8]">
+            <Search className="w-4 h-4 text-[#8B5CF6]" />
           </div>
           <input
             type="text"
@@ -71,18 +71,18 @@ export const TopNav: React.FC = () => {
               if (currentView !== 'search') navigateTo('search')
             }}
             onKeyDown={handleKeyDown}
-            className="w-full pl-10 pr-9 py-2 bg-[#141A23] hover:bg-[#1B232E] focus:bg-[#1B232E] text-white text-xs font-medium rounded-full border border-white/10 focus:border-[#B6F36B] focus:outline-none transition-all placeholder-[#929DA8] shadow-inner"
+            className="w-full pl-10 pr-9 py-2 bg-[#12141D] hover:bg-[#181B27] focus:bg-[#181B27] text-white text-xs font-medium rounded-full border border-white/10 focus:border-[#8B5CF6] focus:outline-none transition-all placeholder-[#94A3B8] shadow-inner"
           />
           {searchQuery && (
             <button
               onClick={() => setSearchQuery('')}
-              className="absolute inset-y-0 right-0 pr-3 flex items-center text-[#929DA8] hover:text-white"
+              className="absolute inset-y-0 right-0 pr-3 flex items-center text-[#94A3B8] hover:text-white"
             >
               <X className="w-3.5 h-3.5" />
             </button>
           )}
           {urlMessage && (
-            <div className="absolute -bottom-6 left-3 text-[11px] text-[#B6F36B] font-semibold animate-pulse font-heading">
+            <div className="absolute -bottom-6 left-3 text-[11px] text-[#A78BFA] font-semibold animate-pulse font-heading">
               {urlMessage}
             </div>
           )}

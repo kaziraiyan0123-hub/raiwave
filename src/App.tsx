@@ -16,7 +16,11 @@ import { AndroidMediaNotificationCard } from './components/AndroidMediaNotificat
 function App() {
   return (
     <PlayerProvider>
-      <div className="flex flex-col h-screen w-screen overflow-hidden bg-[#090D13] text-[#F5F7FA] relative font-sans">
+      <div className="flex flex-col h-screen w-screen overflow-hidden bg-[#0B0D13] text-[#F8FAFC] relative font-sans">
+        {/* Subtle Futuristic Ambient Purple Lighting Wash */}
+        <div className="absolute top-0 left-1/4 w-[600px] h-[350px] bg-purple-600/10 rounded-full blur-[140px] pointer-events-none" />
+        <div className="absolute bottom-10 right-1/4 w-[500px] h-[300px] bg-violet-600/8 rounded-full blur-[130px] pointer-events-none" />
+
         {/* Floating Glass Feedback Toast */}
         <ToastNotification />
 
@@ -30,12 +34,12 @@ function App() {
         <MobileTopBar />
 
         {/* Main Application Body */}
-        <div className="flex flex-1 overflow-hidden relative">
+        <div className="flex flex-1 overflow-hidden relative z-10">
           {/* Desktop Left Sidebar (hidden on mobile) */}
           <Sidebar />
 
           {/* Central Workspace Container */}
-          <div className="flex-1 flex flex-col overflow-hidden bg-[#090D13] md:bg-[#141A23]/60 md:rounded-2xl md:my-2 md:border md:border-white/5 relative">
+          <div className="flex-1 flex flex-col overflow-hidden bg-[#0B0D13] md:bg-[#12141D]/90 backdrop-blur-2xl md:rounded-3xl md:my-2 md:border md:border-white/5 relative shadow-2xl">
             <TopNav />
             <MainContent />
           </div>

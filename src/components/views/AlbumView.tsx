@@ -46,7 +46,7 @@ export const AlbumView: React.FC = () => {
       <div
         className="p-8 flex flex-col md:flex-row items-start md:items-end gap-6 relative"
         style={{
-          background: `linear-gradient(to bottom, ${selectedAlbum.color || '#52D6C9'} 0%, #090D13 100%)`,
+          background: `linear-gradient(to bottom, ${selectedAlbum.color || '#52D6C9'} 0%, #0B0D13 100%)`,
         }}
       >
         <img
@@ -56,11 +56,11 @@ export const AlbumView: React.FC = () => {
         />
 
         <div className="flex flex-col gap-2 min-w-0">
-          <span className="text-xs uppercase font-extrabold tracking-wider text-[#B6F36B]">Album</span>
+          <span className="text-xs uppercase font-extrabold tracking-wider text-[#8B5CF6]">Album</span>
           <h1 className="text-4xl sm:text-6xl font-black text-white tracking-tight break-words font-display">
             {selectedAlbum.title}
           </h1>
-          <div className="flex items-center gap-2 text-xs font-semibold text-[#929DA8] mt-2">
+          <div className="flex items-center gap-2 text-xs font-semibold text-[#94A3B8] mt-2">
             <span className="text-white font-bold">{selectedAlbum.artist}</span>
             <span>•</span>
             <span>{selectedAlbum.year}</span>
@@ -71,10 +71,10 @@ export const AlbumView: React.FC = () => {
       </div>
 
       {/* Controls */}
-      <div className="px-8 py-5 flex items-center gap-6 bg-[#090D13]">
+      <div className="px-8 py-5 flex items-center gap-6 bg-[#0B0D13]">
         <button
           onClick={handlePlayAll}
-          className="w-14 h-14 rounded-full bg-[#B6F36B] hover:bg-[#a3e655] text-black flex items-center justify-center transition-transform hover:scale-105 active:scale-95 shadow-xl shadow-[#B6F36B]/20"
+          className="w-14 h-14 rounded-full bg-[#8B5CF6] hover:bg-[#a3e655] text-black flex items-center justify-center transition-transform hover:scale-105 active:scale-95 shadow-xl shadow-[#8B5CF6]/20"
         >
           {isAlbumPlaying ? (
             <Pause className="w-6 h-6 fill-black text-black" />
@@ -85,8 +85,8 @@ export const AlbumView: React.FC = () => {
       </div>
 
       {/* Track List */}
-      <div className="px-8 bg-[#090D13]">
-        <div className="grid grid-cols-12 text-xs font-semibold uppercase text-[#929DA8] border-b border-white/10 pb-2 px-4 mb-2 tracking-wider">
+      <div className="px-8 bg-[#0B0D13]">
+        <div className="grid grid-cols-12 text-xs font-semibold uppercase text-[#94A3B8] border-b border-white/10 pb-2 px-4 mb-2 tracking-wider">
           <div className="col-span-1 text-center">#</div>
           <div className="col-span-8 md:col-span-10">Title</div>
           <div className="col-span-3 md:col-span-1 flex justify-end pr-2">
@@ -107,8 +107,8 @@ export const AlbumView: React.FC = () => {
                   if (isPlayingThis) togglePlay()
                   else playTrack(track, tracks)
                 }}
-                className={`grid grid-cols-12 items-center px-4 py-2.5 rounded-xl hover:bg-[#141A23] group cursor-pointer transition-colors ${
-                  isSelectedThis ? 'bg-[#141A23]/80 border border-[#202A34]' : 'border border-transparent'
+                className={`grid grid-cols-12 items-center px-4 py-2.5 rounded-xl hover:bg-[#12141D] group cursor-pointer transition-colors ${
+                  isSelectedThis ? 'bg-[#12141D]/80 border border-[#202A34]' : 'border border-transparent'
                 }`}
               >
                 <div className="col-span-1 text-center text-sm font-medium flex items-center justify-center">
@@ -124,9 +124,9 @@ export const AlbumView: React.FC = () => {
                   </button>
                   <div className="group-hover:hidden flex items-center justify-center">
                     {isPlayingThis ? (
-                      <EqualizerBars size="sm" color="bg-[#B6F36B]" />
+                      <EqualizerBars size="sm" color="bg-[#8B5CF6]" />
                     ) : (
-                      <span className={`${isSelectedThis ? 'text-[#B6F36B] font-bold' : 'text-[#929DA8]'}`}>
+                      <span className={`${isSelectedThis ? 'text-[#8B5CF6] font-bold' : 'text-[#94A3B8]'}`}>
                         {idx + 1}
                       </span>
                     )}
@@ -134,13 +134,13 @@ export const AlbumView: React.FC = () => {
                 </div>
 
                 <div className="col-span-8 md:col-span-10 truncate pr-2">
-                  <p className={`text-sm font-semibold truncate ${isSelectedThis ? 'text-[#B6F36B]' : 'text-white'}`}>
+                  <p className={`text-sm font-semibold truncate ${isSelectedThis ? 'text-[#8B5CF6]' : 'text-white'}`}>
                     {track.title}
                   </p>
-                  <p className="text-xs text-[#929DA8] truncate">{track.artist}</p>
+                  <p className="text-xs text-[#94A3B8] truncate">{track.artist}</p>
                 </div>
 
-                <div className="col-span-3 md:col-span-1 flex items-center justify-end gap-3 text-xs text-[#929DA8] pr-2">
+                <div className="col-span-3 md:col-span-1 flex items-center justify-end gap-3 text-xs text-[#94A3B8] pr-2">
                   <button
                     onClick={(e) => {
                       e.stopPropagation()
@@ -148,7 +148,7 @@ export const AlbumView: React.FC = () => {
                     }}
                     className="opacity-0 group-hover:opacity-100 transition-opacity hover:scale-110"
                   >
-                    <Heart className={`w-4 h-4 ${liked ? 'text-[#B6F36B] fill-[#B6F36B] opacity-100' : 'hover:text-white'}`} />
+                    <Heart className={`w-4 h-4 ${liked ? 'text-[#8B5CF6] fill-[#8B5CF6] opacity-100' : 'hover:text-white'}`} />
                   </button>
                   <span className="font-mono">{formatDuration(track.duration)}</span>
                 </div>

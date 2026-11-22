@@ -103,18 +103,18 @@ export const SearchView: React.FC = () => {
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <h2 className="text-xl font-bold text-white font-heading">
-              Results for <span className="text-[#B6F36B]">"{searchQuery}"</span>
+              Results for <span className="text-[#A78BFA]">"{searchQuery}"</span>
             </h2>
             {isSearchingOnline && (
-              <span className="flex items-center gap-1.5 text-xs text-[#929DA8]">
-                <Loader2 className="w-3.5 h-3.5 animate-spin text-[#B6F36B]" />
+              <span className="flex items-center gap-1.5 text-xs text-[#94A3B8]">
+                <Loader2 className="w-3.5 h-3.5 animate-spin text-[#8B5CF6]" />
                 <span>Searching global catalog...</span>
               </span>
             )}
           </div>
           <button
             onClick={() => setSearchQuery('')}
-            className="text-xs text-[#929DA8] hover:text-white underline"
+            className="text-xs text-[#94A3B8] hover:text-white underline"
           >
             Clear Search
           </button>
@@ -125,9 +125,9 @@ export const SearchView: React.FC = () => {
       {searchQuery ? (
         <div className="space-y-8">
           {combinedTracks.length === 0 && !isSearchingOnline && (
-            <div className="p-8 bg-[#141A23] rounded-2xl border border-white/10 text-center max-w-xl mx-auto space-y-2">
+            <div className="p-8 bg-[#12141D] rounded-2xl border border-white/10 text-center max-w-xl mx-auto space-y-2">
               <p className="text-base font-bold text-white font-heading">No results found for "{searchQuery}"</p>
-              <p className="text-xs text-[#929DA8]">
+              <p className="text-xs text-[#94A3B8]">
                 Check spelling or try searching for another artist, track, or album.
               </p>
             </div>
@@ -140,7 +140,7 @@ export const SearchView: React.FC = () => {
               <div className="lg:col-span-2">
                 <div className="flex items-center justify-between mb-3">
                   <h3 className="text-xl font-bold text-white font-heading">Top result</h3>
-                  <span className="px-2.5 py-0.5 rounded-full bg-[#B6F36B]/20 border border-[#B6F36B]/40 text-[#B6F36B] text-[10px] font-black uppercase tracking-wider font-heading">
+                  <span className="px-2.5 py-0.5 rounded-full bg-purple-500/20 border border-purple-500/40 text-[#C4B5FD] text-[10px] font-black uppercase tracking-wider font-heading">
                     First Priority Match
                   </span>
                 </div>
@@ -152,12 +152,12 @@ export const SearchView: React.FC = () => {
                         if (currentTrack?.id === topResult.id) toggleMobilePlayer()
                         else playTrack(topResult, combinedTracks)
                       }}
-                      className="bg-[#141A23] hover:bg-[#1B232E] p-6 rounded-2xl cursor-pointer transition-all duration-300 group relative flex flex-col justify-between min-h-[240px] shadow-2xl border border-white/5 hover:border-[#B6F36B]/40 relative overflow-hidden"
+                      className="bg-[#12141D] hover:bg-[#181B27] p-6 rounded-2xl cursor-pointer transition-all duration-300 group relative flex flex-col justify-between min-h-[240px] shadow-2xl border border-white/5 hover:border-purple-500/40 relative overflow-hidden"
                     >
                       {/* Subtle Ambient Glow */}
                       <div
                         className="absolute -top-12 -right-12 w-36 h-36 rounded-full opacity-25 blur-2xl pointer-events-none"
-                        style={{ backgroundColor: topResult.color || '#B6F36B' }}
+                        style={{ backgroundColor: topResult.color || '#8B5CF6' }}
                       />
 
                       <div className="flex items-start justify-between z-10">
@@ -172,7 +172,7 @@ export const SearchView: React.FC = () => {
                         <h4 className="text-xl sm:text-2xl font-black text-white font-heading truncate mb-1">
                           {topResult.title}
                         </h4>
-                        <p className="text-xs sm:text-sm text-[#929DA8] font-medium truncate">
+                        <p className="text-xs sm:text-sm text-[#94A3B8] font-medium truncate">
                           Official Song &bull; <span className="text-white hover:underline">{topResult.artist}</span>
                         </p>
                       </div>
@@ -182,7 +182,7 @@ export const SearchView: React.FC = () => {
                           if (isTopPlaying) togglePlay()
                           else playTrack(topResult, combinedTracks)
                         }}
-                        className="absolute bottom-5 right-5 w-12 h-12 rounded-full bg-[#B6F36B] text-[#090D13] flex items-center justify-center opacity-100 md:opacity-0 md:group-hover:opacity-100 translate-y-0 md:translate-y-2 md:group-hover:translate-y-0 transition-all duration-300 shadow-xl hover:scale-105 active:scale-95 z-20"
+                        className="absolute bottom-5 right-5 w-12 h-12 rounded-full bg-gradient-to-r from-[#8B5CF6] to-[#7C3AED] text-white flex items-center justify-center opacity-100 md:opacity-0 md:group-hover:opacity-100 translate-y-0 md:translate-y-2 md:group-hover:translate-y-0 transition-all duration-300 shadow-xl hover:scale-105 active:scale-95 z-20"
                         title={isTopPlaying ? 'Pause' : 'Play Top Match'}
                       >
                         {isTopPlaying ? (
@@ -224,16 +224,16 @@ export const SearchView: React.FC = () => {
                           <div className="truncate">
                             <p
                               className={`text-sm font-semibold truncate transition-colors font-heading ${
-                                isTrackSelected ? 'text-[#B6F36B]' : 'text-white group-hover:text-[#B6F36B]'
+                                isTrackSelected ? 'text-[#A78BFA]' : 'text-white group-hover:text-[#A78BFA]'
                               }`}
                             >
                               {track.title}
                             </p>
-                            <p className="text-xs text-[#929DA8] truncate">{track.artist}</p>
+                            <p className="text-xs text-[#94A3B8] truncate">{track.artist}</p>
                           </div>
                         </div>
 
-                        <div className="flex items-center gap-4 text-[#929DA8]">
+                        <div className="flex items-center gap-4 text-[#94A3B8]">
                           {isTrackPlaying && <EqualizerBars size="sm" />}
                           <button
                             onClick={(e) => {
@@ -244,7 +244,7 @@ export const SearchView: React.FC = () => {
                           >
                             <Heart
                               className={`w-4 h-4 ${
-                                liked ? 'text-[#B6F36B] fill-[#B6F36B] opacity-100' : 'hover:text-white'
+                                liked ? 'text-[#8B5CF6] fill-[#8B5CF6] opacity-100' : 'hover:text-white'
                               }`}
                             />
                           </button>
@@ -269,7 +269,7 @@ export const SearchView: React.FC = () => {
                     <div
                       key={track.id}
                       onClick={() => playTrack(track, combinedTracks)}
-                      className="flex items-center justify-between p-2.5 rounded-xl bg-[#141A23] hover:bg-[#1B232E] border border-white/5 cursor-pointer group transition-colors"
+                      className="flex items-center justify-between p-2.5 rounded-xl bg-[#12141D] hover:bg-[#181B27] border border-white/5 cursor-pointer group transition-colors"
                     >
                       <div className="flex items-center gap-3 min-w-0">
                         <img
@@ -278,14 +278,14 @@ export const SearchView: React.FC = () => {
                           className="w-11 h-11 rounded-xl object-cover flex-shrink-0 shadow"
                         />
                         <div className="truncate">
-                          <p className="text-sm font-semibold text-white font-heading truncate group-hover:text-[#B6F36B] transition-colors">
+                          <p className="text-sm font-semibold text-white font-heading truncate group-hover:text-[#A78BFA] transition-colors">
                             {track.title}
                           </p>
-                          <p className="text-xs text-[#929DA8] truncate">{track.artist}</p>
+                          <p className="text-xs text-[#94A3B8] truncate">{track.artist}</p>
                         </div>
                       </div>
 
-                      <div className="flex items-center gap-3 text-[#929DA8]">
+                      <div className="flex items-center gap-3 text-[#94A3B8]">
                         <button
                           onClick={(e) => {
                             e.stopPropagation()
@@ -295,7 +295,7 @@ export const SearchView: React.FC = () => {
                         >
                           <Heart
                             className={`w-4 h-4 ${
-                              liked ? 'text-[#B6F36B] fill-[#B6F36B] opacity-100' : 'hover:text-white'
+                              liked ? 'text-[#8B5CF6] fill-[#8B5CF6] opacity-100' : 'hover:text-white'
                             }`}
                           />
                         </button>
