@@ -655,14 +655,14 @@ export const HomeView: React.FC = () => {
         </div>
 
         {/* New Releases Carousel / Grid */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-4">
+        <div className="flex gap-3 overflow-x-auto no-scrollbar pb-2 sm:grid sm:grid-cols-3 md:grid-cols-6 sm:gap-4">
           {newMusicTracks.map((track) => {
             const isPlayingThis = currentTrack?.id === track.id && isPlaying
             return (
               <div
                 key={track.id}
                 onClick={() => playTrack(track, newMusicTracks)}
-                className="bg-[#12141D]/90 hover:bg-[#181B27] p-3 rounded-2xl cursor-pointer transition-all duration-300 border border-white/5 hover:border-purple-500/30 group shadow-md hover:shadow-xl hover:-translate-y-1 relative"
+                className="w-[138px] sm:w-auto flex-shrink-0 bg-[#12141D]/90 hover:bg-[#181B27] p-3 rounded-2xl cursor-pointer transition-all duration-300 border border-white/5 hover:border-purple-500/30 group shadow-md hover:shadow-xl sm:hover:-translate-y-1 relative"
               >
                 <div className="relative mb-2.5 aspect-square w-full rounded-xl overflow-hidden shadow border border-white/5">
                   <img
