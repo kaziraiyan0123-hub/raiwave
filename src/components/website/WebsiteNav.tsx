@@ -3,16 +3,14 @@ import {
   Menu,
   X,
   Download,
-  Play,
 } from 'lucide-react'
 import { SITE_CONFIG } from '../../config/siteConfig'
 
 interface WebsiteNavProps {
   onDownloadClick: () => void
-  onLaunchWeb: () => void
 }
 
-export function WebsiteNav({ onDownloadClick, onLaunchWeb }: WebsiteNavProps) {
+export function WebsiteNav({ onDownloadClick }: WebsiteNavProps) {
   const [isScrolled, setIsScrolled] = useState(false)
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
 
@@ -96,22 +94,13 @@ export function WebsiteNav({ onDownloadClick, onLaunchWeb }: WebsiteNavProps) {
 
         {/* Desktop Actions */}
         <div className="hidden sm:flex items-center gap-3">
-          {/* Launch Web Player */}
-          <button
-            onClick={onLaunchWeb}
-            className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-semibold text-purple-300 hover:text-white bg-purple-950/40 hover:bg-purple-900/50 border border-purple-500/20 transition-all cursor-pointer"
-          >
-            <Play className="w-3.5 h-3.5 fill-current text-purple-400" />
-            <span>Web Player</span>
-          </button>
-
           {/* Download App CTA */}
           <button
             onClick={onDownloadClick}
             className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white text-xs font-bold shadow-[0_0_20px_rgba(147,51,234,0.4)] border border-purple-400/30 transition-all hover:scale-105 active:scale-95 cursor-pointer"
           >
             <Download className="w-3.5 h-3.5" />
-            <span>Download</span>
+            <span>Download App</span>
           </button>
         </div>
 
@@ -142,17 +131,6 @@ export function WebsiteNav({ onDownloadClick, onLaunchWeb }: WebsiteNavProps) {
           </nav>
 
           <div className="mt-6 pt-4 border-t border-white/10 flex flex-col gap-3">
-            <button
-              onClick={() => {
-                setIsMobileMenuOpen(false)
-                onLaunchWeb()
-              }}
-              className="w-full flex items-center justify-center gap-2 py-3.5 px-4 rounded-xl text-sm font-semibold text-purple-200 bg-purple-950/50 border border-purple-500/30"
-            >
-              <Play className="w-4 h-4 fill-current text-purple-400" />
-              <span>Launch Web Player</span>
-            </button>
-
             <button
               onClick={() => {
                 setIsMobileMenuOpen(false)

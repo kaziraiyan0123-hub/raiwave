@@ -21,13 +21,12 @@ function GithubIcon(props: React.SVGProps<SVGSVGElement>) {
 interface WebsiteFooterProps {
   onDownloadAndroid: () => void
   onDownloadWindows: () => void
-  onLaunchWeb: () => void
+  onLaunchWeb?: () => void
 }
 
 export function WebsiteFooter({
   onDownloadAndroid,
   onDownloadWindows,
-  onLaunchWeb,
 }: WebsiteFooterProps) {
   const [showPrivacyModal, setShowPrivacyModal] = useState(false)
   const [showTermsModal, setShowTermsModal] = useState(false)
@@ -136,15 +135,6 @@ export function WebsiteFooter({
                 >
                   <Monitor className="w-3.5 h-3.5 text-cyan-400" />
                   <span>Windows Desktop (x64)</span>
-                </button>
-              </li>
-              <li>
-                <button
-                  onClick={onLaunchWeb}
-                  className="flex items-center gap-1.5 hover:text-emerald-300 transition-colors cursor-pointer"
-                >
-                  <Globe className="w-3.5 h-3.5 text-emerald-400" />
-                  <span>Web App Live Player</span>
                 </button>
               </li>
               <li>

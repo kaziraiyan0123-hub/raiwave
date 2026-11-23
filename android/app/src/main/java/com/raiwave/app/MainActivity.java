@@ -39,7 +39,7 @@ public class MainActivity extends AppCompatActivity {
 
     private static final int PERMISSION_REQUEST_RECORD_AUDIO = 101;
     private static final int PERMISSION_REQUEST_POST_NOTIFICATIONS = 102;
-    private static final String APP_URL = "https://raiwave.vercel.app";
+    private static final String APP_URL = "https://raiwave.vercel.app/#app";
 
     private static MainActivity instance;
     private BackgroundAudioWebView webView;
@@ -138,7 +138,7 @@ public class MainActivity extends AppCompatActivity {
         settings.setMixedContentMode(WebSettings.MIXED_CONTENT_ALWAYS_ALLOW);
 
         // Desktop User-Agent: Crucial to bypass YouTube's mobile-only background auto-pause restriction!
-        String desktopUserAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36";
+        String desktopUserAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36 RAIWAVE-Android-Standalone";
         settings.setUserAgentString(desktopUserAgent);
 
         // Enable first-party and third-party cookies for YouTube embed handshake

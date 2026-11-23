@@ -479,18 +479,61 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     isShuffleRef.current = isShuffle
   }, [isShuffle])
 
-  // Application Mode (Official Website vs Web Player)
-  // Default to the official website so visitors immediately see the branding, features, and download buttons.
-  // The full music player is launched via "Launch Web Player" or directly via #app, /app, ?mode=player.
-  const isExplicitPlayerUrl =
-    typeof window !== 'undefined' &&
-    (window.location.hash === '#app' ||
-      window.location.pathname === '/app' ||
-      window.location.search.includes('mode=player'))
+  // Application Mode (Official Website vs Standalone Music Player)
+  // Standalone Native App Detection:
+  // When running inside the downloaded Android APK (window.AndroidMedia injected by Java WebView),
+  // or inside the downloaded Windows Desktop app (window.chrome.webview injected by C# WebView2),
+  // or launched via #app, /app, ?mode=player, ?platform=android, ?platform=desktop,
+  // or standalone display mode (PWA installed app),
+  // RAIWAVE MUST run strictly as the standalone music application and never show the website.
+  const checkIsStandaloneApp = () => {
+    if (typeof window === 'undefined') return false
+    const hasAndroidBridge = Boolean((window as unknown as { AndroidMedia?: unknown }).AndroidMedia)
+    const hasDesktopBridge = Boolean((window as unknown as { chrome?: { webview?: unknown } }).chrome?.webview)
+    const hasAppHash = window.location.hash === '#app'
+    const hasAppPath = window.location.pathname === '/app'
+    const hasPlayerQuery =
+      window.location.search.includes('mode=player') ||
+      window.location.search.includes('platform=')
+    const isStandaloneDisplay =
+      window.matchMedia('(display-mode: standalone)').matches ||
+      Boolean((navigator as unknown as { standalone?: boolean }).standalone)
+    const isCustomUA = Boolean(
+      navigator.userAgent &&
+        (navigator.userAgent.includes('RAIWAVE-Desktop') ||
+          navigator.userAgent.includes('RAIWAVE-Android'))
+    )
+
+    return (
+      hasAndroidBridge ||
+      hasDesktopBridge ||
+      hasAppHash ||
+      hasAppPath ||
+      hasPlayerQuery ||
+      isStandaloneDisplay ||
+      isCustomUA
+    )
+  }
 
   const [appMode, setAppModeState] = useState<'website' | 'player'>(() => {
-    return isExplicitPlayerUrl ? 'player' : 'website'
+    return checkIsStandaloneApp() ? 'player' : 'website'
   })
+
+  // Ensure that if native Android bridge or desktop bridge initializes shortly after script execution,
+  // the app immediately locks into standalone player mode and never displays the download website.
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+
+    const verifyAndLockStandalone = () => {
+      if (checkIsStandaloneApp() && appMode !== 'player') {
+        setAppModeState('player')
+      }
+    }
+
+    verifyAndLockStandalone()
+    const timer = setTimeout(verifyAndLockStandalone, 150)
+    return () => clearTimeout(timer)
+  }, [appMode])
 
   // Synchronize document body class to enable full natural vertical scrolling on the website
   useEffect(() => {
@@ -506,10 +549,14 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   }, [appMode])
 
   const setAppMode = (mode: 'website' | 'player') => {
+    // If running inside the standalone Android or Desktop app, never allow switching to the website
+    if (mode === 'website' && checkIsStandaloneApp()) {
+      return
+    }
     setAppModeState(mode)
     try {
       if (mode === 'website') {
-        window.history.pushState({ mode: 'website' }, '', '#website')
+        window.history.pushState({ mode: 'website' }, '', window.location.pathname)
       } else {
         window.history.pushState({ mode: 'player' }, '', '#app')
       }
@@ -1380,6 +1427,10 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   useEffect(() => {
     const handlePopState = (e: PopStateEvent) => {
       if (e.state?.mode) {
+        if (e.state.mode === 'website' && checkIsStandaloneApp()) {
+          // Locked in standalone player mode
+          return
+        }
         setAppModeState(e.state.mode)
         return
       }

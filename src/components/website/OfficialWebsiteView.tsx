@@ -9,13 +9,9 @@ import { DeveloperSection } from './DeveloperSection'
 import { CreditsSection } from './CreditsSection'
 import { WebsiteFooter } from './WebsiteFooter'
 import { DownloadModal } from './DownloadModal'
-import { Activity, Play } from 'lucide-react'
+import { Activity } from 'lucide-react'
 
-interface OfficialWebsiteViewProps {
-  onLaunchWebPlayer: () => void
-}
-
-export function OfficialWebsiteView({ onLaunchWebPlayer }: OfficialWebsiteViewProps) {
+export function OfficialWebsiteView() {
   const [downloadModalPlatform, setDownloadModalPlatform] = useState<'android' | 'windows' | null>(null)
 
   const handleDownloadAndroid = () => {
@@ -33,12 +29,18 @@ export function OfficialWebsiteView({ onLaunchWebPlayer }: OfficialWebsiteViewPr
     }
   }
 
+  const handleScrollToDownload = () => {
+    const el = document.querySelector('#download')
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth' })
+    }
+  }
+
   return (
     <div className="min-h-screen w-full bg-[#0B0813] text-[#F8FAFC] font-sans selection:bg-purple-600 selection:text-white relative overflow-x-hidden">
       {/* Sticky Top Navigation Bar */}
       <WebsiteNav
-        onDownloadClick={handleDownloadAndroid}
-        onLaunchWeb={onLaunchWebPlayer}
+        onDownloadClick={handleScrollToDownload}
       />
 
       {/* Hero Section */}
@@ -46,7 +48,6 @@ export function OfficialWebsiteView({ onLaunchWebPlayer }: OfficialWebsiteViewPr
         <HeroSection
           onDownloadAndroid={handleDownloadAndroid}
           onDownloadWindows={handleDownloadWindows}
-          onLaunchApp={onLaunchWebPlayer}
           onExploreExperience={handleExploreExperience}
         />
       </div>
@@ -79,7 +80,6 @@ export function OfficialWebsiteView({ onLaunchWebPlayer }: OfficialWebsiteViewPr
       {/* Official Download Center Section */}
       <DownloadSection
         onSelectPlatform={(platform) => setDownloadModalPlatform(platform)}
-        onLaunchWeb={onLaunchWebPlayer}
       />
 
       {/* The Person Behind The Music — Developer Raiyan */}
@@ -92,7 +92,6 @@ export function OfficialWebsiteView({ onLaunchWebPlayer }: OfficialWebsiteViewPr
       <WebsiteFooter
         onDownloadAndroid={handleDownloadAndroid}
         onDownloadWindows={handleDownloadWindows}
-        onLaunchWeb={onLaunchWebPlayer}
       />
 
       {/* Interactive Platform Download Modal */}
@@ -100,18 +99,6 @@ export function OfficialWebsiteView({ onLaunchWebPlayer }: OfficialWebsiteViewPr
         platform={downloadModalPlatform}
         onClose={() => setDownloadModalPlatform(null)}
       />
-
-      {/* Floating Quick Action Button to Launch/Return to Player */}
-      <div className="fixed bottom-5 right-5 sm:bottom-6 sm:right-6 z-50">
-        <button
-          onClick={onLaunchWebPlayer}
-          className="flex items-center gap-2 px-5 py-3 rounded-full bg-gradient-to-r from-purple-600 via-indigo-600 to-purple-600 text-white font-bold text-xs sm:text-sm shadow-[0_6px_25px_rgba(147,51,234,0.6)] hover:shadow-[0_8px_30px_rgba(147,51,234,0.8)] border border-purple-400/40 active:scale-95 transition-all cursor-pointer group"
-          title="Open Music Player"
-        >
-          <Play className="w-4 h-4 fill-current group-hover:scale-110 transition-transform" />
-          <span>Launch Music App</span>
-        </button>
-      </div>
     </div>
   )
 }

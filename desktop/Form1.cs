@@ -97,9 +97,10 @@ public partial class Form1 : Form
             _webView.CoreWebView2.Settings.IsStatusBarEnabled = false;
             _webView.CoreWebView2.Settings.AreDevToolsEnabled = false;
             _webView.CoreWebView2.Settings.IsZoomControlEnabled = false;
+            _webView.CoreWebView2.Settings.UserAgent += " RAIWAVE-Desktop-Standalone";
 
-            // Direct live stream application
-            _webView.CoreWebView2.Navigate("https://raiwave.vercel.app");
+            // Direct standalone desktop music player application
+            _webView.CoreWebView2.Navigate("https://raiwave.vercel.app/#app");
         }
         catch (Exception ex)
         {

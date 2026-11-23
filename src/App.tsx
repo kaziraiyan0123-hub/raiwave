@@ -17,13 +17,13 @@ import { DedicatedVisualizerModal } from './components/visualizer/DedicatedVisua
 import { OfficialWebsiteView } from './components/website/OfficialWebsiteView'
 
 function MainAppShell() {
-  const { dynamicTheme, appMode, setAppMode } = usePlayer()
+  const { dynamicTheme, appMode } = usePlayer()
 
   // Official Website & Download Hub Mode
   if (appMode === 'website') {
     return (
       <div className="min-h-screen w-full bg-[#0B0813] text-[#F8FAFC]">
-        <OfficialWebsiteView onLaunchWebPlayer={() => setAppMode('player')} />
+        <OfficialWebsiteView />
         {/* Preserve background audio playback engine */}
         <YouTubeIframeContainer />
         <ToastNotification />

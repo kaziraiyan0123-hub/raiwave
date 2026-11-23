@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react'
 import {
   Download,
   Monitor,
-  Play,
   Sparkles,
   ArrowRight,
   Disc,
@@ -14,14 +13,13 @@ import { SITE_CONFIG } from '../../config/siteConfig'
 interface HeroSectionProps {
   onDownloadAndroid: () => void
   onDownloadWindows: () => void
-  onLaunchApp: () => void
   onExploreExperience: () => void
+  onLaunchApp?: () => void
 }
 
 export function HeroSection({
   onDownloadAndroid,
   onDownloadWindows,
-  onLaunchApp,
   onExploreExperience,
 }: HeroSectionProps) {
   const [mousePos, setMousePos] = useState({ x: 0.5, y: 0.5 })
@@ -132,17 +130,6 @@ export function HeroSection({
             <Compass className="w-5 h-5 text-purple-400 group-hover:rotate-45 transition-transform" />
             <span>EXPLORE THE EXPERIENCE</span>
             <ArrowRight className="w-4 h-4 text-purple-400 group-hover:translate-x-1 transition-transform" />
-          </button>
-        </div>
-
-        {/* Supplementary Launch Web Player Link */}
-        <div className="mt-4">
-          <button
-            onClick={onLaunchApp}
-            className="inline-flex items-center gap-2 text-xs font-semibold text-white/60 hover:text-white transition-colors cursor-pointer"
-          >
-            <Play className="w-3.5 h-3.5 fill-current text-purple-400" />
-            <span>Or launch live Web Player directly in your browser</span>
           </button>
         </div>
 
