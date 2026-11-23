@@ -45,8 +45,8 @@ jobs:
         uses: softprops/action-gh-release@v2
         if: startsWith(github.ref, 'refs/tags/') || github.ref == 'refs/heads/main'
         with:
-          tag_name: v1.2.7
-          name: "RAIWAVE v1.2.7 Official Release"
+          tag_name: v1.2.8
+          name: "RAIWAVE v1.2.8 Official Release"
           body: |
             ### 🎵 RAIWAVE v1.2.7 — Feel Every Frequency
             **Lead Engineer & Creator:** Kazi Raiyan

@@ -56,19 +56,8 @@ public class MediaNotificationService extends Service {
 
         audioManager = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
         audioFocusChangeListener = focusChange -> {
-            switch (focusChange) {
-                case AudioManager.AUDIOFOCUS_LOSS:
-                    // Genuine permanent focus loss to another application (e.g. Phone call)
-                    MainActivity.handleMediaAction("pause");
-                    break;
-                case AudioManager.AUDIOFOCUS_LOSS_TRANSIENT:
-                case AudioManager.AUDIOFOCUS_LOSS_TRANSIENT_CAN_DUCK:
-                    // Transient loss (notifications, system chimes, or internal WebView handshake)
-                    // Never pause the music! Let audio continue smoothly.
-                    break;
-                case AudioManager.AUDIOFOCUS_GAIN:
-                    break;
-            }
+            // Audio focus is managed directly by Chromium within the same app process.
+            // We intentionally do not interfere with WebView playback.
         };
 
         PowerManager powerManager = (PowerManager) getSystemService(Context.POWER_SERVICE);
@@ -121,46 +110,12 @@ public class MediaNotificationService extends Service {
     }
 
     private void requestAudioFocus() {
-        if (audioManager == null) return;
-        try {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                if (audioFocusRequest == null) {
-                    AudioAttributes playbackAttributes = new AudioAttributes.Builder()
-                            .setUsage(AudioAttributes.USAGE_MEDIA)
-                            .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)
-                            .build();
-                    audioFocusRequest = new AudioFocusRequest.Builder(AudioManager.AUDIOFOCUS_GAIN)
-                            .setAudioAttributes(playbackAttributes)
-                            .setAcceptsDelayedFocusGain(true)
-                            .setOnAudioFocusChangeListener(audioFocusChangeListener)
-                            .build();
-                }
-                audioManager.requestAudioFocus(audioFocusRequest);
-            } else {
-                audioManager.requestAudioFocus(
-                        audioFocusChangeListener,
-                        AudioManager.STREAM_MUSIC,
-                        AudioManager.AUDIOFOCUS_GAIN
-                );
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+        // No-op: Do NOT steal audio focus from the in-app Chromium WebView!
+        // Chromium's AudioFocusDelegate manages native media stream focus directly.
     }
 
     private void abandonAudioFocus() {
-        if (audioManager == null) return;
-        try {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                if (audioFocusRequest != null) {
-                    audioManager.abandonAudioFocusRequest(audioFocusRequest);
-                }
-            } else {
-                audioManager.abandonAudioFocus(audioFocusChangeListener);
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+        // No-op
     }
 
     private void createNotificationChannel() {

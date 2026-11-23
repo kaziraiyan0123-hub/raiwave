@@ -16,6 +16,8 @@ import android.os.Environment;
 import android.view.View;
 import android.view.Window;
 import android.view.WindowManager;
+import android.util.Log;
+import android.webkit.ConsoleMessage;
 import android.webkit.CookieManager;
 import android.webkit.JavascriptInterface;
 import android.webkit.PermissionRequest;
@@ -122,6 +124,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void configureWebView() {
+        WebView.setWebContentsDebuggingEnabled(true);
         WebSettings settings = webView.getSettings();
         settings.setJavaScriptEnabled(true);
         settings.setDomStorageEnabled(true);
@@ -199,6 +202,14 @@ public class MainActivity extends AppCompatActivity {
         });
 
         webView.setWebChromeClient(new WebChromeClient() {
+            @Override
+            public boolean onConsoleMessage(ConsoleMessage consoleMessage) {
+                Log.d("RAIWAVE_JS", "[" + consoleMessage.messageLevel() + "] "
+                        + consoleMessage.message() + " (" + consoleMessage.sourceId() + ":"
+                        + consoleMessage.lineNumber() + ")");
+                return true;
+            }
+
             @Override
             public void onPermissionRequest(final PermissionRequest request) {
                 runOnUiThread(() -> {

@@ -159,6 +159,7 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const isShuffleRef = useRef<boolean>(false)
   const blockedVideoIdsRef = useRef<Set<string>>(new Set())
   const playRequestIdRef = useRef<number>(0)
+  const lastPlayTimeRef = useRef<number>(0)
 
   // Current track & queue state (Default idle - never autoplay on load)
   const [currentTrack, setCurrentTrack] = useState<Track | null>(null)
@@ -784,6 +785,7 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     setDuration(track.duration || 180)
     if (shouldPlay) {
       setIsPlaying(true)
+      lastPlayTimeRef.current = Date.now()
     }
 
     showToast(`▶ Now Playing: ${track.title} • ${track.artist}`)
@@ -997,6 +999,7 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       }
       setIsPlaying(false)
     } else {
+      lastPlayTimeRef.current = Date.now()
       if (currentEngineRef.current === 'audio' && audioRef.current) {
         audioRef.current.play().catch(() => {
           if (currentTrack.youtubeId) {
@@ -1120,6 +1123,11 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       if (action === 'play') {
         if (!isPlayingRef.current) togglePlay()
       } else if (action === 'pause') {
+        // Protect against spurious audiofocus loss from native notification service within 3.5s of starting playback
+        if (Date.now() - lastPlayTimeRef.current < 3500) {
+          console.warn('Ignoring premature audiofocus pause event from native service')
+          return
+        }
         if (isPlayingRef.current) togglePlay()
       } else if (action === 'play_pause') {
         togglePlay()
