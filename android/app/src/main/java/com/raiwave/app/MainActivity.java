@@ -1,5 +1,7 @@
 package com.raiwave.app;
 
+import com.raiwave.app.BuildConfig;
+
 import android.Manifest;
 import android.app.DownloadManager;
 import android.content.BroadcastReceiver;
