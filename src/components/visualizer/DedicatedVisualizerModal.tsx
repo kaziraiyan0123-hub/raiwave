@@ -133,7 +133,7 @@ export const DedicatedVisualizerModal: React.FC = () => {
     hideTimerRef.current = setTimeout(() => {
       setControlsVisible(false)
       setShowSensitivitySlider(false)
-    }, 10000)
+    }, 15000)
   }, [])
 
   useEffect(() => {
@@ -696,8 +696,14 @@ export const DedicatedVisualizerModal: React.FC = () => {
       {/* High-Definition 60 FPS Visualizer Canvas */}
       <canvas
         ref={canvasRef}
-        className="w-full h-full block cursor-pointer"
+        className="w-full h-full block cursor-pointer select-none"
         onClick={() => {
+          setControlsVisible((prev) => {
+            if (!prev) resetHideTimer()
+            return !prev
+          })
+        }}
+        onTouchEnd={() => {
           setControlsVisible((prev) => {
             if (!prev) resetHideTimer()
             return !prev
