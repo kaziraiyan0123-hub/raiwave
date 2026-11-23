@@ -14,10 +14,24 @@ import { ProfileModal } from './components/ProfileModal'
 import { AndroidMediaNotificationCard } from './components/AndroidMediaNotificationCard'
 import { UpNextPanel } from './components/UpNextPanel'
 import { DedicatedVisualizerModal } from './components/visualizer/DedicatedVisualizerModal'
+import { OfficialWebsiteView } from './components/website/OfficialWebsiteView'
 
 function MainAppShell() {
-  const { dynamicTheme } = usePlayer()
+  const { dynamicTheme, appMode, setAppMode } = usePlayer()
 
+  // Official Website & Download Hub Mode
+  if (appMode === 'website') {
+    return (
+      <div className="min-h-screen w-full bg-[#0B0813] text-[#F8FAFC]">
+        <OfficialWebsiteView onLaunchWebPlayer={() => setAppMode('player')} />
+        {/* Preserve background audio playback engine */}
+        <YouTubeIframeContainer />
+        <ToastNotification />
+      </div>
+    )
+  }
+
+  // Full High-Fidelity Music Player Application Mode
   return (
     <div className="flex flex-col h-screen w-screen overflow-hidden bg-[#0B0D13] text-[#F8FAFC] relative font-sans transition-colors duration-1000">
       {/* Subtle Futuristic Ambient Lighting Wash (Dynamically reacts to album artwork) */}
@@ -60,7 +74,7 @@ function MainAppShell() {
           <MainContent />
         </div>
 
-        {/* Desktop Right Companion Pane (Image 5 - Top Hits + My Library) */}
+        {/* Desktop Right Companion Pane */}
         <RightCompanionPane />
       </div>
 

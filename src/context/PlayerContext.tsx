@@ -35,6 +35,10 @@ interface PlayerContextType {
   isVideoOpen: boolean
   toggleVideoOpen: () => void
 
+  // Application Mode (Official Website vs Web Player)
+  appMode: 'website' | 'player'
+  setAppMode: (mode: 'website' | 'player') => void
+
   // Navigation & Views
   currentView: ViewMode
   selectedPlaylist: Playlist | null
@@ -474,6 +478,34 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   useEffect(() => {
     isShuffleRef.current = isShuffle
   }, [isShuffle])
+
+  // Application Mode (Official Website vs Web Player)
+  const isAndroidNative = typeof (window as unknown as { AndroidMedia?: unknown }).AndroidMedia !== 'undefined'
+  const isExplicitAppUrl =
+    typeof window !== 'undefined' &&
+    (window.location.hash.includes('app') ||
+      window.location.pathname.startsWith('/app') ||
+      window.location.search.includes('app=true') ||
+      window.location.search.includes('source=android'))
+
+  const [appMode, setAppModeState] = useState<'website' | 'player'>(() => {
+    return isAndroidNative || isExplicitAppUrl ? 'player' : 'website'
+  })
+
+  const setAppMode = (mode: 'website' | 'player') => {
+    setAppModeState(mode)
+    try {
+      if (mode === 'player') {
+        window.history.pushState({ mode: 'player' }, '', '#app')
+      } else {
+        window.history.pushState(
+          { mode: 'website' },
+          '',
+          window.location.pathname === '/app' ? '/' : window.location.pathname
+        )
+      }
+    } catch {}
+  }
 
   // Views & navigation
   const [currentView, setCurrentView] = useState<ViewMode>('home')
@@ -1338,6 +1370,10 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   // Hardware/Browser back button listener for mobile
   useEffect(() => {
     const handlePopState = (e: PopStateEvent) => {
+      if (e.state?.mode) {
+        setAppModeState(e.state.mode)
+        return
+      }
       if (isDedicatedVisualizerOpen) {
         setIsDedicatedVisualizerOpen(false)
         return
@@ -1529,6 +1565,8 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         isLoadingRealtime,
         refreshRealtimeMusic,
         dynamicTheme,
+        appMode,
+        setAppMode,
       }}
     >
       {children}

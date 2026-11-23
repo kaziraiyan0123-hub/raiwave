@@ -5,6 +5,7 @@ import {
   Search,
   X,
   Radio,
+  Globe,
 } from 'lucide-react'
 import { usePlayer } from '../context/PlayerContext'
 
@@ -19,6 +20,7 @@ export const TopNav: React.FC = () => {
     toggleProfile,
     isNotificationOpen,
     toggleNotification,
+    setAppMode,
   } = usePlayer()
   const [urlMessage, setUrlMessage] = useState('')
 
@@ -92,8 +94,18 @@ export const TopNav: React.FC = () => {
         </div>
       </div>
 
-      {/* Right side: Floating Notification Card Toggle & User Profile Avatar */}
+      {/* Right side: Official Website & Notification Toggle & User Profile Avatar */}
       <div className="flex items-center gap-2">
+        {/* Official Website & Download Hub */}
+        <button
+          onClick={() => setAppMode('website')}
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-heading font-semibold transition-all border cursor-pointer bg-[#12141D] hover:bg-[#181B27] border-white/10 text-[#94A3B8] hover:text-white"
+          title="Return to Official Website & Downloads"
+        >
+          <Globe className="w-3.5 h-3.5 text-purple-400" />
+          <span className="hidden lg:inline">Official Site</span>
+        </button>
+
         {/* Floating Notification Card Toggle Button */}
         <button
           onClick={toggleNotification}
