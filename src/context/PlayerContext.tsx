@@ -520,7 +520,7 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   })
 
   // Ensure that if native Android bridge or desktop bridge initializes shortly after script execution,
-  // the app immediately locks into standalone player mode and never displays the download website.
+  // or when the URL hash changes to #app, the app immediately locks into standalone player mode.
   useEffect(() => {
     if (typeof window === 'undefined') return
 
@@ -532,7 +532,16 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
     verifyAndLockStandalone()
     const timer = setTimeout(verifyAndLockStandalone, 150)
-    return () => clearTimeout(timer)
+
+    const handleHashChange = () => {
+      verifyAndLockStandalone()
+    }
+    window.addEventListener('hashchange', handleHashChange)
+
+    return () => {
+      clearTimeout(timer)
+      window.removeEventListener('hashchange', handleHashChange)
+    }
   }, [appMode])
 
   // Synchronize document body class to enable full natural vertical scrolling on the website
