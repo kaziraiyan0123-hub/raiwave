@@ -480,17 +480,30 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   }, [isShuffle])
 
   // Application Mode (Official Website vs Web Player)
-  // Default to the full music player on mobile, Android app, and standard web.
-  // The official landing website is opened on demand via #website, /website, ?mode=website or TopNav button.
-  const isExplicitWebsiteUrl =
+  // Default to the official website so visitors immediately see the branding, features, and download buttons.
+  // The full music player is launched via "Launch Web Player" or directly via #app, /app, ?mode=player.
+  const isExplicitPlayerUrl =
     typeof window !== 'undefined' &&
-    (window.location.hash === '#website' ||
-      window.location.pathname === '/website' ||
-      window.location.search.includes('mode=website'))
+    (window.location.hash === '#app' ||
+      window.location.pathname === '/app' ||
+      window.location.search.includes('mode=player'))
 
   const [appMode, setAppModeState] = useState<'website' | 'player'>(() => {
-    return isExplicitWebsiteUrl ? 'website' : 'player'
+    return isExplicitPlayerUrl ? 'player' : 'website'
   })
+
+  // Synchronize document body class to enable full natural vertical scrolling on the website
+  useEffect(() => {
+    if (typeof document !== 'undefined') {
+      if (appMode === 'website') {
+        document.body.classList.add('website-mode')
+        document.body.classList.remove('player-mode')
+      } else {
+        document.body.classList.add('player-mode')
+        document.body.classList.remove('website-mode')
+      }
+    }
+  }, [appMode])
 
   const setAppMode = (mode: 'website' | 'player') => {
     setAppModeState(mode)
