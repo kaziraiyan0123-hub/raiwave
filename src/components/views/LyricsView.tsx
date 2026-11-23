@@ -40,7 +40,7 @@ export const LyricsView: React.FC = () => {
         background: `linear-gradient(180deg, ${currentTrack.color || '#12141D'} 0%, #0B0D13 90%)`,
       }}
     >
-      <div className="max-w-2xl mx-auto space-y-6 pb-28 md:pb-20">
+      <div className="max-w-2xl mx-auto space-y-6 pb-44 md:pb-28">
         {/* Track info banner */}
         <div className="flex items-center gap-4 mb-10 pb-6 border-b border-white/10">
           <img

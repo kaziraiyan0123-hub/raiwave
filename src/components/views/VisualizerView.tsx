@@ -663,7 +663,7 @@ export const VisualizerView: React.FC = () => {
 
       {/* Bottom Floating Glass HUD: Now Playing Bar & Playback Controls */}
       {currentTrack && (
-        <div className="relative z-20 p-4 sm:p-6 bg-gradient-to-t from-[#0B0D13]/90 via-[#0B0D13]/50 to-transparent flex items-center justify-between gap-4">
+        <div className="relative z-20 p-4 sm:p-6 pb-28 sm:pb-6 bg-gradient-to-t from-[#0B0D13]/90 via-[#0B0D13]/50 to-transparent flex items-center justify-between gap-4">
           {/* Left: Album Artwork & Song Info */}
           <div className="flex items-center gap-3.5 min-w-0">
             <div className="relative w-12 h-12 sm:w-14 sm:h-14 rounded-2xl overflow-hidden shadow-lg border border-white/10 flex-shrink-0">

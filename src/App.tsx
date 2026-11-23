@@ -13,6 +13,7 @@ import { ToastNotification } from './components/ToastNotification'
 import { ProfileModal } from './components/ProfileModal'
 import { AndroidMediaNotificationCard } from './components/AndroidMediaNotificationCard'
 import { UpNextPanel } from './components/UpNextPanel'
+import { WelcomeModal } from './components/WelcomeModal'
 
 function MainAppShell() {
   const { dynamicTheme } = usePlayer()
@@ -35,6 +36,9 @@ function MainAppShell() {
 
       {/* Floating Glass Feedback Toast */}
       <ToastNotification />
+
+      {/* First-Time User Welcome Modal & Developer Greeting */}
+      <WelcomeModal />
 
       {/* User Gmail Profile & Account Modal */}
       <ProfileModal />

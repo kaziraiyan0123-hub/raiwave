@@ -171,7 +171,7 @@ export const UpNextPanel: React.FC = () => {
         {/* =========================================================================
             PANEL BODY (Scrollable)
            ========================================================================= */}
-        <div className="flex-1 overflow-y-auto p-5 space-y-6 custom-scrollbar relative z-10">
+        <div className="flex-1 overflow-y-auto p-4 sm:p-5 pb-24 sm:pb-6 space-y-6 custom-scrollbar relative z-10">
           {/* 1. NOW PLAYING CARD */}
           <div>
             <div className="flex items-center justify-between mb-2.5 px-0.5">

@@ -1,5 +1,5 @@
 import React from 'react'
-import { Play, Pause, Heart, Clock, Music } from 'lucide-react'
+import { Play, Pause, Heart, Clock, Music, ChevronLeft } from 'lucide-react'
 import { usePlayer } from '../../context/PlayerContext'
 import { SAMPLE_TRACKS } from '../../data/musicData'
 import { EqualizerBars } from '../EqualizerBars'
@@ -13,6 +13,7 @@ export const LikedSongsView: React.FC = () => {
     isPlaying,
     togglePlay,
     toggleMobilePlayer,
+    goBack,
   } = usePlayer()
 
   const likedTracks = SAMPLE_TRACKS.filter((t) => likedTrackIds.includes(t.id))
@@ -37,9 +38,19 @@ export const LikedSongsView: React.FC = () => {
   }
 
   return (
-    <div className="select-none pb-28 md:pb-20">
+    <div className="select-none pb-44 md:pb-28">
       {/* 1. Header */}
-      <div className="p-6 sm:p-8 flex flex-col md:flex-row items-start md:items-end gap-6 bg-gradient-to-b from-[#52D6C9]/30 via-[#12141D] to-[#0B0D13] border-b border-white/5">
+      <div className="p-6 sm:p-8 flex flex-col md:flex-row items-start md:items-end gap-6 bg-gradient-to-b from-[#52D6C9]/30 via-[#12141D] to-[#0B0D13] border-b border-white/5 relative">
+        {/* Mobile In-Page Back Button */}
+        <button
+          onClick={goBack}
+          className="md:hidden flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-black/40 backdrop-blur-md text-white text-xs font-semibold border border-white/15 active:scale-95 transition-all mb-2 cursor-pointer"
+          title="Back"
+        >
+          <ChevronLeft className="w-4 h-4" />
+          <span>Back</span>
+        </button>
+
         <div className="w-40 h-40 sm:w-48 sm:h-48 rounded-2xl bg-gradient-to-br from-[#52D6C9] via-[#3B82F6] to-[#8B5CF6] shadow-2xl flex items-center justify-center flex-shrink-0 border border-white/10">
           <Heart className="w-20 h-20 text-white fill-white shadow-sm" />
         </div>

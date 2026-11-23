@@ -8,6 +8,7 @@ import {
   MoreHorizontal,
   Music,
   ListPlus,
+  ChevronLeft,
 } from 'lucide-react'
 import { usePlayer } from '../../context/PlayerContext'
 import { EqualizerBars } from '../EqualizerBars'
@@ -26,6 +27,7 @@ export const PlaylistView: React.FC = () => {
     toggleMobilePlayer,
     addToQueue,
     addPlaylistToQueue,
+    goBack,
   } = usePlayer()
 
   if (!selectedPlaylist) {
@@ -59,14 +61,24 @@ export const PlaylistView: React.FC = () => {
   }
 
   return (
-    <div className="select-none pb-20">
+    <div className="select-none pb-44 md:pb-28">
       {/* 1. Hero Header with Dynamic Tint */}
       <div
-        className="p-8 flex flex-col md:flex-row items-start md:items-end gap-6 transition-colors duration-500 relative"
+        className="p-6 sm:p-8 flex flex-col md:flex-row items-start md:items-end gap-6 transition-colors duration-500 relative"
         style={{
           background: `linear-gradient(to bottom, ${selectedPlaylist.color || '#2563eb'} 0%, #121212 100%)`,
         }}
       >
+        {/* Mobile In-Page Back Button */}
+        <button
+          onClick={goBack}
+          className="md:hidden flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-black/40 backdrop-blur-md text-white text-xs font-semibold border border-white/15 active:scale-95 transition-all mb-2 cursor-pointer"
+          title="Back"
+        >
+          <ChevronLeft className="w-4 h-4" />
+          <span>Back</span>
+        </button>
+
         <img
           src={selectedPlaylist.coverUrl}
           alt={selectedPlaylist.name}

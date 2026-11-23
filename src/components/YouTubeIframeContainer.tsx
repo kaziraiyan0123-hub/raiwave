@@ -32,38 +32,46 @@ export const YouTubeIframeContainer: React.FC = () => {
 
   return (
     <div
-      className={`fixed right-4 bottom-36 sm:right-6 sm:bottom-28 z-40 bg-[#141A23]/95 backdrop-blur-xl border border-[#202A34] rounded-2xl overflow-hidden shadow-2xl transition-all duration-300 ${
-        isVisible ? 'opacity-100 translate-y-0 pointer-events-auto' : 'opacity-0 pointer-events-none translate-y-10'
-      } ${isMinimized ? 'w-56 h-10' : 'w-72 h-48 sm:w-80 sm:h-52'}`}
+      className={`overflow-hidden transition-all duration-300 ${
+        isVisible
+          ? `fixed z-40 bg-[#141A23]/95 backdrop-blur-xl border border-[#202A34] rounded-2xl shadow-2xl ${
+              isMinimized
+                ? 'bottom-24 right-4 sm:right-6 sm:bottom-28 w-56 h-10'
+                : 'bottom-24 left-4 right-4 sm:left-auto sm:right-6 sm:bottom-28 w-auto sm:w-80 h-48 sm:h-52'
+            }`
+          : 'fixed -bottom-24 -right-24 w-1 h-1 opacity-[0.005] pointer-events-none z-[-10]'
+      }`}
     >
-      {/* Mini-dock header */}
-      <div className="bg-[#1B232E] px-3 py-1.5 flex items-center justify-between text-xs font-semibold text-white/90 border-b border-[#202A34] select-none">
-        <div className="flex items-center gap-2 truncate">
-          <Tv className="w-3.5 h-3.5 text-[#B6F36B]" />
-          <span className="truncate font-display text-white">RAIWAVE Visualizer</span>
+      {/* Mini-dock header (only shown when visible) */}
+      {isVisible && (
+        <div className="bg-[#1B232E] px-3 py-1.5 flex items-center justify-between text-xs font-semibold text-white/90 border-b border-[#202A34] select-none">
+          <div className="flex items-center gap-2 truncate">
+            <Tv className="w-3.5 h-3.5 text-[#B6F36B]" />
+            <span className="truncate font-display text-white">RAIWAVE Visualizer</span>
+          </div>
+          <div className="flex items-center gap-1">
+            <button
+              onClick={() => setIsMinimized((prev) => !prev)}
+              className="p-1 hover:text-white text-white/60 transition-colors rounded hover:bg-white/10"
+              title={isMinimized ? 'Expand Video' : 'Minimize Video'}
+            >
+              {isMinimized ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+            </button>
+            <button
+              onClick={toggleVideoOpen}
+              className="p-1 hover:text-white text-white/60 transition-colors rounded hover:bg-white/10"
+              title="Close Video Dock"
+            >
+              <X className="w-3.5 h-3.5" />
+            </button>
+          </div>
         </div>
-        <div className="flex items-center gap-1">
-          <button
-            onClick={() => setIsMinimized((prev) => !prev)}
-            className="p-1 hover:text-white text-white/60 transition-colors rounded hover:bg-white/10"
-            title={isMinimized ? 'Expand Video' : 'Minimize Video'}
-          >
-            {isMinimized ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
-          </button>
-          <button
-            onClick={toggleVideoOpen}
-            className="p-1 hover:text-white text-white/60 transition-colors rounded hover:bg-white/10"
-            title="Close Video Dock"
-          >
-            <X className="w-3.5 h-3.5" />
-          </button>
-        </div>
-      </div>
+      )}
 
       {/* The Actual YouTube Iframe container */}
       <div
         className={`w-full bg-black transition-all duration-200 ${
-          isMinimized ? 'h-0 opacity-0 pointer-events-none' : 'h-[calc(100%-28px)] opacity-100'
+          isVisible && isMinimized ? 'h-0 opacity-0 pointer-events-none' : isVisible ? 'h-[calc(100%-28px)] opacity-100' : 'w-full h-full'
         }`}
       >
         <PlayerHost />

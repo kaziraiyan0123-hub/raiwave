@@ -15,6 +15,7 @@ import {
   ArrowDownToLine,
   CheckCircle2,
   Sparkles,
+  Activity,
 } from 'lucide-react'
 import { usePlayer } from '../../context/PlayerContext'
 
@@ -465,6 +466,17 @@ export const MobileFullPlayer: React.FC = () => {
           >
             <ListMusic className="w-4 h-4 text-[#52D6C9]" />
             <span>Queue</span>
+          </button>
+
+          <button
+            onClick={() => {
+              toggleMobilePlayer()
+              navigateTo('visualizer')
+            }}
+            className="flex items-center gap-1.5 text-xs hover:text-white transition-colors py-1.5 px-3 rounded-full cursor-pointer"
+          >
+            <Activity className="w-4 h-4 text-purple-400" />
+            <span>Visualizer</span>
           </button>
 
           <button

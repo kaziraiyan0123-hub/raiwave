@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react'
+import React, { useState, useMemo } from 'react'
 import {
   Play,
   Pause,
@@ -94,14 +94,30 @@ export const HomeView: React.FC = () => {
   // Calculate current playback progress percentage
   const currentProgressPercent = duration > 0 ? (currentTime / duration) * 100 : 0
 
+  // Optional friendly developer greeting from Raiyan
+  const [showDevGreeting, setShowDevGreeting] = useState(() => {
+    try {
+      return localStorage.getItem('raiwave_dev_greeting_dismissed') !== 'true'
+    } catch {
+      return true
+    }
+  })
+
+  const dismissDevGreeting = () => {
+    setShowDevGreeting(false)
+    try {
+      localStorage.setItem('raiwave_dev_greeting_dismissed', 'true')
+    } catch {}
+  }
+
   return (
-    <div className="p-4 sm:p-6 lg:p-8 space-y-10 select-none pb-36 md:pb-28 max-w-7xl mx-auto">
+    <div className="p-4 sm:p-6 lg:p-8 space-y-8 select-none pb-44 md:pb-28 max-w-7xl mx-auto">
       {/* =========================================================================
           TOP SECTION: IN-PAGE SEARCH & GREETING HEADER
          ========================================================================= */}
       <div className="space-y-4">
-        {/* Quick Search Bar (Prominent in Home View) */}
-        <div className="relative max-w-2xl">
+        {/* Quick Search Bar (Prominent in Desktop Home View; Mobile uses MobileTopBar) */}
+        <div className="hidden md:block relative max-w-2xl">
           <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-[#94A3B8]">
             <Search className="w-4 h-4 text-[#8B5CF6]" />
           </div>
@@ -132,6 +148,38 @@ export const HomeView: React.FC = () => {
             </button>
           )}
         </div>
+
+        {/* Developer Greeting Banner from Raiyan (Dismissible & Personalized) */}
+        {showDevGreeting && (
+          <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-purple-950/40 via-purple-900/25 to-[#12141D]/90 border border-purple-500/20 p-4 sm:p-4.5 shadow-xl backdrop-blur-xl animate-in fade-in duration-300">
+            <div className="flex items-start justify-between gap-3">
+              <div className="flex items-start gap-3">
+                <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-purple-500/20 border border-purple-400/30 flex items-center justify-center flex-shrink-0 text-lg shadow-inner">
+                  👋
+                </div>
+                <div>
+                  <h4 className="text-xs sm:text-sm font-bold text-white flex items-center gap-2">
+                    <span>A note from Raiyan</span>
+                    <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-purple-500/20 text-purple-300 border border-purple-400/25">
+                      Developer
+                    </span>
+                  </h4>
+                  <p className="text-xs text-white/75 mt-1 leading-relaxed">
+                    {userProfile.name ? `Hey ${userProfile.name.split(' ')[0]}! ` : 'Welcome to RAIWAVE! '}
+                    Stream studio-grade lossless audio, live karaoke lyrics, and real-time audio visualizers across your devices. Enjoy the music!
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={dismissDevGreeting}
+                className="text-white/40 hover:text-white p-1 rounded-lg hover:bg-white/10 transition-colors flex-shrink-0 cursor-pointer"
+                title="Dismiss message"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* 1. Greeting Section */}
         <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 pt-2">

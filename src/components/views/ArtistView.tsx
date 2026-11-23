@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { Play, Pause, CheckCircle2, Heart } from 'lucide-react'
+import { Play, Pause, CheckCircle2, Heart, ChevronLeft } from 'lucide-react'
 import { usePlayer } from '../../context/PlayerContext'
 import { EqualizerBars } from '../EqualizerBars'
 
@@ -12,6 +12,7 @@ export const ArtistView: React.FC = () => {
     togglePlay,
     isLiked,
     toggleLike,
+    goBack,
   } = usePlayer()
 
   const [isFollowing, setIsFollowing] = useState(false)
@@ -43,14 +44,24 @@ export const ArtistView: React.FC = () => {
   }
 
   return (
-    <div className="select-none pb-32">
+    <div className="select-none pb-44 md:pb-28">
       {/* Hero Banner with Artist Image */}
       <div
-        className="h-80 relative flex items-end p-8 bg-cover bg-center overflow-hidden"
+        className="h-80 relative flex items-end p-6 sm:p-8 bg-cover bg-center overflow-hidden"
         style={{
           backgroundImage: `linear-gradient(rgba(9,13,19,0.3), rgba(9,13,19,0.98)), url(${selectedArtist.headerImage})`,
         }}
       >
+        {/* Mobile In-Page Back Button */}
+        <button
+          onClick={goBack}
+          className="md:hidden absolute top-4 left-4 z-20 flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-black/60 backdrop-blur-md text-white text-xs font-semibold border border-white/15 active:scale-95 transition-all cursor-pointer"
+          title="Back"
+        >
+          <ChevronLeft className="w-4 h-4" />
+          <span>Back</span>
+        </button>
+
         <div className="relative z-10 space-y-2">
           <div className="flex items-center gap-1.5 text-xs font-semibold text-[#52D6C9]">
             <CheckCircle2 className="w-4 h-4 fill-[#52D6C9] text-black" />

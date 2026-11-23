@@ -74,6 +74,8 @@ interface PlayerContextType {
 
   // Navigation actions
   navigateTo: (view: ViewMode) => void
+  goBack: () => void
+  canGoBack: boolean
   openPlaylist: (playlist: Playlist) => void
   openAlbum: (album: Album) => void
   openArtist: (artist: Artist) => void
@@ -431,6 +433,7 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
   // Views & navigation
   const [currentView, setCurrentView] = useState<ViewMode>('home')
+  const [viewHistory, setViewHistory] = useState<ViewMode[]>(['home'])
   const [selectedPlaylist, setSelectedPlaylist] = useState<Playlist | null>(null)
   const [selectedAlbum, setSelectedAlbum] = useState<Album | null>(null)
   const [selectedArtist, setSelectedArtist] = useState<Artist | null>(null)
@@ -615,21 +618,21 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     youtubeService.setVolume(actualVol)
   }, [volume, isMuted])
 
-  // 4. MediaSession API setup & Android Mobile Background Playback Notification
+  // 4. MediaSession API setup & Mobile Background Audio Session
   const backgroundAudioRef = useRef<HTMLAudioElement | null>(null)
   const isPlayingRef = useRef(isPlaying)
-  const lastReportedTrackIdRef = useRef<string | null>(null)
-  const lastReportedPlayingRef = useRef<boolean | null>(null)
+  const togglePlayRef = useRef<() => void>(() => {})
+  const prevTrackRef = useRef<() => void>(() => {})
+  const nextTrackRef = useRef<() => void>(() => {})
+  const seekRef = useRef<(secs: number) => void>(() => {})
+  const currentTimeRef = useRef(currentTime)
+  const durationRef = useRef(duration)
 
   useEffect(() => {
-    isPlayingRef.current = isPlaying
-  }, [isPlaying])
-
-  useEffect(() => {
-    // Silent audio loop to keep Android mobile background audio process alive
+    // Silent audio element to keep mobile background audio session and notification active
     const bgAudio = new Audio('data:audio/wav;base64,UklGRigAAABXQVZFZm10IBIAAAABAAEARKwAAIhYAQACABAAAABkYXRhAgAAAAEA')
     bgAudio.loop = true
-    bgAudio.volume = 0.02 // Must be > 0.01 for Chromium isAudible check
+    bgAudio.volume = 0.01
     backgroundAudioRef.current = bgAudio
     return () => {
       bgAudio.pause()
@@ -637,14 +640,100 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   }, [])
 
   useEffect(() => {
-    // Only use background silent audio if in standard HTML5 audio engine.
-    // When YouTube engine is active, playing backgroundAudioRef steals Android audio focus from the YouTube iframe!
-    if (isPlaying && currentEngineRef.current === 'audio') {
+    if (isPlaying) {
       backgroundAudioRef.current?.play().catch(() => {})
     } else {
       backgroundAudioRef.current?.pause()
     }
-  }, [isPlaying, activeEngine])
+  }, [isPlaying])
+
+  // Stable MediaSession Action Handlers (registered once)
+  useEffect(() => {
+    if ('mediaSession' in navigator) {
+      navigator.mediaSession.setActionHandler('play', () => togglePlayRef.current())
+      navigator.mediaSession.setActionHandler('pause', () => togglePlayRef.current())
+      navigator.mediaSession.setActionHandler('previoustrack', () => prevTrackRef.current())
+      navigator.mediaSession.setActionHandler('nexttrack', () => nextTrackRef.current())
+      navigator.mediaSession.setActionHandler('seekto', (details) => {
+        if (details.seekTime !== undefined) seekRef.current(details.seekTime)
+      })
+      navigator.mediaSession.setActionHandler('seekbackward', (details) => {
+        const offset = details.seekOffset || 10
+        seekRef.current(Math.max(0, currentTimeRef.current - offset))
+      })
+      navigator.mediaSession.setActionHandler('seekforward', (details) => {
+        const offset = details.seekOffset || 10
+        seekRef.current(Math.min(durationRef.current, currentTimeRef.current + offset))
+      })
+    }
+  }, [])
+
+  // Update MediaSession metadata only when track changes
+  useEffect(() => {
+    if ('mediaSession' in navigator && currentTrack) {
+      try {
+        navigator.mediaSession.metadata = new MediaMetadata({
+          title: currentTrack.title,
+          artist: currentTrack.artist,
+          album: currentTrack.album || 'RAIWAVE Lossless Stream',
+          artwork: [
+            { src: currentTrack.coverUrl, sizes: '96x96', type: 'image/jpeg' },
+            { src: currentTrack.coverUrl, sizes: '128x128', type: 'image/jpeg' },
+            { src: currentTrack.coverUrl, sizes: '192x192', type: 'image/jpeg' },
+            { src: currentTrack.coverUrl, sizes: '256x256', type: 'image/jpeg' },
+            { src: currentTrack.coverUrl, sizes: '384x384', type: 'image/jpeg' },
+            { src: currentTrack.coverUrl, sizes: '512x512', type: 'image/jpeg' },
+          ],
+        })
+      } catch {}
+    }
+  }, [currentTrack?.id])
+
+  // Update MediaSession playback state & Android Bridge on play/pause transition
+  useEffect(() => {
+    if ('mediaSession' in navigator) {
+      navigator.mediaSession.playbackState = isPlaying ? 'playing' : 'paused'
+    }
+
+    if (currentTrack) {
+      try {
+        const androidBridge = (window as any).AndroidMedia
+        if (androidBridge) {
+          if (typeof androidBridge.updateMediaWithDetails === 'function') {
+            androidBridge.updateMediaWithDetails(
+              currentTrack.title,
+              currentTrack.artist,
+              currentTrack.album || 'RAIWAVE Lossless Stream',
+              currentTrack.coverUrl,
+              isPlaying,
+              Math.round(duration || 0),
+              Math.round(currentTime || 0)
+            )
+          } else if (typeof androidBridge.updateMedia === 'function') {
+            androidBridge.updateMedia(
+              currentTrack.title,
+              currentTrack.artist,
+              currentTrack.coverUrl,
+              isPlaying
+            )
+          }
+        }
+      } catch {}
+    }
+  }, [isPlaying, currentTrack?.id])
+
+  // Update position state smoothly when duration or currentTime change significantly
+  useEffect(() => {
+    if ('mediaSession' in navigator && duration > 0 && 'setPositionState' in navigator.mediaSession) {
+      try {
+        navigator.mediaSession.setPositionState({
+          duration: Math.max(duration, 1),
+          playbackRate: isPlaying ? 1 : 0,
+          position: Math.min(Math.max(currentTime, 0), duration),
+        })
+      } catch {}
+    }
+  }, [duration, isPlaying, Math.floor(currentTime)])
 
   // Live Synced Lyrics fetcher
   useEffect(() => {
@@ -685,87 +774,6 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       setSmartSuggestions(suggs)
     })
   }, [currentTrack?.id, queue.length])
-
-  // MediaSession API setup
-  useEffect(() => {
-    if ('mediaSession' in navigator && currentTrack) {
-      navigator.mediaSession.metadata = new MediaMetadata({
-        title: currentTrack.title,
-        artist: currentTrack.artist,
-        album: currentTrack.album || 'RAIWAVE Universal Stream',
-        artwork: [
-          { src: currentTrack.coverUrl, sizes: '96x96', type: 'image/jpeg' },
-          { src: currentTrack.coverUrl, sizes: '128x128', type: 'image/jpeg' },
-          { src: currentTrack.coverUrl, sizes: '192x192', type: 'image/jpeg' },
-          { src: currentTrack.coverUrl, sizes: '256x256', type: 'image/jpeg' },
-          { src: currentTrack.coverUrl, sizes: '384x384', type: 'image/jpeg' },
-          { src: currentTrack.coverUrl, sizes: '512x512', type: 'image/jpeg' },
-        ],
-      })
-
-      navigator.mediaSession.playbackState = isPlaying ? 'playing' : 'paused'
-
-      navigator.mediaSession.setActionHandler('play', () => togglePlay())
-      navigator.mediaSession.setActionHandler('pause', () => togglePlay())
-      navigator.mediaSession.setActionHandler('previoustrack', () => prevTrack())
-      navigator.mediaSession.setActionHandler('nexttrack', () => nextTrack())
-      navigator.mediaSession.setActionHandler('seekto', (details) => {
-        if (details.seekTime !== undefined) seek(details.seekTime)
-      })
-      navigator.mediaSession.setActionHandler('seekbackward', (details) => {
-        const offset = details.seekOffset || 10
-        seek(Math.max(0, currentTime - offset))
-      })
-      navigator.mediaSession.setActionHandler('seekforward', (details) => {
-        const offset = details.seekOffset || 10
-        seek(Math.min(duration, currentTime + offset))
-      })
-
-      try {
-        if (duration > 0 && 'setPositionState' in navigator.mediaSession) {
-          navigator.mediaSession.setPositionState({
-            duration: Math.max(duration, 1),
-            playbackRate: 1,
-            position: Math.min(Math.max(currentTime, 0), duration),
-          })
-        }
-      } catch {}
-    }
-
-    // Update Native Android Media Notification in Android APK
-    // Note: Only dispatch updates on track changes or play/pause state transitions.
-    // Never dispatch on every timer tick, which throws ForegroundServiceStartNotAllowedException on Android 12+!
-    const trackChanged = currentTrack && lastReportedTrackIdRef.current !== currentTrack.id
-    const playingChanged = lastReportedPlayingRef.current !== isPlaying
-
-    if (currentTrack && (trackChanged || playingChanged)) {
-      lastReportedTrackIdRef.current = currentTrack.id
-      lastReportedPlayingRef.current = isPlaying
-      try {
-        const androidBridge = (window as any).AndroidMedia
-        if (androidBridge) {
-          if (typeof androidBridge.updateMediaWithDetails === 'function') {
-            androidBridge.updateMediaWithDetails(
-              currentTrack.title,
-              currentTrack.artist,
-              currentTrack.album || 'RAIWAVE Universal Stream',
-              currentTrack.coverUrl,
-              isPlaying,
-              Math.round(duration || 0),
-              Math.round(currentTime || 0)
-            )
-          } else if (typeof androidBridge.updateMedia === 'function') {
-            androidBridge.updateMedia(
-              currentTrack.title,
-              currentTrack.artist,
-              currentTrack.coverUrl,
-              isPlaying
-            )
-          }
-        }
-      } catch {}
-    }
-  }, [currentTrack, isPlaying, duration, currentTime])
 
   // Central Playback Engine Router
   const loadAndPlayTrack = (track: Track, shouldPlay = true) => {
@@ -856,8 +864,18 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       currentEngineRef.current = 'youtube'
       setActiveEngine('youtube')
       if (audioRef.current) audioRef.current.pause()
-      youtubeService.loadSearchQuery(`${track.artist} - ${track.title}`)
-      setIsPlaying(shouldPlay)
+      youtubeService.loadSearchQuery(`${track.artist} - ${track.title}`).then((vid) => {
+        if (playRequestIdRef.current !== reqId) return
+        if (vid) {
+          track.youtubeId = vid
+          if (currentTrackRef.current?.id === track.id) {
+            youtubeService.loadVideo(vid, shouldPlay)
+          }
+        } else {
+          setIsPlaying(false)
+          showToast(`⚠️ Audio stream not found for "${track.title}"`)
+        }
+      })
     }
 
     // Add to history & persist in localStorage
@@ -1085,6 +1103,17 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     loadAndPlayTrack(curQueue[prevIdx], true)
   }
 
+  // Keep MediaSession refs continuously updated with latest functions and values
+  useEffect(() => {
+    togglePlayRef.current = togglePlay
+    prevTrackRef.current = prevTrack
+    nextTrackRef.current = nextTrack
+    seekRef.current = seek
+    isPlayingRef.current = isPlaying
+    currentTimeRef.current = currentTime
+    durationRef.current = duration
+  }, [togglePlay, prevTrack, nextTrack, seek, isPlaying, currentTime, duration])
+
   // Native Android Media Notification Callback bridge
   useEffect(() => {
     ;(window as any).__raiwaveMediaControl = (action: string) => {
@@ -1224,21 +1253,63 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     showToast(`▶ Now playing "${track.title}"`)
   }
 
-  const navigateTo = (view: ViewMode) => setCurrentView(view)
+  const navigateTo = (view: ViewMode) => {
+    setViewHistory((prev) => (prev[prev.length - 1] === view ? prev : [...prev, view]))
+    setCurrentView(view)
+    try {
+      window.history.pushState({ view }, '', `#${view}`)
+    } catch {}
+  }
+
+  const goBack = () => {
+    if (isMobilePlayerOpen) {
+      setIsMobilePlayerOpen(false)
+      return
+    }
+    setViewHistory((prev) => {
+      if (prev.length <= 1) {
+        setCurrentView('home')
+        return ['home']
+      }
+      const updated = prev.slice(0, -1)
+      const target = updated[updated.length - 1]
+      setCurrentView(target)
+      return updated
+    })
+  }
+
+  const canGoBack = viewHistory.length > 1 || currentView !== 'home'
+
+  // Hardware/Browser back button listener for mobile
+  useEffect(() => {
+    const handlePopState = (e: PopStateEvent) => {
+      if (isMobilePlayerOpen) {
+        setIsMobilePlayerOpen(false)
+        return
+      }
+      if (e.state?.view) {
+        setCurrentView(e.state.view)
+      } else {
+        goBack()
+      }
+    }
+    window.addEventListener('popstate', handlePopState)
+    return () => window.removeEventListener('popstate', handlePopState)
+  }, [isMobilePlayerOpen])
 
   const openPlaylist = (playlist: Playlist) => {
     setSelectedPlaylist(playlist)
-    setCurrentView('playlist')
+    navigateTo('playlist')
   }
 
   const openAlbum = (album: Album) => {
     setSelectedAlbum(album)
-    setCurrentView('album')
+    navigateTo('album')
   }
 
   const openArtist = (artist: Artist) => {
     setSelectedArtist(artist)
-    setCurrentView('artist')
+    navigateTo('artist')
   }
 
   const createPlaylist = (name: string, description?: string): Playlist => {
@@ -1358,6 +1429,8 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         setIsQueuePanelOpen,
         toggleQueuePanel,
         navigateTo,
+        goBack,
+        canGoBack,
         openPlaylist,
         openAlbum,
         openArtist,

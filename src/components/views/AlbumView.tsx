@@ -1,5 +1,5 @@
 import React from 'react'
-import { Play, Pause, Clock, Heart, ListPlus } from 'lucide-react'
+import { Play, Pause, Clock, Heart, ListPlus, ChevronLeft } from 'lucide-react'
 import { usePlayer } from '../../context/PlayerContext'
 import { EqualizerBars } from '../EqualizerBars'
 
@@ -14,6 +14,7 @@ export const AlbumView: React.FC = () => {
     toggleLike,
     addToQueue,
     addAlbumToQueue,
+    goBack,
   } = usePlayer()
 
   if (!selectedAlbum) {
@@ -43,14 +44,24 @@ export const AlbumView: React.FC = () => {
   }
 
   return (
-    <div className="select-none pb-32">
+    <div className="select-none pb-44 md:pb-28">
       {/* Header */}
       <div
-        className="p-8 flex flex-col md:flex-row items-start md:items-end gap-6 relative"
+        className="p-6 sm:p-8 flex flex-col md:flex-row items-start md:items-end gap-6 relative"
         style={{
           background: `linear-gradient(to bottom, ${selectedAlbum.color || '#52D6C9'} 0%, #0B0D13 100%)`,
         }}
       >
+        {/* Mobile In-Page Back Button */}
+        <button
+          onClick={goBack}
+          className="md:hidden flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-black/40 backdrop-blur-md text-white text-xs font-semibold border border-white/15 active:scale-95 transition-all mb-2 cursor-pointer"
+          title="Back"
+        >
+          <ChevronLeft className="w-4 h-4" />
+          <span>Back</span>
+        </button>
+
         <img
           src={selectedAlbum.coverUrl}
           alt={selectedAlbum.title}

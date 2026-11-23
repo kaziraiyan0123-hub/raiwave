@@ -1,5 +1,5 @@
 import React from 'react'
-import { Play, Pause } from 'lucide-react'
+import { Play, Pause, SkipForward, Heart } from 'lucide-react'
 import { usePlayer } from '../../context/PlayerContext'
 import { EqualizerBars } from '../EqualizerBars'
 
@@ -8,6 +8,9 @@ export const MobileMiniPlayer: React.FC = () => {
     currentTrack,
     isPlaying,
     togglePlay,
+    nextTrack,
+    isLiked,
+    toggleLike,
     toggleMobilePlayer,
     currentTime,
     duration,
@@ -17,73 +20,99 @@ export const MobileMiniPlayer: React.FC = () => {
   if (!currentTrack) return null
 
   const progressPercent = duration > 0 ? (currentTime / duration) * 100 : 0
+  const liked = isLiked(currentTrack.id)
+  const accentColor = dynamicTheme.primary || '#A78BFA'
+  const secondaryColor = dynamicTheme.secondary || '#8B5CF6'
 
   return (
     <div
       id="mobile-mini-player"
       data-testid="mobile-mini-player"
       onClick={toggleMobilePlayer}
-      className="md:hidden fixed bottom-[84px] left-3.5 right-3.5 z-30 cursor-pointer select-none group transition-all"
+      className="md:hidden fixed bottom-[78px] left-3 right-3 z-30 cursor-pointer select-none group transition-all"
     >
       <div
-        className="bg-[#131520]/95 backdrop-blur-2xl border rounded-2xl p-2.5 flex items-center justify-between gap-3 relative overflow-hidden transition-all duration-200 active:scale-[0.99]"
+        className="bg-[#120E22]/95 backdrop-blur-3xl border rounded-2xl p-2.5 flex items-center justify-between gap-3 relative overflow-hidden shadow-2xl transition-all duration-300 active:scale-[0.99]"
         style={{
-          borderColor: dynamicTheme.borderColor,
-          boxShadow: `0 10px 30px rgba(0,0,0,0.85), 0 0 20px ${dynamicTheme.surfaceGlow}`,
-          transition: 'border-color 800ms ease, box-shadow 800ms ease',
+          borderColor: dynamicTheme.borderColor || 'rgba(255, 255, 255, 0.12)',
+          boxShadow: `0 12px 35px rgba(0,0,0,0.85), 0 0 25px ${dynamicTheme.surfaceGlow}`,
         }}
       >
         {/* Subtle Ambient Color Glow */}
         <div
-          className="absolute -inset-1 opacity-20 blur-xl pointer-events-none transition-all duration-700"
-          style={{ backgroundColor: dynamicTheme.primary }}
+          className="absolute -inset-1 opacity-25 blur-xl pointer-events-none transition-all duration-700"
+          style={{ backgroundColor: accentColor }}
         />
 
-        {/* Track Artwork + Details */}
-        <div className="flex items-center gap-3 min-w-0 z-10">
+        {/* Left: Track Artwork + Live Equalizer + Details */}
+        <div className="flex items-center gap-3 min-w-0 z-10 flex-1">
           <div className="relative flex-shrink-0">
             <img
               src={currentTrack.coverUrl}
               alt={currentTrack.title}
-              className="w-11 h-11 rounded-xl object-cover shadow-md border border-white/10"
+              className="w-12 h-12 rounded-xl object-cover shadow-md border border-white/10"
             />
             {isPlaying && (
-              <span className="absolute bottom-1 right-1 p-0.5 rounded-full bg-black/60 backdrop-blur-sm">
+              <span className="absolute bottom-1 right-1 p-0.5 rounded-full bg-black/70 backdrop-blur-sm">
                 <EqualizerBars size="sm" />
               </span>
             )}
           </div>
 
-          <div className="flex flex-col min-w-0">
-            <span className="text-xs font-bold text-white truncate font-heading group-hover:text-white/80 transition-colors">
+          <div className="flex flex-col min-w-0 pr-1">
+            <span className="text-xs sm:text-sm font-bold text-white truncate font-heading leading-tight">
               {currentTrack.title}
             </span>
-            <span className="text-[11px] text-[#94A3B8] truncate">
+            <span className="text-[11px] text-white/60 truncate mt-0.5">
               {currentTrack.artist}
             </span>
           </div>
         </div>
 
-        {/* Controls */}
-        <div className="flex items-center gap-2 z-10 flex-shrink-0 pr-1">
+        {/* Right Controls: Favorite Heart + Play/Pause + Skip Next */}
+        <div className="flex items-center gap-1.5 z-10 flex-shrink-0 pr-0.5">
+          {/* Like Heart Button */}
+          <button
+            onClick={(e) => {
+              e.stopPropagation()
+              toggleLike(currentTrack.id)
+            }}
+            className="w-9 h-9 rounded-full flex items-center justify-center text-white/60 hover:text-white active:scale-90 transition-all cursor-pointer"
+            title={liked ? 'Unlike' : 'Like'}
+          >
+            <Heart
+              className={`w-4 h-4 stroke-[2] ${
+                liked ? 'text-pink-500 fill-pink-500' : 'text-white/60'
+              }`}
+            />
+          </button>
+
+          {/* Play/Pause Button */}
           <button
             onClick={(e) => {
               e.stopPropagation()
               togglePlay()
             }}
-            className="w-9 h-9 rounded-full text-white flex items-center justify-center hover:scale-105 active:scale-95 transition-all"
-            style={{
-              background: `linear-gradient(135deg, ${dynamicTheme.primary} 0%, ${dynamicTheme.secondary} 100%)`,
-              boxShadow: `0 4px 14px ${dynamicTheme.accentGlow}`,
-              transition: 'all 600ms ease',
-            }}
+            className="w-10 h-10 rounded-full text-[#0B0D13] bg-white flex items-center justify-center hover:scale-105 active:scale-95 transition-all shadow-md cursor-pointer"
             title={isPlaying ? 'Pause' : 'Play'}
           >
             {isPlaying ? (
-              <Pause className="w-4 h-4 fill-white" />
+              <Pause className="w-4 h-4 fill-current" />
             ) : (
-              <Play className="w-4 h-4 fill-white ml-0.5" />
+              <Play className="w-4 h-4 fill-current ml-0.5" />
             )}
+          </button>
+
+          {/* Skip Next Track */}
+          <button
+            onClick={(e) => {
+              e.stopPropagation()
+              nextTrack()
+            }}
+            className="w-9 h-9 rounded-full flex items-center justify-center text-white/80 hover:text-white active:scale-90 transition-all cursor-pointer"
+            title="Next Track"
+          >
+            <SkipForward className="w-4 h-4 fill-current" />
           </button>
         </div>
 
@@ -93,7 +122,7 @@ export const MobileMiniPlayer: React.FC = () => {
             className="h-full transition-all duration-300"
             style={{
               width: `${progressPercent}%`,
-              background: `linear-gradient(90deg, ${dynamicTheme.secondary} 0%, ${dynamicTheme.primary} 100%)`,
+              background: `linear-gradient(90deg, ${secondaryColor} 0%, ${accentColor} 100%)`,
             }}
           />
         </div>
