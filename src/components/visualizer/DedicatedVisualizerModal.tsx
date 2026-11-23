@@ -133,7 +133,7 @@ export const DedicatedVisualizerModal: React.FC = () => {
     hideTimerRef.current = setTimeout(() => {
       setControlsVisible(false)
       setShowSensitivitySlider(false)
-    }, 4000)
+    }, 6000)
   }, [])
 
   useEffect(() => {
@@ -687,6 +687,8 @@ export const DedicatedVisualizerModal: React.FC = () => {
       ref={containerRef}
       id="dedicated-visualizer-modal"
       data-testid="dedicated-visualizer-modal"
+      onClick={resetHideTimer}
+      onPointerDown={resetHideTimer}
       onMouseMove={resetHideTimer}
       onTouchStart={resetHideTimer}
       className="fixed inset-0 z-[60] select-none overflow-hidden bg-[#07090E] transition-opacity duration-300 animate-in fade-in"
@@ -792,7 +794,10 @@ export const DedicatedVisualizerModal: React.FC = () => {
             return (
               <button
                 key={m.id}
-                onClick={() => setMode(m.id)}
+                onClick={() => {
+                  setMode(m.id)
+                  resetHideTimer()
+                }}
                 className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-semibold font-heading transition-all duration-200 active:scale-95 cursor-pointer whitespace-nowrap ${
                   isCurrent
                     ? 'bg-gradient-to-r from-purple-600 to-indigo-600 text-white shadow-[0_0_16px_rgba(147,51,234,0.5)] border border-purple-400/40'
