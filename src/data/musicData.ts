@@ -554,6 +554,32 @@ export const SAMPLE_PLAYLISTS: Playlist[] = [
     owner: 'YouTube Studio',
     color: '#ef4444',
   },
+  {
+    id: 'playlist-synth-drive',
+    name: 'Synthwave & Electronic Pulse',
+    description: 'Neon horizons, analog basslines, and retro-futuristic audio engineering.',
+    coverUrl: 'https://images.unsplash.com/photo-1508700115892-45ecd05ae2ad?w=600&auto=format&fit=crop&q=80',
+    tracks: [
+      SAMPLE_TRACKS[2],
+      SAMPLE_TRACKS[0],
+      SAMPLE_TRACKS[8],
+    ],
+    owner: 'RAIWAVE Pulse',
+    color: '#06b6d4',
+  },
+  {
+    id: 'playlist-acoustic-sunset',
+    name: 'Acoustic Sunset & Warm Tones',
+    description: 'Organic strings, mellow percussions, and soothing vocal harmony.',
+    coverUrl: 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=600&auto=format&fit=crop&q=80',
+    tracks: [
+      SAMPLE_TRACKS[6],
+      SAMPLE_TRACKS[11],
+      SAMPLE_TRACKS[15],
+    ],
+    owner: 'Warm Acoustic',
+    color: '#f59e0b',
+  },
 ]
 
 export const SAMPLE_ALBUMS: Album[] = [
@@ -592,6 +618,42 @@ export const SAMPLE_ALBUMS: Album[] = [
     year: 2022,
     tracks: [SAMPLE_TRACKS[1]],
     color: '#4f46e5',
+  },
+  {
+    id: 'album-future-nostalgia',
+    title: 'Future Nostalgia',
+    artist: 'Dua Lipa',
+    coverUrl: 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=600&auto=format&fit=crop&q=80',
+    year: 2020,
+    tracks: [SAMPLE_TRACKS[12]],
+    color: '#ec4899',
+  },
+  {
+    id: 'album-ram',
+    title: 'Random Access Memories',
+    artist: 'Daft Punk',
+    coverUrl: 'https://images.unsplash.com/photo-1508700115892-45ecd05ae2ad?w=600&auto=format&fit=crop&q=80',
+    year: 2013,
+    tracks: [SAMPLE_TRACKS[2]],
+    color: '#f59e0b',
+  },
+  {
+    id: 'album-divide',
+    title: 'Divide (÷)',
+    artist: 'Ed Sheeran',
+    coverUrl: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=600&auto=format&fit=crop&q=80',
+    year: 2017,
+    tracks: [SAMPLE_TRACKS[6]],
+    color: '#06b6d4',
+  },
+  {
+    id: 'album-night-visions',
+    title: 'Night Visions',
+    artist: 'Imagine Dragons',
+    coverUrl: 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=600&auto=format&fit=crop&q=80',
+    year: 2012,
+    tracks: [SAMPLE_TRACKS[10]],
+    color: '#8b5cf6',
   },
 ]
 

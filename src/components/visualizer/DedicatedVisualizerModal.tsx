@@ -240,8 +240,8 @@ export const DedicatedVisualizerModal: React.FC = () => {
       const numBars = Math.min(64, Math.floor(width / 12))
       const barWidth = Math.max(3, (width * 0.88) / numBars - 4)
       const startX = (width - numBars * (barWidth + 4)) / 2
-      const baselineY = height * 0.72
-      const maxHeight = height * 0.45
+      const baselineY = height * 0.62
+      const maxHeight = height * 0.38
 
       for (let i = 0; i < numBars; i++) {
         const binIndex = Math.floor((i / numBars) * 60)
@@ -308,7 +308,7 @@ export const DedicatedVisualizerModal: React.FC = () => {
     // =========================================================================
     else if (mode === 'wave' || mode === 'waveform') {
       const step = width / 64
-      const centerY = height * 0.52
+      const centerY = height * 0.50
 
       // 1. Fill Layer (Under Waveform)
       ctx.beginPath()
@@ -716,36 +716,38 @@ export const DedicatedVisualizerModal: React.FC = () => {
           TOP FLOATING HEADER BAR (Fade out when idle)
          ========================================================================= */}
       <div
-        className={`absolute top-0 inset-x-0 p-4 sm:p-6 flex items-center justify-between pointer-events-none transition-all duration-500 z-20 ${
+        className={`absolute top-0 inset-x-0 p-4 sm:p-6 transition-all duration-500 z-20 pointer-events-none ${
           controlsVisible ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-4'
         }`}
       >
         {/* Left: Exit/Close Button */}
-        <button
-          onClick={closeDedicatedVisualizer}
-          className="pointer-events-auto flex items-center gap-2 px-3.5 py-2 rounded-full bg-white/10 hover:bg-white/20 active:scale-95 text-white backdrop-blur-xl border border-white/10 shadow-xl transition-all cursor-pointer group"
-          title="Exit visualizer (Esc)"
-        >
-          <ChevronDown className="w-5 h-5 group-hover:-translate-y-0.5 transition-transform" />
-          <span className="text-xs font-semibold font-heading hidden sm:inline">Close</span>
-        </button>
+        <div className="absolute left-4 top-4 sm:top-6 sm:left-6 z-10">
+          <button
+            onClick={closeDedicatedVisualizer}
+            className="pointer-events-auto flex items-center gap-2 px-3.5 py-2 rounded-full bg-white/10 hover:bg-white/20 active:scale-95 text-white backdrop-blur-xl border border-white/10 shadow-xl transition-all cursor-pointer group"
+            title="Exit visualizer (Esc)"
+          >
+            <ChevronDown className="w-5 h-5 group-hover:-translate-y-0.5 transition-transform" />
+            <span className="text-xs font-semibold font-heading hidden sm:inline">Close</span>
+          </button>
+        </div>
 
-        {/* Center: Track Details & Lossless Badge */}
-        <div className="flex flex-col items-center max-w-[55%] text-center truncate">
-          <span className="text-[10px] uppercase font-mono tracking-widest text-[#A78BFA] flex items-center gap-1.5 font-bold mb-0.5">
+        {/* Center: Track Details & Lossless Badge (Perfect Dead Center) */}
+        <div className="flex flex-col items-center justify-center mx-auto max-w-[50%] sm:max-w-md text-center">
+          <span className="text-[10px] uppercase font-mono tracking-widest text-[#A78BFA] flex items-center justify-center gap-1.5 font-bold mb-0.5">
             <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
             LIVE AUDIO VISUALIZER
           </span>
-          <h2 className="text-sm sm:text-base font-bold text-white font-heading truncate drop-shadow-md">
+          <h2 className="text-sm sm:text-base font-bold text-white font-heading truncate drop-shadow-md max-w-full">
             {currentTrack.title}
           </h2>
-          <p className="text-xs text-white/60 truncate font-medium">
+          <p className="text-xs text-white/60 truncate font-medium max-w-full">
             {currentTrack.artist}
           </p>
         </div>
 
         {/* Right: Sensitivity & Fullscreen Controls */}
-        <div className="pointer-events-auto flex items-center gap-2">
+        <div className="absolute right-4 top-4 sm:top-6 sm:right-6 pointer-events-auto flex items-center gap-2 z-10">
           {/* Sensitivity Button */}
           <div className="relative">
             <button
@@ -795,11 +797,11 @@ export const DedicatedVisualizerModal: React.FC = () => {
           MODE SWITCHER FLOATING PILL BAR (Top Center)
          ========================================================================= */}
       <div
-        className={`absolute top-20 sm:top-24 inset-x-0 flex justify-start sm:justify-center px-3 sm:px-4 pointer-events-none transition-all duration-500 z-20 ${
+        className={`absolute top-20 sm:top-24 inset-x-0 flex justify-center px-3 sm:px-4 pointer-events-none transition-all duration-500 z-20 ${
           controlsVisible ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-2'
         }`}
       >
-        <div className="pointer-events-auto flex items-center gap-1.5 p-1 rounded-full bg-[#120E22]/90 backdrop-blur-2xl border border-white/10 shadow-2xl overflow-x-auto no-scrollbar max-w-full">
+        <div className="pointer-events-auto flex items-center justify-center gap-1.5 p-1 rounded-full bg-[#120E22]/90 backdrop-blur-2xl border border-white/10 shadow-2xl overflow-x-auto no-scrollbar max-w-full mx-auto">
           {MODES.map((m) => {
             const Icon = m.icon
             const isCurrent = mode === m.id
@@ -828,11 +830,11 @@ export const DedicatedVisualizerModal: React.FC = () => {
           BOTTOM FLOATING PLAYER BAR (Timeline & Playback Controls)
          ========================================================================= */}
       <div
-        className={`absolute bottom-0 inset-x-0 p-4 sm:p-6 pb-8 flex flex-col items-center pointer-events-none transition-all duration-500 z-20 ${
+        className={`absolute bottom-0 inset-x-0 p-4 sm:p-6 pb-8 flex flex-col items-center justify-center pointer-events-none transition-all duration-500 z-20 ${
           controlsVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'
         }`}
       >
-        <div className="pointer-events-auto w-full max-w-xl bg-[#120E22]/90 backdrop-blur-3xl border border-white/10 rounded-3xl p-4 shadow-[0_15px_40px_rgba(0,0,0,0.85)] flex flex-col gap-3">
+        <div className="pointer-events-auto w-full max-w-md sm:max-w-xl mx-auto bg-[#120E22]/90 backdrop-blur-3xl border border-white/10 rounded-3xl p-4 shadow-[0_15px_40px_rgba(0,0,0,0.85)] flex flex-col gap-3">
           {/* Progress Timeline Slider */}
           <div className="space-y-1">
             <div className="relative flex items-center group cursor-pointer h-3.5">

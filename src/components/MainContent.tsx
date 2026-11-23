@@ -15,7 +15,7 @@ export const MainContent: React.FC = () => {
   const { currentView } = usePlayer()
 
   return (
-    <main className="flex-1 overflow-y-auto overflow-x-hidden bg-[#090D13] relative custom-scrollbar flex flex-col">
+    <main className="flex-1 overflow-y-auto w-full bg-[#090D13] relative custom-scrollbar flex flex-col">
       {currentView === 'home' && <HomeView />}
       {currentView === 'explore' && <ExploreView />}
       {currentView === 'search' && <SearchView />}

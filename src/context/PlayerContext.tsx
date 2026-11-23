@@ -480,29 +480,25 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   }, [isShuffle])
 
   // Application Mode (Official Website vs Web Player)
-  const isAndroidNative = typeof (window as unknown as { AndroidMedia?: unknown }).AndroidMedia !== 'undefined'
-  const isExplicitAppUrl =
+  // Default to the full music player on mobile, Android app, and standard web.
+  // The official landing website is opened on demand via #website, /website, ?mode=website or TopNav button.
+  const isExplicitWebsiteUrl =
     typeof window !== 'undefined' &&
-    (window.location.hash.includes('app') ||
-      window.location.pathname.startsWith('/app') ||
-      window.location.search.includes('app=true') ||
-      window.location.search.includes('source=android'))
+    (window.location.hash === '#website' ||
+      window.location.pathname === '/website' ||
+      window.location.search.includes('mode=website'))
 
   const [appMode, setAppModeState] = useState<'website' | 'player'>(() => {
-    return isAndroidNative || isExplicitAppUrl ? 'player' : 'website'
+    return isExplicitWebsiteUrl ? 'website' : 'player'
   })
 
   const setAppMode = (mode: 'website' | 'player') => {
     setAppModeState(mode)
     try {
-      if (mode === 'player') {
-        window.history.pushState({ mode: 'player' }, '', '#app')
+      if (mode === 'website') {
+        window.history.pushState({ mode: 'website' }, '', '#website')
       } else {
-        window.history.pushState(
-          { mode: 'website' },
-          '',
-          window.location.pathname === '/app' ? '/' : window.location.pathname
-        )
+        window.history.pushState({ mode: 'player' }, '', '#app')
       }
     } catch {}
   }

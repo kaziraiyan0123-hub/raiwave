@@ -139,6 +139,23 @@ body {
   scrollbar-width: none;
 }
 
+/* Ultra-smooth mobile horizontal carousel swiping with native momentum */
+.carousel-swipe {
+  display: flex;
+  overflow-x: auto;
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-x pan-y;
+  overscroll-behavior-x: contain;
+  scroll-behavior: smooth;
+  scroll-snap-type: x proximity;
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.carousel-swipe::-webkit-scrollbar {
+  display: none;
+}
+
 /* Range input styling for sleek RAIWAVE sliders */
 input[type="range"] {
   -webkit-appearance: none;

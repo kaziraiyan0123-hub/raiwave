@@ -87,16 +87,17 @@ export const MobileFullPlayer: React.FC = () => {
   const downloaded = isOffline(currentTrack.id)
 
   return (
-    <div className="fixed inset-0 z-50 bg-[#0B0D13] flex flex-col justify-between p-6 select-none overflow-y-auto no-scrollbar transition-transform duration-300">
-      {/* Dynamic Ambient Glow Background */}
-      <div
-        className="absolute -top-32 left-1/2 -translate-x-1/2 w-[420px] h-[420px] rounded-full opacity-35 blur-[120px] pointer-events-none transition-all duration-1000"
-        style={{ backgroundColor: dynamicTheme.primary }}
-      />
-      <div className="absolute inset-0 bg-gradient-to-b from-transparent via-[#0B0D13]/75 to-[#0B0D13] pointer-events-none" />
+    <div className="fixed inset-0 z-50 bg-[#0B0D13] select-none overflow-y-auto no-scrollbar transition-transform duration-300">
+      <div className="w-full max-w-md mx-auto min-h-full flex flex-col justify-between p-6 relative">
+        {/* Dynamic Ambient Glow Background */}
+        <div
+          className="absolute -top-32 left-1/2 -translate-x-1/2 w-[420px] h-[420px] rounded-full opacity-35 blur-[120px] pointer-events-none transition-all duration-1000"
+          style={{ backgroundColor: dynamicTheme.primary }}
+        />
+        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-[#0B0D13]/75 to-[#0B0D13] pointer-events-none" />
 
-      {/* Top Header */}
-      <div className="flex items-center justify-between z-10 pt-2">
+        {/* Top Header */}
+        <div className="w-full flex items-center justify-between z-10 pt-2">
         <button
           data-testid="close-full-player"
           onClick={toggleMobilePlayer}
@@ -230,7 +231,7 @@ export const MobileFullPlayer: React.FC = () => {
       </div>
 
       {/* Signature Linear Scrubber & Audio Controls */}
-      <div className="flex flex-col gap-5 z-10 pb-2">
+      <div className="flex flex-col gap-5 z-10 pb-2 w-full max-w-sm mx-auto">
         {/* Scrubber Bar */}
         <div className="w-full flex items-center gap-3 px-2">
           <span className="text-[11px] font-mono text-[#94A3B8] w-9 text-right">
@@ -372,5 +373,6 @@ export const MobileFullPlayer: React.FC = () => {
         </div>
       </div>
     </div>
+  </div>
   )
 }

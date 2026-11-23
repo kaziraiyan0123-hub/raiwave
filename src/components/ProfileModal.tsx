@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { X, Mail, User, Music, CheckCircle2, Sparkles, Download, RefreshCw, Smartphone } from 'lucide-react'
+import { X, Mail, User, Music, CheckCircle2, Sparkles, Download, RefreshCw, Smartphone, Globe } from 'lucide-react'
 import { usePlayer } from '../context/PlayerContext'
 
 export const ProfileModal: React.FC = () => {
@@ -10,6 +10,7 @@ export const ProfileModal: React.FC = () => {
     updateUserProfile,
     likedTrackIds,
     userPlaylists,
+    setAppMode,
   } = usePlayer()
 
   const [name, setName] = useState(userProfile.name || '')
@@ -256,6 +257,19 @@ export const ProfileModal: React.FC = () => {
               >
                 <RefreshCw className={`w-3.5 h-3.5 text-[#8B5CF6] ${isUpdating ? 'animate-spin' : ''}`} />
                 <span>{isUpdating ? 'Updating...' : 'Check for Updates / Update App'}</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  toggleProfile()
+                  setAppMode('website')
+                }}
+                className="w-full sm:w-auto px-4 py-2 rounded-xl bg-purple-500/10 hover:bg-purple-500/20 text-[#A78BFA] text-xs font-bold font-display transition-all flex items-center justify-center gap-1.5 border border-purple-500/30 shadow-sm active:scale-95 cursor-pointer"
+                title="Visit Official Website & Desktop Downloads"
+              >
+                <Globe className="w-3.5 h-3.5" />
+                <span>Official Website</span>
               </button>
 
               <button

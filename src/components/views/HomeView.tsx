@@ -14,6 +14,8 @@ import {
   Radio,
   Music2,
   Headphones,
+  ChevronLeft,
+  ChevronRight,
 } from 'lucide-react'
 import { usePlayer } from '../../context/PlayerContext'
 import {
@@ -90,6 +92,27 @@ export const HomeView: React.FC = () => {
     return `${m}:${s < 10 ? '0' : ''}${s}`
   }
 
+  // Combined Recently Played + Recommended tracks (always full & swipeable)
+  const recentlyPlayedList = useMemo(() => {
+    const list = [...history]
+    for (const track of categoryFilteredTracks) {
+      if (!list.some((t) => t.id === track.id)) {
+        list.push(track)
+      }
+      if (list.length >= 14) break
+    }
+    return list
+  }, [history, categoryFilteredTracks])
+
+  // Smooth carousel scroll utility
+  const scrollCarousel = (id: string, direction: 'left' | 'right') => {
+    const el = document.getElementById(id)
+    if (el) {
+      const scrollAmount = direction === 'left' ? -280 : 280
+      el.scrollBy({ left: scrollAmount, behavior: 'smooth' })
+    }
+  }
+
   // Calculate current playback progress percentage
   const currentProgressPercent = duration > 0 ? (currentTime / duration) * 100 : 0
 
@@ -149,7 +172,7 @@ export const HomeView: React.FC = () => {
           </div>
 
           {/* Category Filter Chips */}
-          <div className="flex items-center gap-2 overflow-x-auto no-scrollbar py-1">
+          <div className="carousel-swipe flex items-center gap-2 pb-1">
             {MUSIC_CATEGORIES.map((cat) => {
               const isActive = activeCategory === cat
               return (
@@ -322,19 +345,41 @@ export const HomeView: React.FC = () => {
               Recently Played
             </h2>
           </div>
-          {history.length > 0 && (
-            <button
-              onClick={clearHistory}
-              className="text-xs font-medium text-[#94A3B8] hover:text-[#A78BFA] transition-colors"
-            >
-              Clear History
-            </button>
-          )}
+          <div className="flex items-center gap-2">
+            {/* Desktop / Touch Swipe Navigation Arrows */}
+            <div className="hidden sm:flex items-center gap-1">
+              <button
+                onClick={() => scrollCarousel('carousel-recently-played', 'left')}
+                className="w-7 h-7 rounded-full bg-white/5 hover:bg-white/10 active:scale-90 flex items-center justify-center text-white/70 hover:text-white border border-white/10 transition-all cursor-pointer"
+                title="Scroll Left"
+              >
+                <ChevronLeft className="w-4 h-4" />
+              </button>
+              <button
+                onClick={() => scrollCarousel('carousel-recently-played', 'right')}
+                className="w-7 h-7 rounded-full bg-white/5 hover:bg-white/10 active:scale-90 flex items-center justify-center text-white/70 hover:text-white border border-white/10 transition-all cursor-pointer"
+                title="Scroll Right"
+              >
+                <ChevronRight className="w-4 h-4" />
+              </button>
+            </div>
+            {history.length > 0 && (
+              <button
+                onClick={clearHistory}
+                className="text-xs font-medium text-[#94A3B8] hover:text-[#A78BFA] transition-colors"
+              >
+                Clear History
+              </button>
+            )}
+          </div>
         </div>
 
-        {/* Responsive Carousel on Mobile / Grid on Desktop */}
-        <div className="flex gap-3 overflow-x-auto no-scrollbar pb-2 sm:grid sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 sm:gap-4">
-          {(history.length > 0 ? history.slice(0, 10) : SAMPLE_TRACKS.slice(0, 10)).map((track) => {
+        {/* Responsive Ultra-Smooth Swipe Carousel on Mobile / Grid on Desktop */}
+        <div
+          id="carousel-recently-played"
+          className="carousel-swipe gap-3 pb-3 sm:grid sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 sm:gap-4"
+        >
+          {recentlyPlayedList.map((track) => {
             const isSelected = currentTrack?.id === track.id
             const isTrackPlaying = isSelected && isPlaying
 
@@ -343,9 +388,9 @@ export const HomeView: React.FC = () => {
                 key={track.id}
                 onClick={() => {
                   if (isSelected) toggleMobilePlayer()
-                  else playTrack(track, history.length > 0 ? history : SAMPLE_TRACKS)
+                  else playTrack(track, recentlyPlayedList)
                 }}
-                className={`w-[138px] sm:w-auto flex-shrink-0 p-3 sm:p-3.5 rounded-2xl bg-[#12141D]/90 hover:bg-[#181B27] border border-white/5 hover:border-purple-500/30 cursor-pointer group transition-all duration-300 relative overflow-hidden shadow-lg hover:shadow-[0_8px_30px_rgba(0,0,0,0.6)] sm:hover:-translate-y-1 ${
+                className={`w-[142px] sm:w-auto flex-shrink-0 snap-start p-3 sm:p-3.5 rounded-2xl bg-[#12141D]/90 hover:bg-[#181B27] border border-white/5 hover:border-purple-500/30 cursor-pointer group transition-all duration-300 relative overflow-hidden shadow-lg hover:shadow-[0_8px_30px_rgba(0,0,0,0.6)] sm:hover:-translate-y-1 ${
                   isSelected ? 'ring-1 ring-[#8B5CF6] shadow-[0_0_20px_rgba(139,92,246,0.3)]' : ''
                 }`}
               >
@@ -401,24 +446,45 @@ export const HomeView: React.FC = () => {
               Featured Albums
             </h2>
           </div>
-          <button
-            onClick={() => navigateTo('library')}
-            className="text-xs font-semibold text-[#94A3B8] hover:text-[#A78BFA] flex items-center gap-1 transition-colors"
-          >
-            <span>View all in Library</span>
-            <ArrowRight className="w-3.5 h-3.5" />
-          </button>
+          <div className="flex items-center gap-2">
+            <div className="hidden sm:flex items-center gap-1">
+              <button
+                onClick={() => scrollCarousel('carousel-featured-albums', 'left')}
+                className="w-7 h-7 rounded-full bg-white/5 hover:bg-white/10 active:scale-90 flex items-center justify-center text-white/70 hover:text-white border border-white/10 transition-all cursor-pointer"
+                title="Scroll Left"
+              >
+                <ChevronLeft className="w-4 h-4" />
+              </button>
+              <button
+                onClick={() => scrollCarousel('carousel-featured-albums', 'right')}
+                className="w-7 h-7 rounded-full bg-white/5 hover:bg-white/10 active:scale-90 flex items-center justify-center text-white/70 hover:text-white border border-white/10 transition-all cursor-pointer"
+                title="Scroll Right"
+              >
+                <ChevronRight className="w-4 h-4" />
+              </button>
+            </div>
+            <button
+              onClick={() => navigateTo('library')}
+              className="text-xs font-semibold text-[#94A3B8] hover:text-[#A78BFA] flex items-center gap-1 transition-colors"
+            >
+              <span>View all</span>
+              <ArrowRight className="w-3.5 h-3.5" />
+            </button>
+          </div>
         </div>
 
         {/* Albums Carousel on Mobile / Grid on Desktop */}
-        <div className="flex gap-3.5 overflow-x-auto no-scrollbar pb-2 sm:grid sm:grid-cols-2 md:grid-cols-4 sm:gap-5">
+        <div
+          id="carousel-featured-albums"
+          className="carousel-swipe gap-3.5 pb-3 sm:grid sm:grid-cols-2 md:grid-cols-4 sm:gap-5"
+        >
           {SAMPLE_ALBUMS.map((album) => {
             const isAlbumActive = currentTrack?.album === album.title
             return (
               <div
                 key={album.id}
                 onClick={() => openAlbum(album)}
-                className="w-[155px] sm:w-auto flex-shrink-0 bg-[#12141D]/90 hover:bg-[#181B27] p-3.5 sm:p-4 rounded-3xl cursor-pointer transition-all duration-300 border border-white/5 hover:border-purple-500/30 group shadow-lg hover:shadow-[0_12px_36px_rgba(0,0,0,0.65)] sm:hover:-translate-y-1 relative overflow-hidden"
+                className="w-[160px] sm:w-auto flex-shrink-0 snap-start bg-[#12141D]/90 hover:bg-[#181B27] p-3.5 sm:p-4 rounded-3xl cursor-pointer transition-all duration-300 border border-white/5 hover:border-purple-500/30 group shadow-lg hover:shadow-[0_12px_36px_rgba(0,0,0,0.65)] sm:hover:-translate-y-1 relative overflow-hidden"
               >
                 {/* Album Artwork with smooth zoom */}
                 <div className="relative mb-3 aspect-square w-full rounded-2xl overflow-hidden shadow-lg border border-white/5">
@@ -475,22 +541,43 @@ export const HomeView: React.FC = () => {
               Recommended Playlists &bull; Made For You
             </h2>
           </div>
-          <button
-            onClick={() => navigateTo('explore')}
-            className="text-xs font-semibold text-[#94A3B8] hover:text-[#A78BFA] flex items-center gap-1 transition-colors"
-          >
-            <span>Explore more</span>
-            <ArrowRight className="w-3.5 h-3.5" />
-          </button>
+          <div className="flex items-center gap-2">
+            <div className="hidden sm:flex items-center gap-1">
+              <button
+                onClick={() => scrollCarousel('carousel-recommended-playlists', 'left')}
+                className="w-7 h-7 rounded-full bg-white/5 hover:bg-white/10 active:scale-90 flex items-center justify-center text-white/70 hover:text-white border border-white/10 transition-all cursor-pointer"
+                title="Scroll Left"
+              >
+                <ChevronLeft className="w-4 h-4" />
+              </button>
+              <button
+                onClick={() => scrollCarousel('carousel-recommended-playlists', 'right')}
+                className="w-7 h-7 rounded-full bg-white/5 hover:bg-white/10 active:scale-90 flex items-center justify-center text-white/70 hover:text-white border border-white/10 transition-all cursor-pointer"
+                title="Scroll Right"
+              >
+                <ChevronRight className="w-4 h-4" />
+              </button>
+            </div>
+            <button
+              onClick={() => navigateTo('explore')}
+              className="text-xs font-semibold text-[#94A3B8] hover:text-[#A78BFA] flex items-center gap-1 transition-colors"
+            >
+              <span>Explore more</span>
+              <ArrowRight className="w-3.5 h-3.5" />
+            </button>
+          </div>
         </div>
 
         {/* Playlists Carousel on Mobile / Grid on Desktop */}
-        <div className="flex gap-3 overflow-x-auto no-scrollbar pb-2 sm:grid sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 sm:gap-4">
+        <div
+          id="carousel-recommended-playlists"
+          className="carousel-swipe gap-3.5 pb-3 sm:grid sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 sm:gap-4"
+        >
           {SAMPLE_PLAYLISTS.map((pl) => (
             <div
               key={pl.id}
               onClick={() => openPlaylist(pl)}
-              className="w-[145px] sm:w-auto flex-shrink-0 bg-[#12141D]/80 hover:bg-[#181B27] p-3 sm:p-3.5 rounded-2xl cursor-pointer transition-all duration-300 border border-white/5 hover:border-purple-500/30 group shadow-md hover:shadow-xl sm:hover:-translate-y-1"
+              className="w-[150px] sm:w-auto flex-shrink-0 snap-start bg-[#12141D]/90 hover:bg-[#181B27] p-3 sm:p-3.5 rounded-2xl cursor-pointer transition-all duration-300 border border-white/5 hover:border-purple-500/30 group shadow-md hover:shadow-xl sm:hover:-translate-y-1 relative overflow-hidden"
             >
               <div className="relative mb-2.5 aspect-square w-full rounded-xl overflow-hidden shadow-lg border border-white/5">
                 <img
@@ -652,17 +739,38 @@ export const HomeView: React.FC = () => {
               New Releases & Fresh Frequencies
             </h2>
           </div>
+          <div className="flex items-center gap-2">
+            <div className="hidden sm:flex items-center gap-1">
+              <button
+                onClick={() => scrollCarousel('carousel-new-releases', 'left')}
+                className="w-7 h-7 rounded-full bg-white/5 hover:bg-white/10 active:scale-90 flex items-center justify-center text-white/70 hover:text-white border border-white/10 transition-all cursor-pointer"
+                title="Scroll Left"
+              >
+                <ChevronLeft className="w-4 h-4" />
+              </button>
+              <button
+                onClick={() => scrollCarousel('carousel-new-releases', 'right')}
+                className="w-7 h-7 rounded-full bg-white/5 hover:bg-white/10 active:scale-90 flex items-center justify-center text-white/70 hover:text-white border border-white/10 transition-all cursor-pointer"
+                title="Scroll Right"
+              >
+                <ChevronRight className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
         </div>
 
         {/* New Releases Carousel / Grid */}
-        <div className="flex gap-3 overflow-x-auto no-scrollbar pb-2 sm:grid sm:grid-cols-3 md:grid-cols-6 sm:gap-4">
+        <div
+          id="carousel-new-releases"
+          className="carousel-swipe gap-3 pb-3 sm:grid sm:grid-cols-3 md:grid-cols-6 sm:gap-4"
+        >
           {newMusicTracks.map((track) => {
             const isPlayingThis = currentTrack?.id === track.id && isPlaying
             return (
               <div
                 key={track.id}
                 onClick={() => playTrack(track, newMusicTracks)}
-                className="w-[138px] sm:w-auto flex-shrink-0 bg-[#12141D]/90 hover:bg-[#181B27] p-3 rounded-2xl cursor-pointer transition-all duration-300 border border-white/5 hover:border-purple-500/30 group shadow-md hover:shadow-xl sm:hover:-translate-y-1 relative"
+                className="w-[140px] sm:w-auto flex-shrink-0 snap-start bg-[#12141D]/90 hover:bg-[#181B27] p-3 rounded-2xl cursor-pointer transition-all duration-300 border border-white/5 hover:border-purple-500/30 group shadow-md hover:shadow-xl sm:hover:-translate-y-1 relative"
               >
                 <div className="relative mb-2.5 aspect-square w-full rounded-xl overflow-hidden shadow border border-white/5">
                   <img

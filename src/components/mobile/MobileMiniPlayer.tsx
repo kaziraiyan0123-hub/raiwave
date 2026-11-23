@@ -29,10 +29,10 @@ export const MobileMiniPlayer: React.FC = () => {
       id="mobile-mini-player"
       data-testid="mobile-mini-player"
       onClick={toggleMobilePlayer}
-      className="md:hidden fixed bottom-[78px] left-3 right-3 z-30 cursor-pointer select-none group transition-all"
+      className="md:hidden fixed bottom-[78px] left-3 right-3 z-30 cursor-pointer select-none group transition-all pointer-events-none"
     >
       <div
-        className="bg-[#120E22]/95 backdrop-blur-3xl border rounded-2xl p-2.5 flex items-center justify-between gap-3 relative overflow-hidden shadow-2xl transition-all duration-300 active:scale-[0.99]"
+        className="w-full mx-auto max-w-sm pointer-events-auto bg-[#120E22]/95 backdrop-blur-3xl border rounded-2xl p-2.5 flex items-center justify-between gap-3 relative overflow-hidden shadow-2xl transition-all duration-300 active:scale-[0.99]"
         style={{
           borderColor: dynamicTheme.borderColor || 'rgba(255, 255, 255, 0.12)',
           boxShadow: `0 12px 35px rgba(0,0,0,0.85), 0 0 25px ${dynamicTheme.surfaceGlow}`,

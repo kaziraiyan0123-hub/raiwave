@@ -9,7 +9,7 @@ import { DeveloperSection } from './DeveloperSection'
 import { CreditsSection } from './CreditsSection'
 import { WebsiteFooter } from './WebsiteFooter'
 import { DownloadModal } from './DownloadModal'
-import { Activity } from 'lucide-react'
+import { Activity, Play } from 'lucide-react'
 
 interface OfficialWebsiteViewProps {
   onLaunchWebPlayer: () => void
@@ -100,6 +100,18 @@ export function OfficialWebsiteView({ onLaunchWebPlayer }: OfficialWebsiteViewPr
         platform={downloadModalPlatform}
         onClose={() => setDownloadModalPlatform(null)}
       />
+
+      {/* Floating Quick Action Button to Launch/Return to Player */}
+      <div className="fixed bottom-5 right-5 sm:bottom-6 sm:right-6 z-50">
+        <button
+          onClick={onLaunchWebPlayer}
+          className="flex items-center gap-2 px-5 py-3 rounded-full bg-gradient-to-r from-purple-600 via-indigo-600 to-purple-600 text-white font-bold text-xs sm:text-sm shadow-[0_6px_25px_rgba(147,51,234,0.6)] hover:shadow-[0_8px_30px_rgba(147,51,234,0.8)] border border-purple-400/40 active:scale-95 transition-all cursor-pointer group"
+          title="Open Music Player"
+        >
+          <Play className="w-4 h-4 fill-current group-hover:scale-110 transition-transform" />
+          <span>Launch Music App</span>
+        </button>
+      </div>
     </div>
   )
 }
