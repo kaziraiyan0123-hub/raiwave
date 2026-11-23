@@ -111,10 +111,10 @@ export const AndroidMediaNotificationCard: React.FC = () => {
     <div
       id="android-media-notification-card"
       data-testid="android-media-notification-card"
-      className={`fixed z-50 select-none transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] ${
+      className={`hidden md:block fixed z-50 select-none transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] ${
         isNotificationExpanded
-          ? 'top-14 left-3 right-3 sm:left-auto sm:top-6 sm:right-6 sm:w-[480px] max-w-[500px]'
-          : 'top-14 left-3 right-3 sm:left-auto sm:top-6 sm:right-6 sm:w-[410px] max-w-[430px]'
+          ? 'top-4 right-4 sm:top-6 sm:right-6 w-[calc(100vw-2rem)] sm:w-[480px] max-w-[500px]'
+          : 'top-4 right-4 sm:top-6 sm:right-6 w-[calc(100vw-2rem)] sm:w-[410px] max-w-[430px]'
       }`}
     >
       {/* Outer Floating Glass Card with Dynamic Artwork Ambient Wash */}

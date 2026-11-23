@@ -111,9 +111,10 @@ class YouTubeService {
         width: '100%',
         videoId: this.pendingVideoId || '', // Do NOT load any seed video unprompted
         playerVars: {
-          autoplay: 0, // Never autoplay without user interaction
+          autoplay: 1, // Auto-play when video is loaded
           enablejsapi: 1,
-          playsinline: 1,
+          playsinline: 1, // Crucial for mobile: prevent fullscreen takeover
+          controls: 0,
           rel: 0,
           modestbranding: 1,
           origin: window.location.origin,
@@ -124,7 +125,7 @@ class YouTubeService {
             this.startTimeTracker()
             try {
               event.target.unMute()
-              event.target.setVolume(85)
+              event.target.setVolume(100)
             } catch {
               // ignore
             }
@@ -134,6 +135,8 @@ class YouTubeService {
               this.pendingPlayOnReady = false
               event.target.loadVideoById(vid)
               try {
+                event.target.unMute()
+                event.target.setVolume(100)
                 event.target.playVideo()
               } catch {}
             } else if (this.pendingPlayOnReady && this.pendingSearchQuery) {
@@ -144,6 +147,8 @@ class YouTubeService {
                 if (vid) {
                   event.target.loadVideoById(vid)
                   try {
+                    event.target.unMute()
+                    event.target.setVolume(100)
                     event.target.playVideo()
                   } catch {}
                 }
@@ -156,20 +161,26 @@ class YouTubeService {
             if (event.data === ps.PLAYING) {
               this.isExplicitlyPaused = false
               this.isTransitioning = false
+              try {
+                this.player?.unMute()
+                this.player?.setVolume(100)
+              } catch {}
               this.onStateChangeCb?.('playing')
             } else if (event.data === ps.PAUSED) {
-              // Intercept automatic OS/browser background pauses:
-              // If the user did NOT click pause, immediately re-trigger playback to keep background audio alive!
-              if (!this.isExplicitlyPaused) {
+              if (this.isExplicitlyPaused) {
+                this.onStateChangeCb?.('paused')
+              } else {
+                // If paused unexpectedly, notify state and attempt resume
+                this.onStateChangeCb?.('paused')
                 try {
+                  this.player?.unMute()
                   this.player?.playVideo()
                 } catch {}
-                return
               }
-              this.onStateChangeCb?.('paused')
             } else if (event.data === ps.CUED) {
               if (!this.isExplicitlyPaused) {
                 try {
+                  this.player?.unMute()
                   this.player?.playVideo()
                 } catch {}
               }
@@ -237,8 +248,14 @@ class YouTubeService {
         if (typeof this.player.unMute === 'function') {
           this.player.unMute()
         }
+        if (typeof this.player.setVolume === 'function') {
+          this.player.setVolume(100)
+        }
         if (playImmediately) {
           this.player.loadVideoById(videoId)
+          try {
+            this.player.playVideo()
+          } catch {}
         } else {
           this.player.cueVideoById(videoId)
         }
@@ -269,6 +286,9 @@ class YouTubeService {
       try {
         if (typeof this.player.unMute === 'function') {
           this.player.unMute()
+        }
+        if (typeof this.player.setVolume === 'function') {
+          this.player.setVolume(100)
         }
         this.player.playVideo()
       } catch (err) {

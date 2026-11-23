@@ -4,7 +4,6 @@ import {
   Search,
   X,
   Activity,
-  Radio,
 } from 'lucide-react'
 import { usePlayer } from '../../context/PlayerContext'
 import { RaiwaveLogo } from '../RaiwaveLogo'
@@ -23,8 +22,6 @@ export const MobileTopBar: React.FC = () => {
     selectedAlbum,
     selectedPlaylist,
     selectedArtist,
-    isNotificationOpen,
-    toggleNotification,
   } = usePlayer()
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -135,21 +132,8 @@ export const MobileTopBar: React.FC = () => {
         )}
       </div>
 
-      {/* Right Action Icons: Android Notification Toggle + Quick Visualizer + Profile Avatar */}
-      <div className="flex items-center gap-1.5 flex-shrink-0">
-        {/* Android Floating Notification Card Toggle */}
-        <button
-          onClick={toggleNotification}
-          className={`w-8 h-8 rounded-full flex items-center justify-center transition-all cursor-pointer active:scale-95 ${
-            isNotificationOpen
-              ? 'bg-purple-600/30 border border-purple-400 text-purple-300 shadow-[0_0_12px_rgba(168,85,247,0.4)]'
-              : 'bg-white/5 border border-white/8 text-white/60 hover:text-white'
-          }`}
-          title={isNotificationOpen ? 'Hide Media Notification Card' : 'Show Media Notification Card'}
-        >
-          <Radio className="w-3.5 h-3.5" />
-        </button>
-
+      {/* Right Action Icons: Quick Visualizer + Profile Avatar */}
+      <div className="flex items-center gap-2 flex-shrink-0">
         {/* Quick Visualizer Shortcut */}
         <button
           onClick={() => navigateTo(currentView === 'visualizer' ? 'home' : 'visualizer')}

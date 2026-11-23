@@ -39,7 +39,7 @@ export const YouTubeIframeContainer: React.FC = () => {
                 ? 'bottom-24 right-4 sm:right-6 sm:bottom-28 w-56 h-10'
                 : 'bottom-24 left-4 right-4 sm:left-auto sm:right-6 sm:bottom-28 w-auto sm:w-80 h-48 sm:h-52'
             }`
-          : 'fixed -bottom-24 -right-24 w-1 h-1 opacity-[0.005] pointer-events-none z-[-10]'
+          : 'fixed bottom-0 right-0 w-[240px] h-[180px] opacity-[0.01] pointer-events-none -z-10'
       }`}
     >
       {/* Mini-dock header (only shown when visible) */}

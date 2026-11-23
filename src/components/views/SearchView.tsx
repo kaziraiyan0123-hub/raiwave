@@ -97,7 +97,7 @@ export const SearchView: React.FC = () => {
   }
 
   return (
-    <div className="p-4 sm:p-6 select-none space-y-6 pb-28 md:pb-20">
+    <div className="p-4 sm:p-6 select-none space-y-6 pb-44 md:pb-28">
       {/* Search Header */}
       {searchQuery && (
         <div className="flex items-center justify-between">
@@ -133,114 +133,260 @@ export const SearchView: React.FC = () => {
             </div>
           )}
 
-          {/* Top Result + Matching Songs Split Grid */}
-          {topResult && (
-            <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
-              {/* Top Result Card */}
-              <div className="lg:col-span-2">
-                <div className="flex items-center justify-between mb-3">
-                  <h3 className="text-xl font-bold text-white font-heading">Top result</h3>
-                  <span className="px-2.5 py-0.5 rounded-full bg-purple-500/20 border border-purple-500/40 text-[#C4B5FD] text-[10px] font-black uppercase tracking-wider font-heading">
-                    First Priority Match
-                  </span>
-                </div>
-                {(() => {
-                  const isTopPlaying = currentTrack?.id === topResult.id && isPlaying
-                  return (
-                    <div
-                      onClick={() => {
-                        if (currentTrack?.id === topResult.id) toggleMobilePlayer()
-                        else playTrack(topResult, combinedTracks)
-                      }}
-                      className="bg-[#12141D] hover:bg-[#181B27] p-6 rounded-2xl cursor-pointer transition-all duration-300 group relative flex flex-col justify-between min-h-[240px] shadow-2xl border border-white/5 hover:border-purple-500/40 relative overflow-hidden"
-                    >
-                      {/* Subtle Ambient Glow */}
-                      <div
-                        className="absolute -top-12 -right-12 w-36 h-36 rounded-full opacity-25 blur-2xl pointer-events-none"
-                        style={{ backgroundColor: topResult.color || '#8B5CF6' }}
-                      />
+          {/* Mobile Search Results Layout (Clean touch-friendly native list) */}
+          <div className="lg:hidden space-y-3">
+            <h3 className="text-xs font-bold text-white/60 uppercase tracking-wider font-heading px-1">
+              Search Results
+            </h3>
+            <div className="space-y-2">
+              {combinedTracks.map((track) => {
+                const isTrackPlaying = currentTrack?.id === track.id && isPlaying
+                const isTrackSelected = currentTrack?.id === track.id
+                const liked = isLiked(track.id)
 
-                      <div className="flex items-start justify-between z-10">
+                return (
+                  <div
+                    key={track.id}
+                    onClick={() => {
+                      if (isTrackSelected) toggleMobilePlayer()
+                      else playTrack(track, combinedTracks)
+                    }}
+                    className={`flex items-center justify-between p-3 rounded-2xl cursor-pointer active:scale-[0.99] transition-all border ${
+                      isTrackSelected
+                        ? 'bg-purple-950/40 border-purple-500/50 shadow-lg'
+                        : 'bg-[#12141D]/90 hover:bg-[#181B27] border-white/5'
+                    }`}
+                  >
+                    <div className="flex items-center gap-3 min-w-0 flex-1 pr-2">
+                      <div className="relative w-12 h-12 flex-shrink-0 rounded-xl overflow-hidden shadow-md border border-white/10">
                         <img
-                          src={topResult.coverUrl}
-                          alt={topResult.title}
-                          className="w-24 h-24 rounded-2xl object-cover shadow-lg border border-white/10 group-hover:scale-105 transition-transform"
+                          src={track.coverUrl}
+                          alt={track.title}
+                          className="w-full h-full object-cover"
                         />
-                        {isTopPlaying && <EqualizerBars size="md" />}
+                        {isTrackPlaying && (
+                          <div className="absolute inset-0 bg-black/60 backdrop-blur-xs flex items-center justify-center">
+                            <EqualizerBars size="sm" />
+                          </div>
+                        )}
                       </div>
-                      <div className="z-10 mt-4 pr-14">
-                        <h4 className="text-xl sm:text-2xl font-black text-white font-heading truncate mb-1">
-                          {topResult.title}
-                        </h4>
-                        <p className="text-xs sm:text-sm text-[#94A3B8] font-medium truncate">
-                          Official Song &bull; <span className="text-white hover:underline">{topResult.artist}</span>
+
+                      <div className="flex flex-col min-w-0">
+                        <p
+                          className={`text-sm font-bold truncate leading-tight font-heading ${
+                            isTrackSelected ? 'text-[#A78BFA]' : 'text-white'
+                          }`}
+                        >
+                          {track.title}
+                        </p>
+                        <p className="text-xs text-[#94A3B8] truncate mt-0.5 font-medium">
+                          {track.artist}
                         </p>
                       </div>
+                    </div>
+
+                    <div className="flex items-center gap-2 flex-shrink-0">
                       <button
                         onClick={(e) => {
                           e.stopPropagation()
-                          if (isTopPlaying) togglePlay()
-                          else playTrack(topResult, combinedTracks)
+                          toggleLike(track.id)
                         }}
-                        className="absolute bottom-5 right-5 w-12 h-12 rounded-full bg-gradient-to-r from-[#8B5CF6] to-[#7C3AED] text-white flex items-center justify-center opacity-100 md:opacity-0 md:group-hover:opacity-100 translate-y-0 md:translate-y-2 md:group-hover:translate-y-0 transition-all duration-300 shadow-xl hover:scale-105 active:scale-95 z-20"
-                        title={isTopPlaying ? 'Pause' : 'Play Top Match'}
+                        className="p-2 text-white/40 hover:text-white"
+                        title={liked ? 'Unlike' : 'Like'}
                       >
-                        {isTopPlaying ? (
-                          <Pause className="w-6 h-6 fill-current" />
+                        <Heart
+                          className={`w-4 h-4 ${
+                            liked ? 'text-pink-500 fill-pink-500' : ''
+                          }`}
+                        />
+                      </button>
+
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          if (isTrackPlaying) togglePlay()
+                          else playTrack(track, combinedTracks)
+                        }}
+                        className={`w-9 h-9 rounded-full flex items-center justify-center transition-all ${
+                          isTrackPlaying
+                            ? 'bg-white text-black shadow-md'
+                            : 'bg-purple-600/30 text-purple-300 border border-purple-500/30'
+                        }`}
+                        title={isTrackPlaying ? 'Pause' : 'Play'}
+                      >
+                        {isTrackPlaying ? (
+                          <Pause className="w-4 h-4 fill-current" />
                         ) : (
-                          <Play className="w-6 h-6 fill-current ml-0.5" />
+                          <Play className="w-4 h-4 fill-current ml-0.5" />
                         )}
                       </button>
                     </div>
-                  )
-                })()}
-              </div>
+                  </div>
+                )
+              })}
+            </div>
+          </div>
 
-              {/* Matching Songs List */}
-              <div className="lg:col-span-3">
-                <h3 className="text-xl font-bold text-white font-heading mb-3">Songs</h3>
-                <div className="space-y-1">
-                  {combinedTracks.slice(0, 6).map((track) => {
-                    const isTrackPlaying = currentTrack?.id === track.id && isPlaying
-                    const isTrackSelected = currentTrack?.id === track.id
+          {/* Desktop Search Results Layout (Split Grid with Top Result Card + Songs) */}
+          <div className="hidden lg:block space-y-8">
+            {topResult && (
+              <div className="grid grid-cols-5 gap-6">
+                {/* Top Result Card */}
+                <div className="col-span-2">
+                  <div className="flex items-center justify-between mb-3">
+                    <h3 className="text-xl font-bold text-white font-heading">Top result</h3>
+                    <span className="px-2.5 py-0.5 rounded-full bg-purple-500/20 border border-purple-500/40 text-[#C4B5FD] text-[10px] font-black uppercase tracking-wider font-heading">
+                      First Priority Match
+                    </span>
+                  </div>
+                  {(() => {
+                    const isTopPlaying = currentTrack?.id === topResult.id && isPlaying
+                    return (
+                      <div
+                        onClick={() => {
+                          if (currentTrack?.id === topResult.id) toggleMobilePlayer()
+                          else playTrack(topResult, combinedTracks)
+                        }}
+                        className="bg-[#12141D] hover:bg-[#181B27] p-6 rounded-2xl cursor-pointer transition-all duration-300 group relative flex flex-col justify-between min-h-[240px] shadow-2xl border border-white/5 hover:border-purple-500/40 relative overflow-hidden"
+                      >
+                        {/* Subtle Ambient Glow */}
+                        <div
+                          className="absolute -top-12 -right-12 w-36 h-36 rounded-full opacity-25 blur-2xl pointer-events-none"
+                          style={{ backgroundColor: topResult.color || '#8B5CF6' }}
+                        />
+
+                        <div className="flex items-start justify-between z-10">
+                          <img
+                            src={topResult.coverUrl}
+                            alt={topResult.title}
+                            className="w-24 h-24 rounded-2xl object-cover shadow-lg border border-white/10 group-hover:scale-105 transition-transform"
+                          />
+                          {isTopPlaying && <EqualizerBars size="md" />}
+                        </div>
+                        <div className="z-10 mt-4 pr-14">
+                          <h4 className="text-xl sm:text-2xl font-black text-white font-heading truncate mb-1">
+                            {topResult.title}
+                          </h4>
+                          <p className="text-xs sm:text-sm text-[#94A3B8] font-medium truncate">
+                            Official Song &bull; <span className="text-white hover:underline">{topResult.artist}</span>
+                          </p>
+                        </div>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            if (isTopPlaying) togglePlay()
+                            else playTrack(topResult, combinedTracks)
+                          }}
+                          className="absolute bottom-5 right-5 w-12 h-12 rounded-full bg-gradient-to-r from-[#8B5CF6] to-[#7C3AED] text-white flex items-center justify-center opacity-100 md:opacity-0 md:group-hover:opacity-100 translate-y-0 md:translate-y-2 md:group-hover:translate-y-0 transition-all duration-300 shadow-xl hover:scale-105 active:scale-95 z-20 cursor-pointer"
+                          title={isTopPlaying ? 'Pause' : 'Play Top Match'}
+                        >
+                          {isTopPlaying ? (
+                            <Pause className="w-6 h-6 fill-current" />
+                          ) : (
+                            <Play className="w-6 h-6 fill-current ml-0.5" />
+                          )}
+                        </button>
+                      </div>
+                    )
+                  })()}
+                </div>
+
+                {/* Matching Songs List */}
+                <div className="col-span-3">
+                  <h3 className="text-xl font-bold text-white font-heading mb-3">Songs</h3>
+                  <div className="space-y-1">
+                    {combinedTracks.slice(0, 6).map((track) => {
+                      const isTrackPlaying = currentTrack?.id === track.id && isPlaying
+                      const isTrackSelected = currentTrack?.id === track.id
+                      const liked = isLiked(track.id)
+                      return (
+                        <div
+                          key={track.id}
+                          onClick={() => {
+                            if (isTrackSelected) toggleMobilePlayer()
+                            else playTrack(track, combinedTracks)
+                          }}
+                          className={`flex items-center justify-between p-2.5 rounded-xl hover:bg-white/5 cursor-pointer group transition-colors ${
+                            isTrackSelected ? 'bg-white/10' : ''
+                          }`}
+                        >
+                          <div className="flex items-center gap-3 min-w-0">
+                            <img
+                              src={track.coverUrl}
+                              alt={track.title}
+                              className="w-10 h-10 rounded-xl object-cover flex-shrink-0 shadow border border-white/5"
+                            />
+                            <div className="truncate">
+                              <p
+                                className={`text-sm font-semibold truncate transition-colors font-heading ${
+                                  isTrackSelected ? 'text-[#A78BFA]' : 'text-white group-hover:text-[#A78BFA]'
+                                }`}
+                              >
+                                {track.title}
+                              </p>
+                              <p className="text-xs text-[#94A3B8] truncate">{track.artist}</p>
+                            </div>
+                          </div>
+
+                          <div className="flex items-center gap-4 text-[#94A3B8]">
+                            {isTrackPlaying && <EqualizerBars size="sm" />}
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                toggleLike(track.id)
+                              }}
+                              className="opacity-0 group-hover:opacity-100 transition-opacity hover:scale-110 cursor-pointer"
+                            >
+                              <Heart
+                                className={`w-4 h-4 ${
+                                  liked ? 'text-[#8B5CF6] fill-[#8B5CF6] opacity-100' : 'hover:text-white'
+                                }`}
+                              />
+                            </button>
+                            <span className="text-xs font-mono">{formatDuration(track.duration)}</span>
+                          </div>
+                        </div>
+                      )
+                    })}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* All Matching Tracks List (Desktop) */}
+            {combinedTracks.length > 6 && (
+              <section>
+                <h3 className="text-xl font-bold text-white font-heading mb-3">More Songs</h3>
+                <div className="grid grid-cols-2 gap-2">
+                  {combinedTracks.slice(6, 24).map((track) => {
                     const liked = isLiked(track.id)
                     return (
                       <div
                         key={track.id}
-                        onClick={() => {
-                          if (isTrackSelected) toggleMobilePlayer()
-                          else playTrack(track, combinedTracks)
-                        }}
-                        className={`flex items-center justify-between p-2.5 rounded-xl hover:bg-white/5 cursor-pointer group transition-colors ${
-                          isTrackSelected ? 'bg-white/10' : ''
-                        }`}
+                        onClick={() => playTrack(track, combinedTracks)}
+                        className="flex items-center justify-between p-2.5 rounded-xl bg-[#12141D] hover:bg-[#181B27] border border-white/5 cursor-pointer group transition-colors"
                       >
                         <div className="flex items-center gap-3 min-w-0">
                           <img
                             src={track.coverUrl}
                             alt={track.title}
-                            className="w-10 h-10 rounded-xl object-cover flex-shrink-0 shadow border border-white/5"
+                            className="w-11 h-11 rounded-xl object-cover flex-shrink-0 shadow"
                           />
                           <div className="truncate">
-                            <p
-                              className={`text-sm font-semibold truncate transition-colors font-heading ${
-                                isTrackSelected ? 'text-[#A78BFA]' : 'text-white group-hover:text-[#A78BFA]'
-                              }`}
-                            >
+                            <p className="text-sm font-semibold text-white font-heading truncate group-hover:text-[#A78BFA] transition-colors">
                               {track.title}
                             </p>
                             <p className="text-xs text-[#94A3B8] truncate">{track.artist}</p>
                           </div>
                         </div>
 
-                        <div className="flex items-center gap-4 text-[#94A3B8]">
-                          {isTrackPlaying && <EqualizerBars size="sm" />}
+                        <div className="flex items-center gap-3 text-[#94A3B8]">
                           <button
                             onClick={(e) => {
                               e.stopPropagation()
                               toggleLike(track.id)
                             }}
-                            className="opacity-0 group-hover:opacity-100 transition-opacity hover:scale-110"
+                            className="opacity-0 group-hover:opacity-100 transition-opacity hover:scale-110 cursor-pointer"
                           >
                             <Heart
                               className={`w-4 h-4 ${
@@ -254,59 +400,9 @@ export const SearchView: React.FC = () => {
                     )
                   })}
                 </div>
-              </div>
-            </div>
-          )}
-
-          {/* All Matching Tracks List */}
-          {combinedTracks.length > 6 && (
-            <section>
-              <h3 className="text-xl font-bold text-white font-heading mb-3">More Songs</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                {combinedTracks.slice(6, 24).map((track) => {
-                  const liked = isLiked(track.id)
-                  return (
-                    <div
-                      key={track.id}
-                      onClick={() => playTrack(track, combinedTracks)}
-                      className="flex items-center justify-between p-2.5 rounded-xl bg-[#12141D] hover:bg-[#181B27] border border-white/5 cursor-pointer group transition-colors"
-                    >
-                      <div className="flex items-center gap-3 min-w-0">
-                        <img
-                          src={track.coverUrl}
-                          alt={track.title}
-                          className="w-11 h-11 rounded-xl object-cover flex-shrink-0 shadow"
-                        />
-                        <div className="truncate">
-                          <p className="text-sm font-semibold text-white font-heading truncate group-hover:text-[#A78BFA] transition-colors">
-                            {track.title}
-                          </p>
-                          <p className="text-xs text-[#94A3B8] truncate">{track.artist}</p>
-                        </div>
-                      </div>
-
-                      <div className="flex items-center gap-3 text-[#94A3B8]">
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            toggleLike(track.id)
-                          }}
-                          className="opacity-0 group-hover:opacity-100 transition-opacity hover:scale-110"
-                        >
-                          <Heart
-                            className={`w-4 h-4 ${
-                              liked ? 'text-[#8B5CF6] fill-[#8B5CF6] opacity-100' : 'hover:text-white'
-                            }`}
-                          />
-                        </button>
-                        <span className="text-xs font-mono">{formatDuration(track.duration)}</span>
-                      </div>
-                    </div>
-                  )
-                })}
-              </div>
-            </section>
-          )}
+              </section>
+            )}
+          </div>
 
           {/* Matching Artists */}
           {filteredArtists.length > 0 && (
