@@ -26,6 +26,7 @@ import {
   TRENDING_HERO,
 } from '../../data/musicData'
 import { EqualizerBars } from '../EqualizerBars'
+import { useCarouselSwipe } from '../../hooks/useCarouselSwipe'
 
 export const HomeView: React.FC = () => {
   const {
@@ -104,14 +105,12 @@ export const HomeView: React.FC = () => {
     return list
   }, [history, categoryFilteredTracks])
 
-  // Smooth carousel scroll utility
-  const scrollCarousel = (id: string, direction: 'left' | 'right') => {
-    const el = document.getElementById(id)
-    if (el) {
-      const scrollAmount = direction === 'left' ? -280 : 280
-      el.scrollBy({ left: scrollAmount, behavior: 'smooth' })
-    }
-  }
+  // Carousel touch/pointer drag handlers for silky, uninterrupted mobile swiping
+  const categorySwipe = useCarouselSwipe()
+  const recentSwipe = useCarouselSwipe()
+  const albumSwipe = useCarouselSwipe()
+  const playlistSwipe = useCarouselSwipe()
+  const releaseSwipe = useCarouselSwipe()
 
   // Calculate current playback progress percentage
   const currentProgressPercent = duration > 0 ? (currentTime / duration) * 100 : 0
@@ -171,14 +170,17 @@ export const HomeView: React.FC = () => {
             </p>
           </div>
 
-          {/* Category Filter Chips */}
-          <div className="carousel-swipe flex items-center gap-2 pb-1">
+          {/* Category Filter Chips (Ultra-smooth horizontal swipe) */}
+          <div
+            {...categorySwipe.carouselProps}
+            className="carousel-swipe flex items-center gap-2 pb-1 pr-6 sm:pr-0"
+          >
             {MUSIC_CATEGORIES.map((cat) => {
               const isActive = activeCategory === cat
               return (
                 <button
                   key={cat}
-                  onClick={() => setActiveCategory(cat)}
+                  onClick={categorySwipe.handleCardClick(() => setActiveCategory(cat))}
                   className={`px-3.5 py-1.5 rounded-full text-xs font-heading font-semibold whitespace-nowrap transition-all duration-200 active:scale-95 cursor-pointer ${
                     isActive
                       ? 'bg-gradient-to-r from-[#8B5CF6] to-[#7C3AED] text-white shadow-[0_2px_14px_rgba(139,92,246,0.45)] font-bold'
@@ -189,6 +191,7 @@ export const HomeView: React.FC = () => {
                 </button>
               )
             })}
+            <div className="w-4 sm:hidden flex-shrink-0" />
           </div>
         </div>
       </div>
@@ -349,14 +352,14 @@ export const HomeView: React.FC = () => {
             {/* Desktop / Touch Swipe Navigation Arrows */}
             <div className="hidden sm:flex items-center gap-1">
               <button
-                onClick={() => scrollCarousel('carousel-recently-played', 'left')}
+                onClick={() => recentSwipe.scrollByAmount(-280)}
                 className="w-7 h-7 rounded-full bg-white/5 hover:bg-white/10 active:scale-90 flex items-center justify-center text-white/70 hover:text-white border border-white/10 transition-all cursor-pointer"
                 title="Scroll Left"
               >
                 <ChevronLeft className="w-4 h-4" />
               </button>
               <button
-                onClick={() => scrollCarousel('carousel-recently-played', 'right')}
+                onClick={() => recentSwipe.scrollByAmount(280)}
                 className="w-7 h-7 rounded-full bg-white/5 hover:bg-white/10 active:scale-90 flex items-center justify-center text-white/70 hover:text-white border border-white/10 transition-all cursor-pointer"
                 title="Scroll Right"
               >
@@ -377,7 +380,8 @@ export const HomeView: React.FC = () => {
         {/* Responsive Ultra-Smooth Swipe Carousel on Mobile / Grid on Desktop */}
         <div
           id="carousel-recently-played"
-          className="carousel-swipe gap-3 pb-3 sm:grid sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 sm:gap-4"
+          {...recentSwipe.carouselProps}
+          className="carousel-swipe gap-3 pb-3 sm:grid sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 sm:gap-4 pr-6 sm:pr-0"
         >
           {recentlyPlayedList.map((track) => {
             const isSelected = currentTrack?.id === track.id
@@ -386,10 +390,10 @@ export const HomeView: React.FC = () => {
             return (
               <div
                 key={track.id}
-                onClick={() => {
+                onClick={recentSwipe.handleCardClick(() => {
                   if (isSelected) toggleMobilePlayer()
                   else playTrack(track, recentlyPlayedList)
-                }}
+                })}
                 className={`w-[142px] sm:w-auto flex-shrink-0 snap-start p-3 sm:p-3.5 rounded-2xl bg-[#12141D]/90 hover:bg-[#181B27] border border-white/5 hover:border-purple-500/30 cursor-pointer group transition-all duration-300 relative overflow-hidden shadow-lg hover:shadow-[0_8px_30px_rgba(0,0,0,0.6)] sm:hover:-translate-y-1 ${
                   isSelected ? 'ring-1 ring-[#8B5CF6] shadow-[0_0_20px_rgba(139,92,246,0.3)]' : ''
                 }`}
@@ -432,6 +436,7 @@ export const HomeView: React.FC = () => {
               </div>
             )
           })}
+          <div className="w-4 sm:hidden flex-shrink-0" />
         </div>
       </section>
 
@@ -449,14 +454,14 @@ export const HomeView: React.FC = () => {
           <div className="flex items-center gap-2">
             <div className="hidden sm:flex items-center gap-1">
               <button
-                onClick={() => scrollCarousel('carousel-featured-albums', 'left')}
+                onClick={() => albumSwipe.scrollByAmount(-280)}
                 className="w-7 h-7 rounded-full bg-white/5 hover:bg-white/10 active:scale-90 flex items-center justify-center text-white/70 hover:text-white border border-white/10 transition-all cursor-pointer"
                 title="Scroll Left"
               >
                 <ChevronLeft className="w-4 h-4" />
               </button>
               <button
-                onClick={() => scrollCarousel('carousel-featured-albums', 'right')}
+                onClick={() => albumSwipe.scrollByAmount(280)}
                 className="w-7 h-7 rounded-full bg-white/5 hover:bg-white/10 active:scale-90 flex items-center justify-center text-white/70 hover:text-white border border-white/10 transition-all cursor-pointer"
                 title="Scroll Right"
               >
@@ -476,14 +481,15 @@ export const HomeView: React.FC = () => {
         {/* Albums Carousel on Mobile / Grid on Desktop */}
         <div
           id="carousel-featured-albums"
-          className="carousel-swipe gap-3.5 pb-3 sm:grid sm:grid-cols-2 md:grid-cols-4 sm:gap-5"
+          {...albumSwipe.carouselProps}
+          className="carousel-swipe gap-3.5 pb-3 sm:grid sm:grid-cols-2 md:grid-cols-4 sm:gap-5 pr-6 sm:pr-0"
         >
           {SAMPLE_ALBUMS.map((album) => {
             const isAlbumActive = currentTrack?.album === album.title
             return (
               <div
                 key={album.id}
-                onClick={() => openAlbum(album)}
+                onClick={albumSwipe.handleCardClick(() => openAlbum(album))}
                 className="w-[160px] sm:w-auto flex-shrink-0 snap-start bg-[#12141D]/90 hover:bg-[#181B27] p-3.5 sm:p-4 rounded-3xl cursor-pointer transition-all duration-300 border border-white/5 hover:border-purple-500/30 group shadow-lg hover:shadow-[0_12px_36px_rgba(0,0,0,0.65)] sm:hover:-translate-y-1 relative overflow-hidden"
               >
                 {/* Album Artwork with smooth zoom */}
@@ -527,6 +533,7 @@ export const HomeView: React.FC = () => {
               </div>
             )
           })}
+          <div className="w-4 sm:hidden flex-shrink-0" />
         </div>
       </section>
 
@@ -544,14 +551,14 @@ export const HomeView: React.FC = () => {
           <div className="flex items-center gap-2">
             <div className="hidden sm:flex items-center gap-1">
               <button
-                onClick={() => scrollCarousel('carousel-recommended-playlists', 'left')}
+                onClick={() => playlistSwipe.scrollByAmount(-280)}
                 className="w-7 h-7 rounded-full bg-white/5 hover:bg-white/10 active:scale-90 flex items-center justify-center text-white/70 hover:text-white border border-white/10 transition-all cursor-pointer"
                 title="Scroll Left"
               >
                 <ChevronLeft className="w-4 h-4" />
               </button>
               <button
-                onClick={() => scrollCarousel('carousel-recommended-playlists', 'right')}
+                onClick={() => playlistSwipe.scrollByAmount(280)}
                 className="w-7 h-7 rounded-full bg-white/5 hover:bg-white/10 active:scale-90 flex items-center justify-center text-white/70 hover:text-white border border-white/10 transition-all cursor-pointer"
                 title="Scroll Right"
               >
@@ -571,12 +578,13 @@ export const HomeView: React.FC = () => {
         {/* Playlists Carousel on Mobile / Grid on Desktop */}
         <div
           id="carousel-recommended-playlists"
-          className="carousel-swipe gap-3.5 pb-3 sm:grid sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 sm:gap-4"
+          {...playlistSwipe.carouselProps}
+          className="carousel-swipe gap-3.5 pb-3 sm:grid sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 sm:gap-4 pr-6 sm:pr-0"
         >
           {SAMPLE_PLAYLISTS.map((pl) => (
             <div
               key={pl.id}
-              onClick={() => openPlaylist(pl)}
+              onClick={playlistSwipe.handleCardClick(() => openPlaylist(pl))}
               className="w-[150px] sm:w-auto flex-shrink-0 snap-start bg-[#12141D]/90 hover:bg-[#181B27] p-3 sm:p-3.5 rounded-2xl cursor-pointer transition-all duration-300 border border-white/5 hover:border-purple-500/30 group shadow-md hover:shadow-xl sm:hover:-translate-y-1 relative overflow-hidden"
             >
               <div className="relative mb-2.5 aspect-square w-full rounded-xl overflow-hidden shadow-lg border border-white/5">
@@ -605,6 +613,7 @@ export const HomeView: React.FC = () => {
               </p>
             </div>
           ))}
+          <div className="w-4 sm:hidden flex-shrink-0" />
         </div>
       </section>
 
@@ -742,14 +751,14 @@ export const HomeView: React.FC = () => {
           <div className="flex items-center gap-2">
             <div className="hidden sm:flex items-center gap-1">
               <button
-                onClick={() => scrollCarousel('carousel-new-releases', 'left')}
+                onClick={() => releaseSwipe.scrollByAmount(-280)}
                 className="w-7 h-7 rounded-full bg-white/5 hover:bg-white/10 active:scale-90 flex items-center justify-center text-white/70 hover:text-white border border-white/10 transition-all cursor-pointer"
                 title="Scroll Left"
               >
                 <ChevronLeft className="w-4 h-4" />
               </button>
               <button
-                onClick={() => scrollCarousel('carousel-new-releases', 'right')}
+                onClick={() => releaseSwipe.scrollByAmount(280)}
                 className="w-7 h-7 rounded-full bg-white/5 hover:bg-white/10 active:scale-90 flex items-center justify-center text-white/70 hover:text-white border border-white/10 transition-all cursor-pointer"
                 title="Scroll Right"
               >
@@ -762,14 +771,15 @@ export const HomeView: React.FC = () => {
         {/* New Releases Carousel / Grid */}
         <div
           id="carousel-new-releases"
-          className="carousel-swipe gap-3 pb-3 sm:grid sm:grid-cols-3 md:grid-cols-6 sm:gap-4"
+          {...releaseSwipe.carouselProps}
+          className="carousel-swipe gap-3 pb-3 sm:grid sm:grid-cols-3 md:grid-cols-6 sm:gap-4 pr-6 sm:pr-0"
         >
           {newMusicTracks.map((track) => {
             const isPlayingThis = currentTrack?.id === track.id && isPlaying
             return (
               <div
                 key={track.id}
-                onClick={() => playTrack(track, newMusicTracks)}
+                onClick={releaseSwipe.handleCardClick(() => playTrack(track, newMusicTracks))}
                 className="w-[140px] sm:w-auto flex-shrink-0 snap-start bg-[#12141D]/90 hover:bg-[#181B27] p-3 rounded-2xl cursor-pointer transition-all duration-300 border border-white/5 hover:border-purple-500/30 group shadow-md hover:shadow-xl sm:hover:-translate-y-1 relative"
               >
                 <div className="relative mb-2.5 aspect-square w-full rounded-xl overflow-hidden shadow border border-white/5">
@@ -807,6 +817,7 @@ export const HomeView: React.FC = () => {
               </div>
             )
           })}
+          <div className="w-4 sm:hidden flex-shrink-0" />
         </div>
       </section>
     </div>

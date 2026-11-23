@@ -22,13 +22,10 @@ import type { VisualizerMode } from '../../types'
 interface Particle {
   x: number
   y: number
-  vx: number
-  vy: number
   radius: number
   baseRadius: number
   alpha: number
-  baseAlpha: number
-  colorOffset: number
+  color: string
   angle: number
   distance: number
   speed: number
@@ -44,6 +41,24 @@ interface RingShockwave {
   maxRadius: number
   alpha: number
   speed: number
+  color: string
+}
+
+interface Star {
+  x: number
+  y: number
+  radius: number
+  alpha: number
+  blinkSpeed: number
+}
+
+interface BokehOrb {
+  x: number
+  y: number
+  radius: number
+  vx: number
+  vy: number
+  alpha: number
   color: string
 }
 
@@ -65,56 +80,109 @@ export const DedicatedVisualizerModal: React.FC = () => {
   } = usePlayer()
 
   const [mode, setMode] = useState<VisualizerMode>('spectrum')
-  const [sensitivity, setSensitivity] = useState<number>(1.1)
+  const [sensitivity, setSensitivity] = useState<number>(1.2)
   const [isFullscreen, setIsFullscreen] = useState<boolean>(false)
   const [controlsVisible, setControlsVisible] = useState<boolean>(true)
   const [showSensitivitySlider, setShowSensitivitySlider] = useState<boolean>(false)
+
+  // Mutable refs to prevent stale closure during 60 FPS animation loop
+  const modeRef = useRef<VisualizerMode>(mode)
+  const sensitivityRef = useRef<number>(sensitivity)
+  const isPlayingRef = useRef<boolean>(isPlaying)
+  const currentTimeRef = useRef<number>(currentTime)
+  const volumeRef = useRef<number>(volume)
+  const activeEngineRef = useRef<'audio' | 'youtube'>(activeEngine)
+  const dynamicThemeRef = useRef(dynamicTheme)
+
+  useEffect(() => { modeRef.current = mode }, [mode])
+  useEffect(() => { sensitivityRef.current = sensitivity }, [sensitivity])
+  useEffect(() => { isPlayingRef.current = isPlaying }, [isPlaying])
+  useEffect(() => { currentTimeRef.current = currentTime }, [currentTime])
+  useEffect(() => { volumeRef.current = volume }, [volume])
+  useEffect(() => { activeEngineRef.current = activeEngine }, [activeEngine])
+  useEffect(() => { dynamicThemeRef.current = dynamicTheme }, [dynamicTheme])
 
   const canvasRef = useRef<HTMLCanvasElement | null>(null)
   const containerRef = useRef<HTMLDivElement | null>(null)
   const animFrameRef = useRef<number | null>(null)
   const hideTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
-  // Pre-allocated object pools to prevent GC stutter during 60 FPS animation
+  // Object pools for 60 FPS animation without GC jitter
   const particlesPool = useRef<Particle[]>([])
   const peakCaps = useRef<PeakCap[]>([])
   const shockwaves = useRef<RingShockwave[]>([])
+  const starsPool = useRef<Star[]>([])
+  const bokehPool = useRef<BokehOrb[]>([])
   const albumImgRef = useRef<HTMLImageElement | null>(null)
+  const lastShockwaveTime = useRef<number>(0)
 
-  // Initialize particles once
+  // Initialize particle and star pools
   useEffect(() => {
-    const list: Particle[] = []
-    const count = 150
-    for (let i = 0; i < count; i++) {
+    // 1. Particle pool for Particles mode (200 particles)
+    const pList: Particle[] = []
+    const particleColors = ['#FFFFFF', '#A78BFA', '#8B5CF6', '#38BDF8', '#67E8F9', '#EC4899']
+    for (let i = 0; i < 200; i++) {
       const angle = Math.random() * Math.PI * 2
-      const dist = Math.random() * 250 + 20
-      const speed = Math.random() * 0.015 + 0.005
-      const rad = Math.random() * 2.5 + 1.2
-      list.push({
+      const dist = Math.random() * 650 + 30
+      const speed = (Math.random() * 0.012 + 0.004) * (Math.random() > 0.5 ? 1 : -1)
+      const rad = Math.random() * 3.5 + 1.8
+      pList.push({
         x: 0,
         y: 0,
-        vx: 0,
-        vy: 0,
         radius: rad,
         baseRadius: rad,
-        alpha: Math.random() * 0.6 + 0.3,
-        baseAlpha: Math.random() * 0.6 + 0.3,
-        colorOffset: (Math.random() - 0.5) * 50,
+        alpha: Math.random() * 0.6 + 0.4,
+        color: particleColors[i % particleColors.length],
         angle,
         distance: dist,
         speed,
       })
     }
-    particlesPool.current = list
+    particlesPool.current = pList
 
-    // Initialize 64 peak caps for Spectrum mode
+    // 2. 64 peak caps for Spectrum mode
     peakCaps.current = Array.from({ length: 64 }, () => ({
       value: 0,
       velocity: 0,
     }))
+
+    // 3. 60 stars for Aurora night sky
+    const sList: Star[] = []
+    for (let i = 0; i < 60; i++) {
+      sList.push({
+        x: Math.random(),
+        y: Math.random(),
+        radius: Math.random() * 1.8 + 0.8,
+        alpha: Math.random() * 0.8 + 0.2,
+        blinkSpeed: Math.random() * 2 + 1,
+      })
+    }
+    starsPool.current = sList
+
+    // 4. 40 Bokeh discs for Cinematic mode
+    const bList: BokehOrb[] = []
+    const bokehColors = [
+      'rgba(167, 139, 250, 0.25)',
+      'rgba(139, 92, 246, 0.20)',
+      'rgba(56, 189, 248, 0.22)',
+      'rgba(236, 72, 153, 0.18)',
+      'rgba(255, 255, 255, 0.30)',
+    ]
+    for (let i = 0; i < 40; i++) {
+      bList.push({
+        x: Math.random(),
+        y: Math.random(),
+        radius: Math.random() * 32 + 12,
+        vx: (Math.random() - 0.5) * 0.0003,
+        vy: (Math.random() - 0.5) * 0.0003 - 0.0001,
+        alpha: Math.random() * 0.5 + 0.2,
+        color: bokehColors[i % bokehColors.length],
+      })
+    }
+    bokehPool.current = bList
   }, [])
 
-  // Pre-load album image for Canvas modes (Rings / Cinematic)
+  // Preload album cover image for Rings & Cinematic modes
   useEffect(() => {
     if (currentTrack?.coverUrl) {
       const img = new Image()
@@ -133,7 +201,7 @@ export const DedicatedVisualizerModal: React.FC = () => {
     hideTimerRef.current = setTimeout(() => {
       setControlsVisible(false)
       setShowSensitivitySlider(false)
-    }, 15000)
+    }, 12000)
   }, [])
 
   useEffect(() => {
@@ -147,7 +215,7 @@ export const DedicatedVisualizerModal: React.FC = () => {
     }
   }, [isDedicatedVisualizerOpen, resetHideTimer])
 
-  // Fullscreen Handler
+  // Fullscreen toggle
   const toggleFullscreen = () => {
     if (!containerRef.current) return
     if (!document.fullscreenElement) {
@@ -163,7 +231,7 @@ export const DedicatedVisualizerModal: React.FC = () => {
     return () => document.removeEventListener('fullscreenchange', onFsChange)
   }, [])
 
-  // Keyboard Navigation: Esc to close, Space to play/pause
+  // Keyboard controls
   useEffect(() => {
     if (!isDedicatedVisualizerOpen) return
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -183,12 +251,13 @@ export const DedicatedVisualizerModal: React.FC = () => {
     return () => window.removeEventListener('keydown', handleKeyDown)
   }, [isDedicatedVisualizerOpen, closeDedicatedVisualizer, togglePlay, nextTrack, prevTrack, resetHideTimer])
 
-  // Main High-Performance Canvas Rendering Engine
+  // =========================================================================
+  // MAIN CANVAS RENDERING ENGINE (60 FPS High-Definition Graphics)
+  // =========================================================================
   const renderFrame = useCallback(() => {
     const canvas = canvasRef.current
     if (!canvas) return
 
-    // Efficiency check: if tab is hidden in background, skip drawing to save 100% CPU/GPU
     if (visualizerAudioService.isInactive()) {
       animFrameRef.current = requestAnimationFrame(renderFrame)
       return
@@ -197,57 +266,114 @@ export const DedicatedVisualizerModal: React.FC = () => {
     const ctx = canvas.getContext('2d', { alpha: false })
     if (!ctx) return
 
+    // CRITICAL FIX: Reset transform to identity so physical canvas pixels match 1:1
+    ctx.setTransform(1, 0, 0, 1, 0, 0)
+
     const width = canvas.width
     const height = canvas.height
     const cx = width / 2
     const cy = height / 2
 
-    // Get live audio data (hardware FFT or synced rhythmic acoustic model)
+    // Responsive scaling factor relative to 600px base dimension
+    const s = Math.max(0.65, Math.min(width, height) / 600)
+
+    // Current time in seconds for fluid trigonometric synthesis
+    const animTime = performance.now() * 0.001
+
+    // Current state from refs to prevent stale closure during 60 FPS animation loop
+    const curMode = modeRef.current
+    const curSensitivity = sensitivityRef.current
+    const curIsPlaying = isPlayingRef.current
+    const curCurrentTime = currentTimeRef.current
+    const curVolume = volumeRef.current
+    const curActiveEngine = activeEngineRef.current
+    const curDynamicTheme = dynamicThemeRef.current
+
+    // Fetch hardware audio or fallback
     const audio = visualizerAudioService.getAudioData(
-      isPlaying,
-      currentTime,
-      volume,
-      activeEngine
+      curIsPlaying,
+      curCurrentTime,
+      curVolume,
+      curActiveEngine
     )
 
     const freq = audio.frequency
     const wave = audio.waveform
-    const bass = audio.bassKick * sensitivity
-    const mid = audio.midEnergy * sensitivity
-    const treble = audio.trebleEnergy * sensitivity
 
-    const primaryColor = dynamicTheme.primary || '#A78BFA'
-    const secondaryColor = dynamicTheme.secondary || '#8B5CF6'
-    const accentGlow = dynamicTheme.accentGlow || 'rgba(139,92,246,0.3)'
+    // Check if hardware FFT is delivering active energy
+    let rawEnergySum = 0
+    for (let i = 0; i < 64; i++) {
+      rawEnergySum += freq[i] || 0
+    }
+    const isQuiet = rawEnergySum < 120
 
-    // Clear background with deep rich obsidian fade
+    // Procedural rhythm synthesizer for sandboxed streams / quiet states
+    const synthBeatPhase = animTime * 4.4
+    const synthKick = curIsPlaying ? Math.pow(Math.max(0, Math.sin(synthBeatPhase)), 4) : 0.06
+
+    // Effective audio dynamics (seamless hybrid)
+    const effectiveBass = (isQuiet ? synthKick * 0.85 + 0.15 : Math.max(audio.bassKick, synthKick * 0.5)) * curSensitivity
+    const effectiveMid = (isQuiet ? Math.sin(animTime * 3) * 0.2 + 0.35 : Math.max(audio.midEnergy, 0.25)) * curSensitivity
+    const effectiveTreble = (isQuiet ? Math.cos(animTime * 5) * 0.2 + 0.30 : Math.max(audio.trebleEnergy, 0.20)) * curSensitivity
+
+    // Frequency value helper (returns 0.0 to 1.0)
+    const getFreq = (i: number): number => {
+      if (!isQuiet) return Math.min(1, ((freq[i] || 0) / 255) * curSensitivity)
+      if (!curIsPlaying) {
+        return Math.sin(animTime * 1.5 + i * 0.15) * 0.06 + 0.08
+      }
+      const harmonicWeight = Math.exp(-i / 16) * (synthKick * 0.75 + 0.25)
+      const midRhythm = Math.sin(animTime * 5.2 + i * 0.32) * 0.22 + 0.25
+      const trebleSpark = Math.cos(animTime * 8.5 + i * 0.6) * 0.18 + 0.18
+      const val = (harmonicWeight + midRhythm * (1 - i / 64) + trebleSpark * (i / 64)) * curSensitivity
+      return Math.min(1, Math.max(0.06, val))
+    }
+
+    // Waveform value helper (returns -1.0 to 1.0)
+    const getWave = (i: number): number => {
+      if (!isQuiet) return ((wave[i] || 128) - 128) / 128
+      if (!curIsPlaying) {
+        return Math.sin(animTime * 2 + i * 0.12) * 0.14
+      }
+      return (
+        Math.sin(animTime * 6.5 + (i / 64) * Math.PI * 4) * 0.45 * (synthKick + 0.55) +
+        Math.cos(animTime * 11 + (i / 64) * Math.PI * 6) * 0.25
+      )
+    }
+
+    const primaryColor = curDynamicTheme.primary || '#A78BFA'
+    const secondaryColor = curDynamicTheme.secondary || '#8B5CF6'
+
+    // Deep Obsidian Backdrop
     ctx.fillStyle = '#07090E'
     ctx.fillRect(0, 0, width, height)
 
-    // Subtle background ambient pulse in center
-    const bgRad = Math.max(width, height) * 0.7
-    const bgGrad = ctx.createRadialGradient(cx, cy, 10, cx, cy, bgRad)
-    bgGrad.addColorStop(0, `${primaryColor}18`)
-    bgGrad.addColorStop(0.5, `${secondaryColor}08`)
-    bgGrad.addColorStop(1, '#07090E')
-    ctx.fillStyle = bgGrad
+    // Dynamic Central Ambient Aura
+    const auraRad = Math.max(width, height) * 0.75
+    const auraGrad = ctx.createRadialGradient(cx, cy, 10, cx, cy, auraRad)
+    auraGrad.addColorStop(0, `${primaryColor}22`)
+    auraGrad.addColorStop(0.4, `${secondaryColor}10`)
+    auraGrad.addColorStop(1, '#07090E')
+    ctx.fillStyle = auraGrad
     ctx.fillRect(0, 0, width, height)
 
     // =========================================================================
-    // MODE 1: SPECTRUM (High-Resolution 64-Band Frequency Spectrum with Peak Caps)
+    // MODE 1: SPECTRUM (High-Resolution 64-Band Equalizer with Floating Peak Caps)
     // =========================================================================
-    if (mode === 'spectrum' || mode === 'bars') {
-      const numBars = Math.min(64, Math.floor(width / 12))
-      const barWidth = Math.max(3, (width * 0.88) / numBars - 4)
-      const startX = (width - numBars * (barWidth + 4)) / 2
-      const baselineY = height * 0.62
-      const maxHeight = height * 0.38
+    if (curMode === 'spectrum' || curMode === 'bars') {
+      const numBars = Math.min(64, Math.max(36, Math.floor(width / (11 * s))))
+      const totalWidth = width * 0.88
+      const barPitch = totalWidth / numBars
+      const barWidth = Math.max(3, barPitch - 3 * s)
+      const startX = (width - numBars * barPitch) / 2
+      const baselineY = height * 0.58
+      const maxHeight = height * 0.34
 
       for (let i = 0; i < numBars; i++) {
         const binIndex = Math.floor((i / numBars) * 60)
-        const rawVal = (freq[binIndex] || 0) / 255
-        const barHeight = Math.max(4, rawVal * maxHeight * sensitivity)
-        const x = startX + i * (barWidth + 4)
+        const energy = getFreq(binIndex)
+        const barHeight = Math.max(6 * s, energy * maxHeight)
+        const x = startX + i * barPitch
         const y = baselineY - barHeight
 
         // Peak Cap Physics
@@ -256,15 +382,16 @@ export const DedicatedVisualizerModal: React.FC = () => {
           cap.value = barHeight
           cap.velocity = 0
         } else {
-          cap.velocity += 0.22 // gravity
+          cap.velocity += 0.35 * s // gravity
           cap.value = Math.max(0, cap.value - cap.velocity)
         }
         peakCaps.current[i] = cap
 
-        // Bar Gradient
+        // Bar Gradient: Deep Violet -> Vibrant Amethyst -> Electric Cyan -> Pure White
         const grad = ctx.createLinearGradient(0, baselineY, 0, y)
-        grad.addColorStop(0, `${secondaryColor}80`)
-        grad.addColorStop(0.7, primaryColor)
+        grad.addColorStop(0, `${secondaryColor}99`)
+        grad.addColorStop(0.55, primaryColor)
+        grad.addColorStop(0.85, '#38BDF8')
         grad.addColorStop(1, '#FFFFFF')
 
         ctx.fillStyle = grad
@@ -272,146 +399,198 @@ export const DedicatedVisualizerModal: React.FC = () => {
         ctx.roundRect(x, y, barWidth, barHeight, [barWidth / 2, barWidth / 2, 0, 0])
         ctx.fill()
 
-        // Peak Cap Dot
-        if (cap.value > 6) {
-          const capY = baselineY - cap.value - 4
+        // Luminous Peak Cap Capsule
+        if (cap.value > 10 * s) {
+          const capY = baselineY - cap.value - 4 * s
           ctx.fillStyle = '#FFFFFF'
-          ctx.shadowColor = primaryColor
-          ctx.shadowBlur = 8
+          ctx.shadowColor = '#38BDF8'
+          ctx.shadowBlur = 10 * s
           ctx.beginPath()
-          ctx.roundRect(x, capY, barWidth, 2.5, [1, 1, 1, 1])
+          ctx.roundRect(x, capY, barWidth, 3 * s, [2, 2, 2, 2])
           ctx.fill()
           ctx.shadowBlur = 0
         }
 
         // Soft Inverted Baseline Reflection
-        const reflGrad = ctx.createLinearGradient(0, baselineY, 0, baselineY + barHeight * 0.35)
-        reflGrad.addColorStop(0, `${primaryColor}40`)
+        const reflHeight = barHeight * 0.38
+        const reflGrad = ctx.createLinearGradient(0, baselineY, 0, baselineY + reflHeight)
+        reflGrad.addColorStop(0, `${primaryColor}55`)
         reflGrad.addColorStop(1, 'transparent')
         ctx.fillStyle = reflGrad
         ctx.beginPath()
-        ctx.roundRect(x, baselineY + 2, barWidth, barHeight * 0.35, [0, 0, barWidth / 2, barWidth / 2])
+        ctx.roundRect(x, baselineY + 2 * s, barWidth, reflHeight, [0, 0, barWidth / 2, barWidth / 2])
         ctx.fill()
       }
 
       // Glowing Baseline Horizon
-      ctx.strokeStyle = `${primaryColor}60`
-      ctx.lineWidth = 1.5
-      ctx.beginPath()
-      ctx.moveTo(startX - 20, baselineY)
-      ctx.lineTo(startX + numBars * (barWidth + 4) + 20, baselineY)
-      ctx.stroke()
-    }
-
-    // =========================================================================
-    // MODE 2: WAVE (Flowing Multi-Layer Oscilloscope Waveform Ribbon)
-    // =========================================================================
-    else if (mode === 'wave' || mode === 'waveform') {
-      const step = width / 64
-      const centerY = height * 0.50
-
-      // 1. Fill Layer (Under Waveform)
-      ctx.beginPath()
-      ctx.moveTo(0, height)
-      for (let i = 0; i < 64; i++) {
-        const x = i * step
-        const waveVal = (wave[i] - 128) / 128
-        const harm = Math.sin(currentTime * 4 + i * 0.18) * (bass * 40)
-        const y = centerY + waveVal * (height * 0.22) * sensitivity + harm
-        if (i === 0) ctx.lineTo(x, y)
-        else ctx.lineTo(x, y)
-      }
-      ctx.lineTo(width, height)
-      ctx.closePath()
-
-      const waveFillGrad = ctx.createLinearGradient(0, centerY - 100, 0, height)
-      waveFillGrad.addColorStop(0, `${primaryColor}30`)
-      waveFillGrad.addColorStop(0.5, `${secondaryColor}15`)
-      waveFillGrad.addColorStop(1, 'transparent')
-      ctx.fillStyle = waveFillGrad
-      ctx.fill()
-
-      // 2. Harmonic Echo Wave (Behind Main Line)
-      ctx.beginPath()
-      for (let i = 0; i < 64; i++) {
-        const x = i * step
-        const waveVal = (wave[i] - 128) / 128
-        const y = centerY + waveVal * (height * 0.16) * sensitivity + Math.cos(currentTime * 3 + i * 0.25) * ((bass + mid) * 25)
-        if (i === 0) ctx.moveTo(x, y)
-        else ctx.lineTo(x, y)
-      }
-      ctx.strokeStyle = `${secondaryColor}60`
-      ctx.lineWidth = 2
-      ctx.stroke()
-
-      // 3. Main Crisp Glowing Waveform Line
-      ctx.beginPath()
-      for (let i = 0; i < 64; i++) {
-        const x = i * step
-        const waveVal = (wave[i] - 128) / 128
-        const harm = Math.sin(currentTime * 4 + i * 0.18) * (bass * 40)
-        const y = centerY + waveVal * (height * 0.22) * sensitivity + harm
-        if (i === 0) ctx.moveTo(x, y)
-        else ctx.lineTo(x, y)
-      }
-      ctx.strokeStyle = '#FFFFFF'
+      ctx.strokeStyle = `${primaryColor}80`
+      ctx.lineWidth = 2 * s
       ctx.shadowColor = primaryColor
-      ctx.shadowBlur = 20
-      ctx.lineWidth = 3
+      ctx.shadowBlur = 12 * s
+      ctx.beginPath()
+      ctx.moveTo(startX - 20 * s, baselineY)
+      ctx.lineTo(startX + numBars * barPitch + 20 * s, baselineY)
       ctx.stroke()
       ctx.shadowBlur = 0
     }
 
     // =========================================================================
-    // MODE 3: PARTICLES (Audio-Reactive Particle Swarm with Constellations)
+    // MODE 2: WAVE (Flowing Multi-Ribbon Oscilloscope with Luminous Nodes)
     // =========================================================================
-    else if (mode === 'particles') {
-      const particles = particlesPool.current
-      const pulseMultiplier = 1 + bass * 0.65
+    else if (curMode === 'wave' || curMode === 'waveform') {
+      const centerY = height * 0.50
+      const points = 80
+      const step = width / points
 
-      // Center Core Orb
-      const coreRad = Math.max(20, (30 + bass * 55) * sensitivity)
-      const coreGrad = ctx.createRadialGradient(cx, cy, 5, cx, cy, coreRad)
+      // 1. Translucent Ambient Fill Under Wave
+      ctx.beginPath()
+      ctx.moveTo(0, height)
+      for (let i = 0; i <= points; i++) {
+        const x = i * step
+        const wVal = getWave(Math.floor((i / points) * 63))
+        const harm = Math.sin(animTime * 3.5 + i * 0.14) * (effectiveBass * 45 * s)
+        const y = centerY + wVal * (height * 0.18) + harm
+        ctx.lineTo(x, y)
+      }
+      ctx.lineTo(width, height)
+      ctx.closePath()
+
+      const fillGrad = ctx.createLinearGradient(0, centerY - 120 * s, 0, height)
+      fillGrad.addColorStop(0, `${primaryColor}35`)
+      fillGrad.addColorStop(0.5, `${secondaryColor}15`)
+      fillGrad.addColorStop(1, 'transparent')
+      ctx.fillStyle = fillGrad
+      ctx.fill()
+
+      // 2. Harmonic Echo Wave 1 (Deep Violet behind)
+      ctx.beginPath()
+      for (let i = 0; i <= points; i++) {
+        const x = i * step
+        const wVal = getWave(Math.floor((i / points) * 63))
+        const y = centerY + wVal * (height * 0.14) + Math.cos(animTime * 2.8 + i * 0.20) * ((effectiveBass + effectiveMid) * 35 * s)
+        if (i === 0) ctx.moveTo(x, y)
+        else ctx.lineTo(x, y)
+      }
+      ctx.strokeStyle = `${secondaryColor}70`
+      ctx.lineWidth = 2.5 * s
+      ctx.stroke()
+
+      // 3. Harmonic Echo Wave 2 (Electric Cyan)
+      ctx.beginPath()
+      for (let i = 0; i <= points; i++) {
+        const x = i * step
+        const wVal = getWave(Math.floor(((points - i) / points) * 63))
+        const y = centerY + wVal * (height * 0.12) + Math.sin(animTime * 4.2 + i * 0.28) * (effectiveTreble * 28 * s)
+        if (i === 0) ctx.moveTo(x, y)
+        else ctx.lineTo(x, y)
+      }
+      ctx.strokeStyle = '#38BDF860'
+      ctx.lineWidth = 2 * s
+      ctx.stroke()
+
+      // 4. Primary Luminous Waveform Ribbon
+      ctx.beginPath()
+      const wavePoints: { x: number; y: number }[] = []
+      for (let i = 0; i <= points; i++) {
+        const x = i * step
+        const wVal = getWave(Math.floor((i / points) * 63))
+        const harm = Math.sin(animTime * 3.5 + i * 0.14) * (effectiveBass * 45 * s)
+        const y = centerY + wVal * (height * 0.18) + harm
+        wavePoints.push({ x, y })
+        if (i === 0) ctx.moveTo(x, y)
+        else ctx.lineTo(x, y)
+      }
+      ctx.strokeStyle = '#FFFFFF'
+      ctx.shadowColor = primaryColor
+      ctx.shadowBlur = 24 * s
+      ctx.lineWidth = 3.5 * s
+      ctx.stroke()
+      ctx.shadowBlur = 0
+
+      // 5. Pulsating Crest Energy Pearls
+      for (let i = 0; i < wavePoints.length; i += 4) {
+        const pt = wavePoints[i]
+        const pRad = (3 + effectiveBass * 4) * s
+        ctx.fillStyle = '#FFFFFF'
+        ctx.shadowColor = '#38BDF8'
+        ctx.shadowBlur = 12 * s
+        ctx.beginPath()
+        ctx.arc(pt.x, pt.y, pRad, 0, Math.PI * 2)
+        ctx.fill()
+        ctx.shadowBlur = 0
+      }
+    }
+
+    // =========================================================================
+    // MODE 3: PARTICLES (Cosmic Particle Swarm with Center Gravity & Constellations)
+    // =========================================================================
+    else if (curMode === 'particles') {
+      const particles = particlesPool.current
+      const pulseMultiplier = 1 + effectiveBass * 0.45
+
+      // 1. Center Pulsing Plasma Core
+      const coreRad = (32 + effectiveBass * 48) * s
+      const coreGrad = ctx.createRadialGradient(cx, cy, 4, cx, cy, coreRad)
       coreGrad.addColorStop(0, '#FFFFFF')
-      coreGrad.addColorStop(0.4, primaryColor)
+      coreGrad.addColorStop(0.35, primaryColor)
+      coreGrad.addColorStop(0.7, `${secondaryColor}40`)
       coreGrad.addColorStop(1, 'transparent')
       ctx.fillStyle = coreGrad
       ctx.beginPath()
       ctx.arc(cx, cy, coreRad, 0, Math.PI * 2)
       ctx.fill()
 
-      // Update and Draw Particles
+      // 2. Ripple Rings from Center
+      const rippleCount = 3
+      for (let r = 1; r <= rippleCount; r++) {
+        const ripRad = coreRad + ((animTime * 40 * r + r * 35 * s) % (120 * s))
+        const ripAlpha = Math.max(0, 1 - ripRad / (140 * s)) * (0.35 + effectiveBass * 0.4)
+        ctx.strokeStyle = primaryColor
+        ctx.globalAlpha = ripAlpha
+        ctx.lineWidth = 2 * s
+        ctx.beginPath()
+        ctx.arc(cx, cy, ripRad, 0, Math.PI * 2)
+        ctx.stroke()
+      }
+      ctx.globalAlpha = 1
+
+      // 3. Update & Render Particles across full screen
+      const maxCanvasRadius = Math.max(width, height) * 0.65
       for (let i = 0; i < particles.length; i++) {
         const p = particles[i]
-        p.angle += p.speed * (1 + bass * 1.5)
-        const curDist = p.distance * pulseMultiplier
+        p.angle += p.speed * (1 + effectiveBass * 1.8)
+        const curDist = Math.min(maxCanvasRadius, p.distance * pulseMultiplier * s)
         p.x = cx + Math.cos(p.angle) * curDist
         p.y = cy + Math.sin(p.angle) * curDist
-        p.radius = p.baseRadius * (1 + (freq[i % 60] / 255) * 1.8 + treble * 0.5)
 
-        // Draw Particle
-        ctx.fillStyle = i % 3 === 0 ? '#FFFFFF' : primaryColor
-        ctx.globalAlpha = Math.min(1, p.alpha * (0.6 + bass * 0.4))
+        const freqVal = getFreq(i % 60)
+        p.radius = (p.baseRadius * (1 + freqVal * 2.2 + effectiveTreble * 0.6)) * s
+
+        // Draw Particle with Glow
+        ctx.fillStyle = p.color
+        ctx.globalAlpha = Math.min(1, p.alpha * (0.7 + effectiveBass * 0.4))
+        ctx.shadowColor = p.color
+        ctx.shadowBlur = 8 * s
         ctx.beginPath()
-        ctx.arc(p.x, p.y, Math.max(1, p.radius), 0, Math.PI * 2)
+        ctx.arc(p.x, p.y, Math.max(1.5, p.radius), 0, Math.PI * 2)
         ctx.fill()
+        ctx.shadowBlur = 0
 
-        // Constellation filaments to nearby particles
-        if (bass > 0.4) {
-          for (let j = i + 1; j < Math.min(i + 8, particles.length); j++) {
-            const p2 = particles[j]
-            const dx = p.x - p2.x
-            const dy = p.y - p2.y
-            const dist = Math.sqrt(dx * dx + dy * dy)
-            if (dist < 75) {
-              ctx.strokeStyle = primaryColor
-              ctx.globalAlpha = (1 - dist / 75) * 0.35 * bass
-              ctx.lineWidth = 1
-              ctx.beginPath()
-              ctx.moveTo(p.x, p.y)
-              ctx.lineTo(p2.x, p2.y)
-              ctx.stroke()
-            }
+        // Constellation Lines between neighboring particles
+        for (let j = i + 1; j < Math.min(i + 6, particles.length); j++) {
+          const p2 = particles[j]
+          const dx = p.x - p2.x
+          const dy = p.y - p2.y
+          const dist = Math.sqrt(dx * dx + dy * dy)
+          const maxDist = 85 * s
+          if (dist < maxDist) {
+            ctx.strokeStyle = primaryColor
+            ctx.globalAlpha = (1 - dist / maxDist) * (0.28 + effectiveBass * 0.35)
+            ctx.lineWidth = 1 * s
+            ctx.beginPath()
+            ctx.moveTo(p.x, p.y)
+            ctx.lineTo(p2.x, p2.y)
+            ctx.stroke()
           }
         }
       }
@@ -419,48 +598,80 @@ export const DedicatedVisualizerModal: React.FC = () => {
     }
 
     // =========================================================================
-    // MODE 4: AURORA (Fluid Undulating Northern Lights Curtains)
+    // MODE 4: AURORA (Silky Northern Lights Curtains with Volumetric Light Beams)
     // =========================================================================
-    else if (mode === 'aurora') {
-      const numCurtains = 4
-      const points = 50
+    else if (curMode === 'aurora') {
+      // 1. Twinkling Starfield in Background
+      const stars = starsPool.current
+      for (let i = 0; i < stars.length; i++) {
+        const st = stars[i]
+        const stX = st.x * width
+        const stY = st.y * (height * 0.55)
+        const blink = Math.sin(animTime * st.blinkSpeed + i) * 0.4 + 0.6
+        ctx.fillStyle = '#FFFFFF'
+        ctx.globalAlpha = st.alpha * blink
+        ctx.beginPath()
+        ctx.arc(stX, stY, st.radius * s, 0, Math.PI * 2)
+        ctx.fill()
+      }
+      ctx.globalAlpha = 1
+
+      // 2. Volumetric Vertical Light Pillars
+      const numPillars = 8
+      for (let p = 0; p < numPillars; p++) {
+        const px = (width / (numPillars + 1)) * (p + 1) + Math.sin(animTime + p) * (30 * s)
+        const pHeight = height * (0.35 + getFreq(p * 7) * 0.28)
+        const pTop = height * 0.15
+        const pWidth = (35 + Math.sin(animTime * 2 + p) * 15) * s
+
+        const beamGrad = ctx.createLinearGradient(0, pTop, 0, pTop + pHeight)
+        beamGrad.addColorStop(0, 'transparent')
+        beamGrad.addColorStop(0.4, p % 2 === 0 ? '#10B98125' : `${primaryColor}22`)
+        beamGrad.addColorStop(1, 'transparent')
+
+        ctx.fillStyle = beamGrad
+        ctx.fillRect(px - pWidth / 2, pTop, pWidth, pHeight)
+      }
+
+      // 3. 5 Undulating Silky Aurora Curtains
+      const numCurtains = 5
+      const points = 100
       const dx = width / points
 
+      const curtainColors = [
+        { top: '#10B981', mid: '#06B6D4', base: '#0B0D13' }, // Emerald to Cyan
+        { top: '#38BDF8', mid: '#8B5CF6', base: '#0B0D13' }, // Cyan to Violet
+        { top: '#8B5CF6', mid: '#C084FC', base: '#0B0D13' }, // Purple to Amethyst
+        { top: '#EC4899', mid: '#8B5CF6', base: '#0B0D13' }, // Magenta to Violet
+        { top: '#F59E0B', mid: '#10B981', base: '#0B0D13' }, // Gold to Emerald
+      ]
+
       for (let c = 0; c < numCurtains; c++) {
-        const baseH = height * (0.35 + c * 0.12)
-        const speed = 1.2 + c * 0.4
-        const phaseOffset = c * 1.8
+        const baseH = height * (0.32 + c * 0.08)
+        const speed = 1.0 + c * 0.35
+        const phaseOffset = c * 1.6
 
         ctx.beginPath()
         ctx.moveTo(0, height)
 
         for (let i = 0; i <= points; i++) {
           const x = i * dx
-          const freqSample = (freq[(i * 2 + c * 8) % 64] || 0) / 255
-          const wave1 = Math.sin(currentTime * speed + (x / width) * 4 + phaseOffset)
-          const wave2 = Math.cos(currentTime * (speed * 0.7) + (x / width) * 7)
-          const audioAmp = (freqSample * 80 + (bass + mid) * 35 + treble * 25) * sensitivity
-          const y = baseH + (wave1 * 50 + wave2 * 30 + audioAmp)
+          const freqSample = getFreq((i * 2 + c * 10) % 64)
+          const wave1 = Math.sin(animTime * speed + (x / width) * 4.5 + phaseOffset)
+          const wave2 = Math.cos(animTime * (speed * 0.7) + (x / width) * 7.5)
+          const audioAmp = (freqSample * 90 + (effectiveBass + effectiveMid) * 40) * s
+          const y = baseH + (wave1 * 45 * s + wave2 * 25 * s + audioAmp)
           ctx.lineTo(x, y)
         }
 
         ctx.lineTo(width, height)
         ctx.closePath()
 
-        const curtainGrad = ctx.createLinearGradient(0, baseH - 80, 0, height)
-        if (c === 0) {
-          curtainGrad.addColorStop(0, `${primaryColor}70`)
-          curtainGrad.addColorStop(0.6, `${secondaryColor}30`)
-          curtainGrad.addColorStop(1, 'transparent')
-        } else if (c === 1) {
-          curtainGrad.addColorStop(0, '#38BDF860')
-          curtainGrad.addColorStop(0.6, `${primaryColor}25`)
-          curtainGrad.addColorStop(1, 'transparent')
-        } else {
-          curtainGrad.addColorStop(0, `${secondaryColor}50`)
-          curtainGrad.addColorStop(0.7, '#1E1B4B20')
-          curtainGrad.addColorStop(1, 'transparent')
-        }
+        const palette = curtainColors[c % curtainColors.length]
+        const curtainGrad = ctx.createLinearGradient(0, baseH - 90 * s, 0, height)
+        curtainGrad.addColorStop(0, `${palette.top}70`)
+        curtainGrad.addColorStop(0.5, `${palette.mid}30`)
+        curtainGrad.addColorStop(1, 'transparent')
 
         ctx.fillStyle = curtainGrad
         ctx.fill()
@@ -468,24 +679,25 @@ export const DedicatedVisualizerModal: React.FC = () => {
     }
 
     // =========================================================================
-    // MODE 5: RINGS (Concentric Expanding Acoustic Shockwaves & Centerpiece)
+    // MODE 5: RINGS (Concentric Radial Equalizer, Kinetic Orbits & Shockwaves)
     // =========================================================================
-    else if (mode === 'rings' || mode === 'circular') {
-      const centerRadius = Math.min(width, height) * 0.18
-      const pulseScale = 1 + bass * 0.12
+    else if (curMode === 'rings' || curMode === 'circular') {
+      const centerRadius = Math.min(width, height) * 0.20
+      const pulseScale = 1 + effectiveBass * 0.12
 
-      // Bass Shockwave Trigger
-      if (bass > 0.65 && isPlaying && shockwaves.current.length < 5) {
+      // Periodic Shockwave Trigger (every 0.45s on rhythmic beat)
+      if (isPlaying && animTime - lastShockwaveTime.current > 0.45 && shockwaves.current.length < 5) {
+        lastShockwaveTime.current = animTime
         shockwaves.current.push({
           radius: centerRadius * pulseScale,
-          maxRadius: Math.max(width, height) * 0.6,
-          alpha: 0.8,
-          speed: 4 + bass * 5,
-          color: primaryColor,
+          maxRadius: Math.max(width, height) * 0.65,
+          alpha: 0.85,
+          speed: (4.5 + effectiveBass * 6) * s,
+          color: shockwaves.current.length % 2 === 0 ? primaryColor : '#38BDF8',
         })
       }
 
-      // Update and Draw Shockwaves
+      // Update & Draw Expanding Shockwaves
       for (let i = shockwaves.current.length - 1; i >= 0; i--) {
         const sw = shockwaves.current[i]
         sw.radius += sw.speed
@@ -496,31 +708,57 @@ export const DedicatedVisualizerModal: React.FC = () => {
         }
         ctx.strokeStyle = sw.color
         ctx.globalAlpha = sw.alpha
-        ctx.lineWidth = 2.5
+        ctx.lineWidth = 2.5 * s
         ctx.beginPath()
         ctx.arc(cx, cy, sw.radius, 0, Math.PI * 2)
         ctx.stroke()
       }
       ctx.globalAlpha = 1
 
-      // 48 Radial Frequency Rays
-      const totalRays = 48
+      // Kinetic Orbital Ring 1 (Inner Dashed Cyan Ring rotating clockwise)
+      ctx.save()
+      ctx.translate(cx, cy)
+      ctx.rotate(animTime * 0.4)
+      ctx.strokeStyle = '#38BDF880'
+      ctx.lineWidth = 1.5 * s
+      ctx.setLineDash([8 * s, 6 * s])
+      ctx.beginPath()
+      ctx.arc(0, 0, centerRadius * pulseScale + 8 * s, 0, Math.PI * 2)
+      ctx.stroke()
+      ctx.restore()
+
+      // Kinetic Orbital Ring 2 (Outer Dashed Violet Ring rotating counter-clockwise)
+      ctx.save()
+      ctx.translate(cx, cy)
+      ctx.rotate(-animTime * 0.25)
+      ctx.strokeStyle = `${primaryColor}60`
+      ctx.lineWidth = 1.5 * s
+      ctx.setLineDash([12 * s, 10 * s])
+      ctx.beginPath()
+      ctx.arc(0, 0, centerRadius * pulseScale + 65 * s, 0, Math.PI * 2)
+      ctx.stroke()
+      ctx.restore()
+
+      // 64 Radial Frequency Equalizer Rays
+      const totalRays = 64
       const angleStep = (Math.PI * 2) / totalRays
+      const innerOrbit = centerRadius * pulseScale + 14 * s
       for (let i = 0; i < totalRays; i++) {
-        const angle = i * angleStep + currentTime * 0.2
-        const rawEnergy = (freq[i % 60] || 0) / 255
-        const rayLen = Math.max(8, rawEnergy * (height * 0.18) * sensitivity)
-        const innerX = cx + Math.cos(angle) * (centerRadius * pulseScale + 4)
-        const innerY = cy + Math.sin(angle) * (centerRadius * pulseScale + 4)
-        const outerX = cx + Math.cos(angle) * (centerRadius * pulseScale + 4 + rayLen)
-        const outerY = cy + Math.sin(angle) * (centerRadius * pulseScale + 4 + rayLen)
+        const angle = i * angleStep + animTime * 0.15
+        const energy = getFreq(i % 60)
+        const rayLen = Math.max(8 * s, energy * (height * 0.18))
+        const innerX = cx + Math.cos(angle) * innerOrbit
+        const innerY = cy + Math.sin(angle) * innerOrbit
+        const outerX = cx + Math.cos(angle) * (innerOrbit + rayLen)
+        const outerY = cy + Math.sin(angle) * (innerOrbit + rayLen)
 
         const rayGrad = ctx.createLinearGradient(innerX, innerY, outerX, outerY)
         rayGrad.addColorStop(0, primaryColor)
+        rayGrad.addColorStop(0.7, '#38BDF8')
         rayGrad.addColorStop(1, '#FFFFFF')
 
         ctx.strokeStyle = rayGrad
-        ctx.lineWidth = 3
+        ctx.lineWidth = 3 * s
         ctx.lineCap = 'round'
         ctx.beginPath()
         ctx.moveTo(innerX, innerY)
@@ -528,11 +766,12 @@ export const DedicatedVisualizerModal: React.FC = () => {
         ctx.stroke()
       }
 
-      // Center Album Artwork Circular Disc
+      // Center Disc (Album Cover or Stylized Vinyl Record)
       ctx.save()
       ctx.beginPath()
       ctx.arc(cx, cy, centerRadius * pulseScale, 0, Math.PI * 2)
       ctx.clip()
+
       if (albumImgRef.current && albumImgRef.current.complete) {
         ctx.drawImage(
           albumImgRef.current,
@@ -542,16 +781,33 @@ export const DedicatedVisualizerModal: React.FC = () => {
           centerRadius * 2 * pulseScale
         )
       } else {
-        ctx.fillStyle = '#181226'
-        ctx.fillRect(cx - centerRadius, cy - centerRadius, centerRadius * 2, centerRadius * 2)
+        // High-end Cyberpunk Vinyl Record Centerpiece
+        ctx.fillStyle = '#110E1D'
+        ctx.fillRect(cx - centerRadius * 2, cy - centerRadius * 2, centerRadius * 4, centerRadius * 4)
+        for (let g = 1; g <= 5; g++) {
+          ctx.strokeStyle = 'rgba(255, 255, 255, 0.12)'
+          ctx.lineWidth = 1 * s
+          ctx.beginPath()
+          ctx.arc(cx, cy, (centerRadius * pulseScale * g) / 6, 0, Math.PI * 2)
+          ctx.stroke()
+        }
+        // Center label badge
+        ctx.fillStyle = primaryColor
+        ctx.beginPath()
+        ctx.arc(cx, cy, centerRadius * pulseScale * 0.35, 0, Math.PI * 2)
+        ctx.fill()
+        ctx.fillStyle = '#FFFFFF'
+        ctx.beginPath()
+        ctx.arc(cx, cy, 6 * s, 0, Math.PI * 2)
+        ctx.fill()
       }
       ctx.restore()
 
-      // Outer Glowing Ring Border around Centerpiece
+      // Luminous Halo Border around Centerpiece
       ctx.strokeStyle = '#FFFFFF'
       ctx.shadowColor = primaryColor
-      ctx.shadowBlur = 20
-      ctx.lineWidth = 3
+      ctx.shadowBlur = 24 * s
+      ctx.lineWidth = 3.5 * s
       ctx.beginPath()
       ctx.arc(cx, cy, centerRadius * pulseScale, 0, Math.PI * 2)
       ctx.stroke()
@@ -559,58 +815,75 @@ export const DedicatedVisualizerModal: React.FC = () => {
     }
 
     // =========================================================================
-    // MODE 6: CINEMATIC (Atmospheric 3D Depth, Floating Bokeh & Vignette)
+    // MODE 6: CINEMATIC (Volumetric Depth, Floating Bokeh & Showcase Art Card)
     // =========================================================================
-    else if (mode === 'cinematic') {
-      // 1. Ambient Blurred Backdrop
+    else if (curMode === 'cinematic') {
+      // 1. Ambient Breathing Backdrop
       if (albumImgRef.current && albumImgRef.current.complete) {
         ctx.save()
-        ctx.globalAlpha = 0.22 + bass * 0.1
-        const zoom = 1.05 + Math.sin(currentTime * 0.5) * 0.03 + bass * 0.04
+        ctx.globalAlpha = 0.28 + effectiveBass * 0.12
+        const zoom = 1.08 + Math.sin(animTime * 0.4) * 0.04 + effectiveBass * 0.05
         const imgW = width * zoom
         const imgH = height * zoom
         ctx.drawImage(albumImgRef.current, (width - imgW) / 2, (height - imgH) / 2, imgW, imgH)
         ctx.restore()
+      } else {
+        // Volumetric Light Beams if album art is loading
+        const shaftGrad = ctx.createLinearGradient(0, 0, width, height)
+        shaftGrad.addColorStop(0, `${primaryColor}20`)
+        shaftGrad.addColorStop(0.5, '#07090E')
+        shaftGrad.addColorStop(1, '#38BDF815')
+        ctx.fillStyle = shaftGrad
+        ctx.fillRect(0, 0, width, height)
       }
 
-      // 2. Heavy Vignette for cinematic mood
-      const vigGrad = ctx.createRadialGradient(cx, cy, height * 0.2, cx, cy, Math.max(width, height) * 0.7)
+      // 2. Moody Cinematic Vignette
+      const vigGrad = ctx.createRadialGradient(cx, cy, height * 0.22, cx, cy, Math.max(width, height) * 0.72)
       vigGrad.addColorStop(0, 'transparent')
-      vigGrad.addColorStop(0.7, '#07090ECC')
+      vigGrad.addColorStop(0.65, '#07090ECC')
       vigGrad.addColorStop(1, '#07090EFF')
       ctx.fillStyle = vigGrad
       ctx.fillRect(0, 0, width, height)
 
-      // 3. Floating Cinematic Dust Motes
-      for (let i = 0; i < 40; i++) {
-        const mx = (Math.sin(currentTime * 0.3 + i * 2.1) * 0.5 + 0.5) * width
-        const my = (Math.cos(currentTime * 0.2 + i * 1.7) * 0.5 + 0.5) * height
-        const mRad = Math.sin(currentTime * 1.5 + i) * 2 + 3
-        ctx.fillStyle = `${primaryColor}40`
+      // 3. Floating Cinematic Bokeh Orbs
+      const bList = bokehPool.current
+      for (let i = 0; i < bList.length; i++) {
+        const b = bList[i]
+        b.x = (b.x + b.vx + 1) % 1
+        b.y = (b.y + b.vy + 1) % 1
+        const bx = b.x * width
+        const by = b.y * height
+        const bRad = b.radius * s * (1 + effectiveBass * 0.2)
+
+        const bGrad = ctx.createRadialGradient(bx, by, 2, bx, by, bRad)
+        bGrad.addColorStop(0, b.color)
+        bGrad.addColorStop(1, 'transparent')
+        ctx.fillStyle = bGrad
         ctx.beginPath()
-        ctx.arc(mx, my, Math.max(1, mRad), 0, Math.PI * 2)
+        ctx.arc(bx, by, bRad, 0, Math.PI * 2)
         ctx.fill()
       }
 
-      // 4. Centerpiece Showcase Art with Dynamic Breathing Shadow
-      const cardSize = Math.min(width * 0.55, height * 0.42, 320)
+      // 4. Centerpiece Showcase Art Card with Dynamic Breathing Neon Shadow
+      const cardSize = Math.min(width * 0.65, height * 0.36, 320 * s)
       const cardX = cx - cardSize / 2
-      const cardY = cy - cardSize / 2 - 15
+      const cardY = cy - cardSize / 2 - 25 * s
 
-      // Glow behind card
-      ctx.shadowColor = accentGlow
-      ctx.shadowBlur = 35 + bass * 35
-      ctx.fillStyle = primaryColor
+      // Multi-layer Neon Aura
+      ctx.shadowColor = primaryColor
+      ctx.shadowBlur = (35 + effectiveBass * 45) * s
+      ctx.fillStyle = `${primaryColor}40`
       ctx.beginPath()
-      ctx.roundRect(cardX + 8, cardY + 8, cardSize - 16, cardSize - 16, 24)
+      ctx.roundRect(cardX + 6 * s, cardY + 6 * s, cardSize - 12 * s, cardSize - 12 * s, 26 * s)
       ctx.fill()
       ctx.shadowBlur = 0
 
-      // Album Art Card
+      // Card Artwork Container
       ctx.save()
       ctx.beginPath()
-      ctx.roundRect(cardX, cardY, cardSize, cardSize, 24)
+      ctx.roundRect(cardX, cardY, cardSize, cardSize, 26 * s)
       ctx.clip()
+
       if (albumImgRef.current && albumImgRef.current.complete) {
         ctx.drawImage(albumImgRef.current, cardX, cardY, cardSize, cardSize)
       } else {
@@ -619,26 +892,36 @@ export const DedicatedVisualizerModal: React.FC = () => {
       }
       ctx.restore()
 
-      // Card Border Highlight
-      ctx.strokeStyle = 'rgba(255, 255, 255, 0.2)'
-      ctx.lineWidth = 1.5
+      // Specular Highlight Border
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.28)'
+      ctx.lineWidth = 2 * s
       ctx.beginPath()
-      ctx.roundRect(cardX, cardY, cardSize, cardSize, 24)
+      ctx.roundRect(cardX, cardY, cardSize, cardSize, 26 * s)
       ctx.stroke()
+
+      // 5. Mini Audio Spectrum Ribbon Floating Below Card
+      const specY = cardY + cardSize + 22 * s
+      const specBars = 32
+      const specBarWidth = (cardSize * 0.85) / specBars
+      const specStartX = cx - (cardSize * 0.85) / 2
+
+      for (let b = 0; b < specBars; b++) {
+        const bEnergy = getFreq(b * 2)
+        const bHeight = Math.max(4 * s, bEnergy * 24 * s)
+        const bx = specStartX + b * specBarWidth
+        const by = specY - bHeight / 2
+
+        ctx.fillStyle = b % 2 === 0 ? primaryColor : '#38BDF8'
+        ctx.beginPath()
+        ctx.roundRect(bx, by, specBarWidth - 2 * s, bHeight, [1.5 * s, 1.5 * s, 1.5 * s, 1.5 * s])
+        ctx.fill()
+      }
     }
 
     animFrameRef.current = requestAnimationFrame(renderFrame)
-  }, [
-    mode,
-    sensitivity,
-    isPlaying,
-    currentTime,
-    volume,
-    activeEngine,
-    dynamicTheme,
-  ])
+  }, [])
 
-  // Canvas Resize Handler (Maintains device pixel ratio for crystal sharpness)
+  // Canvas Resize Handler (Physical pixel 1:1 crisp sharpness without double-scaling)
   useEffect(() => {
     if (!isDedicatedVisualizerOpen) return
 
@@ -646,10 +929,8 @@ export const DedicatedVisualizerModal: React.FC = () => {
       const canvas = canvasRef.current
       if (!canvas) return
       const dpr = Math.min(window.devicePixelRatio || 1, 2)
-      canvas.width = window.innerWidth * dpr
-      canvas.height = window.innerHeight * dpr
-      const ctx = canvas.getContext('2d')
-      if (ctx) ctx.scale(dpr, dpr)
+      canvas.width = Math.floor(window.innerWidth * dpr)
+      canvas.height = Math.floor(window.innerHeight * dpr)
     }
 
     handleResize()
@@ -732,7 +1013,7 @@ export const DedicatedVisualizerModal: React.FC = () => {
           </button>
         </div>
 
-        {/* Center: Track Details & Lossless Badge (Perfect Dead Center) */}
+        {/* Center: Track Details & Live Audio Indicator (Dead Center) */}
         <div className="flex flex-col items-center justify-center mx-auto max-w-[50%] sm:max-w-md text-center">
           <span className="text-[10px] uppercase font-mono tracking-widest text-[#A78BFA] flex items-center justify-center gap-1.5 font-bold mb-0.5">
             <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
@@ -797,17 +1078,19 @@ export const DedicatedVisualizerModal: React.FC = () => {
           MODE SWITCHER FLOATING PILL BAR (Top Center)
          ========================================================================= */}
       <div
-        className={`absolute top-20 sm:top-24 inset-x-0 flex justify-center px-3 sm:px-4 pointer-events-none transition-all duration-500 z-20 ${
+        className={`absolute top-20 sm:top-24 inset-x-0 flex justify-center px-2 sm:px-4 pointer-events-none transition-all duration-500 z-20 ${
           controlsVisible ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-2'
         }`}
       >
-        <div className="pointer-events-auto flex items-center justify-center gap-1.5 p-1 rounded-full bg-[#120E22]/90 backdrop-blur-2xl border border-white/10 shadow-2xl overflow-x-auto no-scrollbar max-w-full mx-auto">
+        <div className="pointer-events-auto flex items-center justify-start sm:justify-center gap-1.5 p-1.5 px-2 rounded-full bg-[#120E22]/90 backdrop-blur-2xl border border-white/10 shadow-2xl overflow-x-auto no-scrollbar max-w-full mx-auto">
           {MODES.map((m) => {
             const Icon = m.icon
             const isCurrent = mode === m.id
             return (
               <button
                 key={m.id}
+                data-mode={m.id}
+                data-testid={`visualizer-mode-${m.id}`}
                 onClick={() => {
                   setMode(m.id)
                   resetHideTimer()

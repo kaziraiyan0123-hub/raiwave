@@ -145,12 +145,15 @@ body {
   overflow-x: auto;
   overflow-y: hidden;
   -webkit-overflow-scrolling: touch;
-  touch-action: pan-x pan-y;
+  touch-action: pan-y pinch-zoom;
   overscroll-behavior-x: contain;
-  scroll-behavior: smooth;
-  scroll-snap-type: x proximity;
   -ms-overflow-style: none;
   scrollbar-width: none;
+  cursor: grab;
+  user-select: none;
+}
+.carousel-swipe:active {
+  cursor: grabbing;
 }
 .carousel-swipe::-webkit-scrollbar {
   display: none;
