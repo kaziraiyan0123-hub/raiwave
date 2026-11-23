@@ -13,7 +13,6 @@ import { ToastNotification } from './components/ToastNotification'
 import { ProfileModal } from './components/ProfileModal'
 import { AndroidMediaNotificationCard } from './components/AndroidMediaNotificationCard'
 import { UpNextPanel } from './components/UpNextPanel'
-import { WelcomeModal } from './components/WelcomeModal'
 import { DedicatedVisualizerModal } from './components/visualizer/DedicatedVisualizerModal'
 
 function MainAppShell() {
@@ -38,9 +37,6 @@ function MainAppShell() {
       {/* Floating Glass Feedback Toast */}
       <ToastNotification />
 
-      {/* First-Time User Welcome Modal & Developer Greeting */}
-      <WelcomeModal />
-
       {/* User Gmail Profile & Account Modal */}
       <ProfileModal />
 
@@ -49,9 +45,6 @@ function MainAppShell() {
 
       {/* Premium "UP NEXT" Slide-over Queue Management Panel */}
       <UpNextPanel />
-
-      {/* Dedicated Immersive 6-Mode Music Visualizer */}
-      <DedicatedVisualizerModal />
 
       {/* Mobile Top Header (hidden on desktop) */}
       <MobileTopBar />
@@ -82,6 +75,9 @@ function MainAppShell() {
 
       {/* Signature Fullscreen Mobile Player View (Arc Scrubber & Ripple Rings) */}
       <MobileFullPlayer />
+
+      {/* Dedicated Immersive 6-Mode Music Visualizer (Modal with z-[60] above full player) */}
+      <DedicatedVisualizerModal />
 
       {/* Official YouTube Embed Stage / Video Canvas Dock */}
       <YouTubeIframeContainer />

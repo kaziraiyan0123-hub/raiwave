@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { X, Mail, User, Code2, Music, CheckCircle2, Sparkles, Download, RefreshCw, Smartphone } from 'lucide-react'
+import { X, Mail, User, Music, CheckCircle2, Sparkles, Download, RefreshCw, Smartphone } from 'lucide-react'
 import { usePlayer } from '../context/PlayerContext'
 
 export const ProfileModal: React.FC = () => {
@@ -193,7 +193,7 @@ export const ProfileModal: React.FC = () => {
 
               <div className="p-3 rounded-2xl bg-[#181B27]/60 border border-[#202A34] text-center">
                 <Smartphone className="w-4 h-4 mx-auto text-[#8B5CF6] mb-1" />
-                <span className="text-sm font-black text-white font-display">v1.2.6</span>
+                <span className="text-sm font-black text-white font-display">v1.2.9</span>
                 <p className="text-[10px] text-[#94A3B8]">App Version</p>
               </div>
             </div>
@@ -239,7 +239,7 @@ export const ProfileModal: React.FC = () => {
                 </p>
               </div>
               <span className="px-2 py-0.5 rounded-full bg-[#8B5CF6]/15 text-[#8B5CF6] text-[10px] font-bold font-mono">
-                v1.2.7
+                v1.2.9
               </span>
             </div>
 
@@ -277,22 +277,6 @@ export const ProfileModal: React.FC = () => {
                 <span>Direct Download APK</span>
               </button>
             </div>
-          </div>
-
-          {/* Professional Developer Attribution & Example Note */}
-          <div className="p-4 rounded-2xl bg-gradient-to-r from-[#8B5CF6]/5 via-white/5 to-transparent border border-white/10 space-y-2">
-            <div className="flex items-center gap-2">
-              <Code2 className="w-4 h-4 text-[#8B5CF6]" />
-              <span className="text-[11px] uppercase font-bold tracking-wider text-[#8B5CF6] font-display">
-                Developer Attribution & Example
-              </span>
-            </div>
-            <p className="text-xs font-semibold text-white">
-              Application Designed & Engineered by <span className="text-[#8B5CF6]">Kazi Raiyan</span>
-            </p>
-            <p className="text-[11px] text-[#94A3B8] font-mono leading-relaxed">
-              Example: Kazi Raiyan &bull; kaziraiyan0123@gmail.com
-            </p>
           </div>
         </div>
       </div>

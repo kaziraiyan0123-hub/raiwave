@@ -689,7 +689,7 @@ export const DedicatedVisualizerModal: React.FC = () => {
       data-testid="dedicated-visualizer-modal"
       onMouseMove={resetHideTimer}
       onTouchStart={resetHideTimer}
-      className="fixed inset-0 z-50 select-none overflow-hidden bg-[#07090E] transition-opacity duration-300 animate-in fade-in"
+      className="fixed inset-0 z-[60] select-none overflow-hidden bg-[#07090E] transition-opacity duration-300 animate-in fade-in"
     >
       {/* High-Definition 60 FPS Visualizer Canvas */}
       <canvas
