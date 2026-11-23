@@ -181,6 +181,14 @@ body.player-mode #root {
 .carousel-swipe::-webkit-scrollbar {
   display: none;
 }
+@media (min-width: 768px) {
+  .carousel-swipe.desktop-grid {
+    display: grid !important;
+    overflow-x: visible !important;
+    overflow-y: visible !important;
+    cursor: default !important;
+  }
+}
 
 /* Range input styling for sleek RAIWAVE sliders */
 input[type="range"] {
