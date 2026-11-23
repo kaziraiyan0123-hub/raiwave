@@ -417,14 +417,28 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   }, [activeCategory])
 
   const toggleVideoOpen = () => setIsVideoOpen((prev) => !prev)
-  const toggleMobilePlayer = () => setIsMobilePlayerOpen((prev) => !prev)
+  const toggleMobilePlayer = () => {
+    setIsMobilePlayerOpen((prev) => {
+      const next = !prev
+      if (next) {
+        try { window.history.pushState({ modal: 'mobilePlayer' }, '') } catch {}
+      }
+      return next
+    })
+  }
 
   const toggleDedicatedVisualizer = () => {
     if (!currentTrackRef.current) {
       showToast('Select and play a track first to visualize!')
       return
     }
-    setIsDedicatedVisualizerOpen((prev) => !prev)
+    setIsDedicatedVisualizerOpen((prev) => {
+      const next = !prev
+      if (next) {
+        try { window.history.pushState({ modal: 'visualizer' }, '') } catch {}
+      }
+      return next
+    })
   }
 
   const openDedicatedVisualizer = () => {
@@ -432,6 +446,7 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       showToast('Select and play a track first to visualize!')
       return
     }
+    try { window.history.pushState({ modal: 'visualizer' }, '') } catch {}
     setIsDedicatedVisualizerOpen(true)
   }
 
