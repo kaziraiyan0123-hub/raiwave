@@ -10,7 +10,6 @@ import { LyricsView } from './views/LyricsView'
 import { QueueView } from './views/QueueView'
 import { AlbumView } from './views/AlbumView'
 import { ArtistView } from './views/ArtistView'
-import { VisualizerView } from './views/VisualizerView'
 
 export const MainContent: React.FC = () => {
   const { currentView } = usePlayer()
@@ -27,7 +26,7 @@ export const MainContent: React.FC = () => {
       {currentView === 'queue' && <QueueView />}
       {currentView === 'album' && <AlbumView />}
       {currentView === 'artist' && <ArtistView />}
-      {currentView === 'visualizer' && <VisualizerView />}
+      {currentView === 'visualizer' && <HomeView />}
     </main>
   )
 }

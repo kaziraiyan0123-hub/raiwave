@@ -14,6 +14,7 @@ import { ProfileModal } from './components/ProfileModal'
 import { AndroidMediaNotificationCard } from './components/AndroidMediaNotificationCard'
 import { UpNextPanel } from './components/UpNextPanel'
 import { WelcomeModal } from './components/WelcomeModal'
+import { DedicatedVisualizerModal } from './components/visualizer/DedicatedVisualizerModal'
 
 function MainAppShell() {
   const { dynamicTheme } = usePlayer()
@@ -48,6 +49,9 @@ function MainAppShell() {
 
       {/* Premium "UP NEXT" Slide-over Queue Management Panel */}
       <UpNextPanel />
+
+      {/* Dedicated Immersive 6-Mode Music Visualizer */}
+      <DedicatedVisualizerModal />
 
       {/* Mobile Top Header (hidden on desktop) */}
       <MobileTopBar />

@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react'
+import React, { useMemo } from 'react'
 import {
   Play,
   Pause,
@@ -9,7 +9,6 @@ import {
   History,
   ArrowDownToLine,
   CheckCircle2,
-  Sparkles,
   Search,
   X,
   Radio,
@@ -94,22 +93,6 @@ export const HomeView: React.FC = () => {
   // Calculate current playback progress percentage
   const currentProgressPercent = duration > 0 ? (currentTime / duration) * 100 : 0
 
-  // Optional friendly developer greeting from Raiyan
-  const [showDevGreeting, setShowDevGreeting] = useState(() => {
-    try {
-      return localStorage.getItem('raiwave_dev_greeting_dismissed') !== 'true'
-    } catch {
-      return true
-    }
-  })
-
-  const dismissDevGreeting = () => {
-    setShowDevGreeting(false)
-    try {
-      localStorage.setItem('raiwave_dev_greeting_dismissed', 'true')
-    } catch {}
-  }
-
   return (
     <div className="p-4 sm:p-6 lg:p-8 space-y-8 select-none pb-44 md:pb-28 max-w-7xl mx-auto">
       {/* =========================================================================
@@ -149,46 +132,10 @@ export const HomeView: React.FC = () => {
           )}
         </div>
 
-        {/* Developer Greeting Banner from Raiyan (Dismissible & Personalized) */}
-        {showDevGreeting && (
-          <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-purple-950/40 via-purple-900/25 to-[#12141D]/90 border border-purple-500/20 p-4 sm:p-4.5 shadow-xl backdrop-blur-xl animate-in fade-in duration-300">
-            <div className="flex items-start justify-between gap-3">
-              <div className="flex items-start gap-3">
-                <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-purple-500/20 border border-purple-400/30 flex items-center justify-center flex-shrink-0 text-lg shadow-inner">
-                  👋
-                </div>
-                <div>
-                  <h4 className="text-xs sm:text-sm font-bold text-white flex items-center gap-2">
-                    <span>A note from Raiyan</span>
-                    <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-purple-500/20 text-purple-300 border border-purple-400/25">
-                      Developer
-                    </span>
-                  </h4>
-                  <p className="text-xs text-white/75 mt-1 leading-relaxed">
-                    {userProfile.name ? `Hey ${userProfile.name.split(' ')[0]}! ` : 'Welcome to RAIWAVE! '}
-                    Stream studio-grade lossless audio, live karaoke lyrics, and real-time audio visualizers across your devices. Enjoy the music!
-                  </p>
-                </div>
-              </div>
-              <button
-                onClick={dismissDevGreeting}
-                className="text-white/40 hover:text-white p-1 rounded-lg hover:bg-white/10 transition-colors flex-shrink-0 cursor-pointer"
-                title="Dismiss message"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-          </div>
-        )}
-
         {/* 1. Greeting Section */}
-        <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 pt-2">
+        <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3 pt-1">
           <div>
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-purple-500/10 border border-purple-500/20 text-[#A78BFA] text-[11px] font-bold uppercase tracking-wider mb-2 font-heading">
-              <Sparkles className="w-3.5 h-3.5 text-[#8B5CF6]" />
-              <span>Personalized Audio Stream</span>
-            </div>
-            <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black text-white font-heading tracking-tight uppercase">
+            <h1 className="text-2xl sm:text-4xl lg:text-5xl font-black text-white font-heading tracking-tight uppercase">
               {greeting}
               {userProfile?.name ? (
                 <span className="text-[#A78BFA] font-normal normal-case ml-2.5">
@@ -197,7 +144,7 @@ export const HomeView: React.FC = () => {
               ) : null}
             </h1>
             <p className="text-xs sm:text-sm text-[#94A3B8] mt-1 font-medium">
-              Feel every frequency &bull; Stream lossless music worldwide
+              Stream lossless music worldwide
             </p>
           </div>
 
@@ -209,7 +156,7 @@ export const HomeView: React.FC = () => {
                 <button
                   key={cat}
                   onClick={() => setActiveCategory(cat)}
-                  className={`px-4 py-1.5 rounded-full text-xs font-heading font-semibold whitespace-nowrap transition-all duration-200 active:scale-95 ${
+                  className={`px-3.5 py-1.5 rounded-full text-xs font-heading font-semibold whitespace-nowrap transition-all duration-200 active:scale-95 cursor-pointer ${
                     isActive
                       ? 'bg-gradient-to-r from-[#8B5CF6] to-[#7C3AED] text-white shadow-[0_2px_14px_rgba(139,92,246,0.45)] font-bold'
                       : 'bg-[#12141D] text-[#94A3B8] hover:text-white hover:bg-[#181B27] border border-white/5'
@@ -385,9 +332,9 @@ export const HomeView: React.FC = () => {
           )}
         </div>
 
-        {/* Responsive Grid of Cards */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
-          {(history.length > 0 ? history.slice(0, 6) : SAMPLE_TRACKS.slice(0, 6)).map((track) => {
+        {/* Responsive Carousel on Mobile / Grid on Desktop */}
+        <div className="flex gap-3 overflow-x-auto no-scrollbar pb-2 sm:grid sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 sm:gap-4">
+          {(history.length > 0 ? history.slice(0, 10) : SAMPLE_TRACKS.slice(0, 10)).map((track) => {
             const isSelected = currentTrack?.id === track.id
             const isTrackPlaying = isSelected && isPlaying
 
@@ -398,12 +345,12 @@ export const HomeView: React.FC = () => {
                   if (isSelected) toggleMobilePlayer()
                   else playTrack(track, history.length > 0 ? history : SAMPLE_TRACKS)
                 }}
-                className={`p-3.5 rounded-2xl bg-[#12141D]/90 hover:bg-[#181B27] border border-white/5 hover:border-purple-500/30 cursor-pointer group transition-all duration-300 relative overflow-hidden shadow-lg hover:shadow-[0_8px_30px_rgba(0,0,0,0.6)] hover:-translate-y-1 ${
+                className={`w-[138px] sm:w-auto flex-shrink-0 p-3 sm:p-3.5 rounded-2xl bg-[#12141D]/90 hover:bg-[#181B27] border border-white/5 hover:border-purple-500/30 cursor-pointer group transition-all duration-300 relative overflow-hidden shadow-lg hover:shadow-[0_8px_30px_rgba(0,0,0,0.6)] sm:hover:-translate-y-1 ${
                   isSelected ? 'ring-1 ring-[#8B5CF6] shadow-[0_0_20px_rgba(139,92,246,0.3)]' : ''
                 }`}
               >
                 {/* Artwork with Smooth Hover Zoom & Floating Play Button */}
-                <div className="relative aspect-square rounded-xl overflow-hidden mb-3 shadow-md border border-white/5">
+                <div className="relative aspect-square rounded-xl overflow-hidden mb-2.5 shadow-md border border-white/5">
                   <img
                     src={track.coverUrl}
                     alt={track.title}
@@ -420,20 +367,20 @@ export const HomeView: React.FC = () => {
                         if (isTrackPlaying) togglePlay()
                         else playTrack(track, history.length > 0 ? history : SAMPLE_TRACKS)
                       }}
-                      className="w-11 h-11 rounded-full bg-gradient-to-r from-[#8B5CF6] to-[#7C3AED] text-white flex items-center justify-center shadow-xl transform group-hover:scale-105 active:scale-95 transition-transform border border-purple-400/30"
+                      className="w-10 h-10 rounded-full bg-gradient-to-r from-[#8B5CF6] to-[#7C3AED] text-white flex items-center justify-center shadow-xl transform group-hover:scale-105 active:scale-95 transition-transform border border-purple-400/30"
                       title={isTrackPlaying ? 'Pause' : 'Play track'}
                     >
                       {isTrackPlaying ? (
-                        <Pause className="w-5 h-5 fill-current" />
+                        <Pause className="w-4 h-4 fill-current" />
                       ) : (
-                        <Play className="w-5 h-5 fill-current ml-0.5" />
+                        <Play className="w-4 h-4 fill-current ml-0.5" />
                       )}
                     </button>
                   </div>
                 </div>
 
                 {/* Card Title & Artist */}
-                <h4 className="text-xs sm:text-sm font-bold text-white truncate font-heading group-hover:text-[#A78BFA] transition-colors">
+                <h4 className="text-xs sm:text-sm font-bold text-white truncate font-heading group-hover:text-[#A78BFA] transition-colors leading-tight">
                   {track.title}
                 </h4>
                 <p className="text-[11px] text-[#94A3B8] truncate mt-0.5">{track.artist}</p>
@@ -463,18 +410,18 @@ export const HomeView: React.FC = () => {
           </button>
         </div>
 
-        {/* Albums Grid */}
-        <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 gap-4 sm:gap-5">
+        {/* Albums Carousel on Mobile / Grid on Desktop */}
+        <div className="flex gap-3.5 overflow-x-auto no-scrollbar pb-2 sm:grid sm:grid-cols-2 md:grid-cols-4 sm:gap-5">
           {SAMPLE_ALBUMS.map((album) => {
             const isAlbumActive = currentTrack?.album === album.title
             return (
               <div
                 key={album.id}
                 onClick={() => openAlbum(album)}
-                className="bg-[#12141D]/90 hover:bg-[#181B27] p-4 rounded-3xl cursor-pointer transition-all duration-300 border border-white/5 hover:border-purple-500/30 group shadow-lg hover:shadow-[0_12px_36px_rgba(0,0,0,0.65)] hover:-translate-y-1 relative overflow-hidden"
+                className="w-[155px] sm:w-auto flex-shrink-0 bg-[#12141D]/90 hover:bg-[#181B27] p-3.5 sm:p-4 rounded-3xl cursor-pointer transition-all duration-300 border border-white/5 hover:border-purple-500/30 group shadow-lg hover:shadow-[0_12px_36px_rgba(0,0,0,0.65)] sm:hover:-translate-y-1 relative overflow-hidden"
               >
                 {/* Album Artwork with smooth zoom */}
-                <div className="relative mb-3.5 aspect-square w-full rounded-2xl overflow-hidden shadow-lg border border-white/5">
+                <div className="relative mb-3 aspect-square w-full rounded-2xl overflow-hidden shadow-lg border border-white/5">
                   <img
                     src={album.coverUrl}
                     alt={album.title}
@@ -488,10 +435,10 @@ export const HomeView: React.FC = () => {
                         playTrack(album.tracks[0], album.tracks)
                       }
                     }}
-                    className="absolute bottom-3 right-3 w-12 h-12 rounded-full bg-gradient-to-r from-[#8B5CF6] to-[#7C3AED] text-white flex items-center justify-center opacity-0 group-hover:opacity-100 translate-y-2 group-hover:translate-y-0 transition-all duration-300 shadow-2xl hover:scale-105 active:scale-95 z-20 border border-purple-400/30"
+                    className="absolute bottom-2.5 right-2.5 w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-gradient-to-r from-[#8B5CF6] to-[#7C3AED] text-white flex items-center justify-center opacity-0 group-hover:opacity-100 translate-y-2 group-hover:translate-y-0 transition-all duration-300 shadow-2xl hover:scale-105 active:scale-95 z-20 border border-purple-400/30"
                     title={`Play ${album.title}`}
                   >
-                    <Play className="w-5 h-5 fill-current ml-0.5" />
+                    <Play className="w-4 h-4 sm:w-5 sm:h-5 fill-current ml-0.5" />
                   </button>
                 </div>
 
@@ -505,7 +452,7 @@ export const HomeView: React.FC = () => {
                     </span>
                   )}
                 </div>
-                <h4 className="text-sm sm:text-base font-bold text-white font-heading truncate group-hover:text-[#A78BFA] transition-colors">
+                <h4 className="text-sm sm:text-base font-bold text-white font-heading truncate group-hover:text-[#A78BFA] transition-colors leading-tight">
                   {album.title}
                 </h4>
                 <p className="text-xs text-[#94A3B8] truncate mt-0.5 font-medium">
@@ -537,15 +484,15 @@ export const HomeView: React.FC = () => {
           </button>
         </div>
 
-        {/* Playlists Grid */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+        {/* Playlists Carousel on Mobile / Grid on Desktop */}
+        <div className="flex gap-3 overflow-x-auto no-scrollbar pb-2 sm:grid sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 sm:gap-4">
           {SAMPLE_PLAYLISTS.map((pl) => (
             <div
               key={pl.id}
               onClick={() => openPlaylist(pl)}
-              className="bg-[#12141D]/80 hover:bg-[#181B27] p-3.5 rounded-2xl cursor-pointer transition-all duration-300 border border-white/5 hover:border-purple-500/30 group shadow-md hover:shadow-xl hover:-translate-y-1"
+              className="w-[145px] sm:w-auto flex-shrink-0 bg-[#12141D]/80 hover:bg-[#181B27] p-3 sm:p-3.5 rounded-2xl cursor-pointer transition-all duration-300 border border-white/5 hover:border-purple-500/30 group shadow-md hover:shadow-xl sm:hover:-translate-y-1"
             >
-              <div className="relative mb-3 aspect-square w-full rounded-xl overflow-hidden shadow-lg border border-white/5">
+              <div className="relative mb-2.5 aspect-square w-full rounded-xl overflow-hidden shadow-lg border border-white/5">
                 <img
                   src={pl.coverUrl}
                   alt={pl.name}

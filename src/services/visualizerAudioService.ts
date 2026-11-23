@@ -82,6 +82,8 @@ class VisualizerAudioService {
     waveform: Uint8Array
     isHardwareFFT: boolean
     bassKick: number
+    midEnergy: number
+    trebleEnergy: number
   } {
     // If paused, decay buffers down to silent baseline to save CPU and display resting state
     if (!isPlaying || volume <= 0) {
@@ -95,6 +97,8 @@ class VisualizerAudioService {
         waveform: this.waveformBuffer,
         isHardwareFFT: this.isConnectedToElement && activeEngine === 'audio',
         bassKick: this.bassKick,
+        midEnergy: 0,
+        trebleEnergy: 0,
       }
     }
 
@@ -116,11 +120,23 @@ class VisualizerAudioService {
         const bassAvg = (testBuffer[0] + testBuffer[1] + testBuffer[2] + testBuffer[3]) / (4 * 255)
         this.bassKick = bassAvg
 
+        // Compute mid energy from bins 4..24
+        let midSum = 0
+        for (let m = 4; m <= 24; m++) midSum += testBuffer[m]
+        const midEnergy = midSum / (21 * 255)
+
+        // Compute treble energy from bins 25..63
+        let trebleSum = 0
+        for (let tr = 25; tr < 64; tr++) trebleSum += testBuffer[tr]
+        const trebleEnergy = trebleSum / (39 * 255)
+
         return {
           frequency: this.frequencyBuffer,
           waveform: this.waveformBuffer,
           isHardwareFFT: true,
           bassKick: this.bassKick,
+          midEnergy,
+          trebleEnergy,
         }
       }
     }
@@ -141,6 +157,8 @@ class VisualizerAudioService {
     this.bassKick = rawKick * 0.85 + Math.random() * 0.15
 
     const volFactor = Math.min(1, Math.max(0.1, volume))
+    let midSum = 0
+    let trebleSum = 0
 
     for (let i = 0; i < 64; i++) {
       // Frequency decay from bass to treble
@@ -159,6 +177,9 @@ class VisualizerAudioService {
         this.frequencyBuffer[i] * 0.7 + targetVal * 0.3
       )
 
+      if (i >= 4 && i <= 24) midSum += this.frequencyBuffer[i]
+      if (i > 24) trebleSum += this.frequencyBuffer[i]
+
       // Waveform oscillating around center 128
       const waveOffset = Math.sin(currentTime * 8 + (i / 64) * Math.PI * 4) * 45 * volFactor * (this.bassKick + 0.4)
       this.waveformBuffer[i] = Math.round(128 + waveOffset)
@@ -169,6 +190,8 @@ class VisualizerAudioService {
       waveform: this.waveformBuffer,
       isHardwareFFT: false,
       bassKick: this.bassKick,
+      midEnergy: midSum / (21 * 255),
+      trebleEnergy: trebleSum / (39 * 255),
     }
   }
 }

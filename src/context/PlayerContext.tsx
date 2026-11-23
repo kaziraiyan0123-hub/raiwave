@@ -88,6 +88,13 @@ interface PlayerContextType {
   setIsMobilePlayerOpen: (open: boolean) => void
   toggleMobilePlayer: () => void
 
+  // Dedicated Immersive Music Visualizer
+  isDedicatedVisualizerOpen: boolean
+  setIsDedicatedVisualizerOpen: (open: boolean) => void
+  toggleDedicatedVisualizer: () => void
+  openDedicatedVisualizer: () => void
+  closeDedicatedVisualizer: () => void
+
   // Playlist management
   createPlaylist: (name: string, description?: string) => Playlist
   addTrackToPlaylist: (playlistId: string, track: Track) => void
@@ -237,6 +244,7 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const [isVideoOpen, setIsVideoOpen] = useState<boolean>(false)
   const [activeCategory, setActiveCategory] = useState<string>('All')
   const [isMobilePlayerOpen, setIsMobilePlayerOpen] = useState<boolean>(false)
+  const [isDedicatedVisualizerOpen, setIsDedicatedVisualizerOpen] = useState<boolean>(false)
 
   // User Profile & Account (Gmail maintained)
   const [userProfile, setUserProfile] = useState<UserProfile>(() => {
@@ -410,6 +418,26 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
   const toggleVideoOpen = () => setIsVideoOpen((prev) => !prev)
   const toggleMobilePlayer = () => setIsMobilePlayerOpen((prev) => !prev)
+
+  const toggleDedicatedVisualizer = () => {
+    if (!currentTrackRef.current) {
+      showToast('Select and play a track first to visualize!')
+      return
+    }
+    setIsDedicatedVisualizerOpen((prev) => !prev)
+  }
+
+  const openDedicatedVisualizer = () => {
+    if (!currentTrackRef.current) {
+      showToast('Select and play a track first to visualize!')
+      return
+    }
+    setIsDedicatedVisualizerOpen(true)
+  }
+
+  const closeDedicatedVisualizer = () => {
+    setIsDedicatedVisualizerOpen(false)
+  }
 
   // Keep refs in sync for event callbacks
   useEffect(() => {
@@ -1270,6 +1298,10 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   }
 
   const goBack = () => {
+    if (isDedicatedVisualizerOpen) {
+      setIsDedicatedVisualizerOpen(false)
+      return
+    }
     if (isMobilePlayerOpen) {
       setIsMobilePlayerOpen(false)
       return
@@ -1291,6 +1323,10 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   // Hardware/Browser back button listener for mobile
   useEffect(() => {
     const handlePopState = (e: PopStateEvent) => {
+      if (isDedicatedVisualizerOpen) {
+        setIsDedicatedVisualizerOpen(false)
+        return
+      }
       if (isMobilePlayerOpen) {
         setIsMobilePlayerOpen(false)
         return
@@ -1303,7 +1339,7 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     }
     window.addEventListener('popstate', handlePopState)
     return () => window.removeEventListener('popstate', handlePopState)
-  }, [isMobilePlayerOpen])
+  }, [isMobilePlayerOpen, isDedicatedVisualizerOpen])
 
   const openPlaylist = (playlist: Playlist) => {
     setSelectedPlaylist(playlist)
@@ -1451,6 +1487,11 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         isMobilePlayerOpen,
         setIsMobilePlayerOpen,
         toggleMobilePlayer,
+        isDedicatedVisualizerOpen,
+        setIsDedicatedVisualizerOpen,
+        toggleDedicatedVisualizer,
+        openDedicatedVisualizer,
+        closeDedicatedVisualizer,
         userProfile,
         isProfileOpen,
         toggleProfile,

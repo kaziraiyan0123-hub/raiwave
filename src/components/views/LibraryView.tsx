@@ -50,7 +50,7 @@ export const LibraryView: React.FC = () => {
           <div className="flex items-center gap-2">
             <button
               onClick={() => setIsModalOpen(true)}
-              className="flex items-center gap-1.5 px-4 py-2 bg-[#8B5CF6] hover:bg-[#a3e655] text-[#0B0D13] rounded-full text-xs font-bold font-display transition-all hover:scale-105 active:scale-95 shadow-md shadow-[#8B5CF6]/20"
+              className="flex items-center gap-1.5 px-4 py-2 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white rounded-full text-xs font-bold font-heading transition-all hover:scale-105 active:scale-95 shadow-md shadow-purple-600/30 cursor-pointer"
             >
               <Plus className="w-4 h-4" />
               <span>New Playlist</span>
@@ -64,10 +64,10 @@ export const LibraryView: React.FC = () => {
             <button
               key={filter}
               onClick={() => setActiveFilter(filter)}
-              className={`px-4 py-1.5 rounded-full text-xs font-display capitalize transition-all ${
+              className={`px-4 py-1.5 rounded-full text-xs font-heading capitalize transition-all cursor-pointer ${
                 activeFilter === filter
-                  ? 'bg-[#8B5CF6] text-[#0B0D13] font-bold shadow-[0_0_15px_rgba(182,243,107,0.3)]'
-                  : 'bg-[#12141D] hover:bg-[#181B27] text-[#94A3B8] hover:text-white border border-[#202A34] font-semibold'
+                  ? 'bg-gradient-to-r from-purple-600 to-indigo-600 text-white font-bold shadow-[0_0_15px_rgba(147,51,234,0.4)]'
+                  : 'bg-[#12141D] hover:bg-[#181B27] text-[#94A3B8] hover:text-white border border-white/5 font-semibold'
               }`}
             >
               {filter === 'offline' ? `Offline (${offlineTrackIds.length})` : filter}

@@ -5,7 +5,6 @@ import {
   Search,
   X,
   Radio,
-  Activity,
 } from 'lucide-react'
 import { usePlayer } from '../context/PlayerContext'
 
@@ -93,22 +92,8 @@ export const TopNav: React.FC = () => {
         </div>
       </div>
 
-      {/* Right side: Visualizer, Floating Notification Card Toggle & User Profile Avatar */}
+      {/* Right side: Floating Notification Card Toggle & User Profile Avatar */}
       <div className="flex items-center gap-2">
-        {/* Visualizer Quick Button */}
-        <button
-          onClick={() => navigateTo(currentView === 'visualizer' ? 'home' : 'visualizer')}
-          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-heading font-semibold transition-all border cursor-pointer ${
-            currentView === 'visualizer'
-              ? 'bg-purple-500/20 border-purple-500/40 text-white shadow-[0_0_12px_rgba(139,92,246,0.35)]'
-              : 'bg-[#12141D] border-white/10 text-[#94A3B8] hover:text-white'
-          }`}
-          title="Music Visualizer (6 Modes)"
-        >
-          <Activity className="w-3.5 h-3.5 text-[#8B5CF6]" />
-          <span className="hidden sm:inline">Visualizer</span>
-        </button>
-
         {/* Floating Notification Card Toggle Button */}
         <button
           onClick={toggleNotification}

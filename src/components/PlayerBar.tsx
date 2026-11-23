@@ -52,6 +52,9 @@ export const PlayerBar: React.FC = () => {
     dynamicTheme,
     isQueuePanelOpen,
     toggleQueuePanel,
+    isDedicatedVisualizerOpen,
+    openDedicatedVisualizer,
+    closeDedicatedVisualizer,
   } = usePlayer()
 
   const [isFullscreen, setIsFullscreen] = useState(false)
@@ -328,13 +331,15 @@ export const PlayerBar: React.FC = () => {
 
         {/* Visualizer Toggle */}
         <button
-          onClick={() => navigateTo(currentView === 'visualizer' ? 'home' : 'visualizer')}
-          title="Music Visualizer (6 Modes)"
-          className={`p-1.5 rounded-xl transition-all hover:scale-105 active:scale-95 ${
-            currentView === 'visualizer' ? 'text-white bg-purple-500/20 border border-purple-500/30' : 'text-[#94A3B8] hover:text-white'
+          onClick={() => (isDedicatedVisualizerOpen ? closeDedicatedVisualizer() : openDedicatedVisualizer())}
+          title="Open Immersive Visualizer (6 Modes)"
+          className={`p-1.5 rounded-xl transition-all hover:scale-105 active:scale-95 cursor-pointer ${
+            isDedicatedVisualizerOpen
+              ? 'text-white bg-purple-500/25 border border-purple-400 shadow-[0_0_14px_rgba(168,85,247,0.4)]'
+              : 'text-[#94A3B8] hover:text-white'
           }`}
         >
-          <Activity className="w-4 h-4" />
+          <Activity className="w-4 h-4 text-purple-400" />
         </button>
 
         {/* Volume Controls */}

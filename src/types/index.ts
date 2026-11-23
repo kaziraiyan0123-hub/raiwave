@@ -72,11 +72,16 @@ export type ViewMode =
   | 'visualizer'
 
 export type VisualizerMode =
+  | 'spectrum'
+  | 'wave'
+  | 'particles'
+  | 'aurora'
+  | 'rings'
+  | 'cinematic'
+  // Legacy aliases for backwards compatibility
   | 'bars'
   | 'circular'
   | 'waveform'
-  | 'aurora'
-  | 'particles'
   | 'minimal'
 
 export type RepeatMode = 'off' | 'all' | 'one'

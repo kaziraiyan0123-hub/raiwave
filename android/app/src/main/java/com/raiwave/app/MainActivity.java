@@ -273,7 +273,7 @@ public class MainActivity extends AppCompatActivity {
                     DownloadManager.Request request = new DownloadManager.Request(Uri.parse(apkUrl));
                     request.setMimeType("application/vnd.android.package-archive");
                     request.setDescription("Downloading latest RAIWAVE APK update...");
-                    request.setTitle("RAIWAVE Update (v1.2.7)");
+                    request.setTitle("RAIWAVE Update (v" + BuildConfig.VERSION_NAME + ")");
                     request.setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED);
                     request.setDestinationInExternalPublicDir(Environment.DIRECTORY_DOWNLOADS, "RAIWAVE.apk");
 
@@ -322,7 +322,7 @@ public class MainActivity extends AppCompatActivity {
 
         @JavascriptInterface
         public String getNativeVersion() {
-            return "1.2.7";
+            return BuildConfig.VERSION_NAME;
         }
     }
 

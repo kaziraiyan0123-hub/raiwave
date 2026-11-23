@@ -10,7 +10,6 @@ import {
   Smartphone,
   ListMusic,
   History,
-  Activity,
 } from 'lucide-react'
 import { usePlayer } from '../context/PlayerContext'
 import { SAMPLE_PLAYLISTS } from '../data/musicData'
@@ -81,22 +80,6 @@ export const Sidebar: React.FC = () => {
             >
               <Compass className={`w-4 h-4 ${currentView === 'explore' ? 'text-white stroke-[2.5]' : ''}`} />
               <span>Discover</span>
-            </button>
-
-            {/* Visualizer (Advanced Music Visualizer System) */}
-            <button
-              onClick={() => navigateTo('visualizer')}
-              className={`flex items-center gap-3.5 px-3 py-2 rounded-xl font-medium text-xs font-heading transition-all ${
-                currentView === 'visualizer'
-                  ? 'bg-gradient-to-r from-[#8B5CF6] to-[#7C3AED] text-white font-bold shadow-[0_4px_16px_rgba(139,92,246,0.35)]'
-                  : 'text-[#94A3B8] hover:text-white hover:bg-white/5'
-              }`}
-            >
-              <Activity className={`w-4 h-4 ${currentView === 'visualizer' ? 'text-white stroke-[2.5]' : 'text-[#A78BFA]'}`} />
-              <div className="flex items-center justify-between flex-1">
-                <span>Visualizer</span>
-                <span className="text-[9px] px-1.5 py-0.5 rounded bg-purple-500/20 text-[#C4B5FD] font-mono">6 MODES</span>
-              </div>
             </button>
 
             {/* 3. My Library */}

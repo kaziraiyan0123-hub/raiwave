@@ -43,21 +43,12 @@ export const MobileFullPlayer: React.FC = () => {
     saveOffline,
     isOffline,
     dynamicTheme,
+    openDedicatedVisualizer,
   } = usePlayer()
 
   const [showInlineLyrics, setShowInlineLyrics] = useState(false)
   const lyricsContainerRef = useRef<HTMLDivElement | null>(null)
   const activeLyricRef = useRef<HTMLParagraphElement | null>(null)
-
-  // 40 Radial Wave Frequency Bars around the centerpiece artwork
-  const totalBars = 40
-  const barAngles = Array.from({ length: totalBars }, (_, i) => (i * 360) / totalBars)
-
-  // Dynamic Beat-Synchronized Audio Rhythm & Soundwave Bars
-  const [visualizerHeights, setVisualizerHeights] = useState<number[]>(() =>
-    Array.from({ length: totalBars }, () => 8)
-  )
-  const [kickPulse, setKickPulse] = useState(0)
 
   // Compute active lyric line
   let activeLyricIndex = -1
@@ -81,71 +72,6 @@ export const MobileFullPlayer: React.FC = () => {
       })
     }
   }, [activeLyricIndex, showInlineLyrics])
-
-  useEffect(() => {
-    if (!isPlaying || !isMobilePlayerOpen) {
-      setVisualizerHeights(Array.from({ length: totalBars }, () => 6))
-      setKickPulse(0)
-      return
-    }
-
-    let animId: number
-    let lastUpdate = 0
-    const genre = (currentTrack?.genre || '').toLowerCase()
-    const bpm =
-      genre.includes('dance') || genre.includes('electronic') || genre.includes('edm')
-        ? 128
-        : genre.includes('hip') || genre.includes('rap')
-        ? 94
-        : genre.includes('rock')
-        ? 132
-        : genre.includes('chill') || genre.includes('lofi')
-        ? 82
-        : 116
-
-    const beatIntervalSec = 60 / bpm
-
-    const updateBeats = () => {
-      const now = performance.now() / 1000
-      if (now - lastUpdate >= 0.035) { // Smooth 28-30 FPS to avoid mobile WebView thread starvation
-        lastUpdate = now
-        const phase = (currentTime > 0 ? currentTime : now) % beatIntervalSec
-        const beatFraction = phase / beatIntervalSec
-
-        // Exponential decay kick pulse on each downbeat
-        const kick = Math.max(0, 1 - beatFraction * 3.4)
-        setKickPulse(kick)
-
-        const snare =
-          beatFraction > 0.45 && beatFraction < 0.65
-            ? Math.max(0, 1 - (beatFraction - 0.45) * 6.5)
-            : 0
-
-        const heights = barAngles.map((_, i) => {
-          const isBass = i <= 6 || i >= 34
-          const isTreble = i >= 17 && i <= 23
-
-          let energy = 0.25
-          if (isBass) {
-            energy = 0.28 + kick * 0.72 + Math.sin(now * 8 + i * 0.3) * 0.12
-          } else if (isTreble) {
-            energy = 0.22 + snare * 0.55 + Math.cos(now * 16 + i * 0.6) * 0.22
-          } else {
-            energy = 0.26 + kick * 0.35 + snare * 0.45 + Math.sin(now * 10 + i * 0.5) * 0.2
-          }
-
-          const clamped = Math.max(0.12, Math.min(1.0, energy))
-          return Math.round(8 + clamped * 28) // 8px to 36px
-        })
-
-        setVisualizerHeights(heights)
-      }
-      animId = requestAnimationFrame(updateBeats)
-    }
-
-    animId = requestAnimationFrame(updateBeats)
-    return () => cancelAnimationFrame(animId)
-  }, [isPlaying, isMobilePlayerOpen, currentTime, currentTrack?.id, currentTrack?.genre])
 
   if (!currentTrack || !isMobilePlayerOpen) return null
 
@@ -207,90 +133,39 @@ export const MobileFullPlayer: React.FC = () => {
       <div className="relative flex flex-col items-center justify-center my-auto py-4 z-10 min-h-[340px]">
         {!showInlineLyrics ? (
           <>
-            {/* Dynamic Music Beat Waves & Radial Sound Spectrum */}
-            <div className="relative w-72 h-72 sm:w-80 sm:h-80 flex items-center justify-center">
-              {/* Concentric Acoustic Shockwave Rings */}
-              {isPlaying && (
-                <>
-                  <div
-                    className="absolute inset-2 rounded-full border pointer-events-none transition-all duration-75"
-                    style={{
-                      transform: `scale(${1 + kickPulse * 0.12})`,
-                      opacity: 0.3 + kickPulse * 0.7,
-                      borderColor: dynamicTheme.borderColor,
-                    }}
-                  />
-                  <div
-                    className="absolute -inset-2 rounded-full border pointer-events-none transition-all duration-100"
-                    style={{
-                      transform: `scale(${1 + kickPulse * 0.08})`,
-                      opacity: 0.2 + kickPulse * 0.5,
-                      borderColor: dynamicTheme.borderColor,
-                    }}
-                  />
-                  <div className="absolute -inset-6 rounded-full border border-white/5 pointer-events-none" />
-                </>
-              )}
-
-              {/* 40 Animated Radial Soundwave Beat Bars radiating outward (Visualizer) */}
-              <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                {barAngles.map((angle, idx) => {
-                  const barHeight = visualizerHeights[idx] || 8
-
-                  return (
-                    <div
-                      key={idx}
-                      className="absolute origin-bottom transition-all duration-75"
-                      style={{
-                        transform: `rotate(${angle}deg) translateY(-126px)`,
-                      }}
-                    >
-                      <div
-                        className="w-1 rounded-full transition-all duration-75"
-                        style={{
-                          height: `${barHeight}px`,
-                          backgroundColor: isPlaying
-                            ? idx % 2 === 0
-                              ? dynamicTheme.primary
-                              : dynamicTheme.secondary
-                            : 'rgba(255, 255, 255, 0.2)',
-                          boxShadow: isPlaying ? `0 0 10px ${dynamicTheme.primary}80` : undefined,
-                        }}
-                      />
-                    </div>
-                  )
-                })}
-              </div>
-
-              {/* Central Album Artwork with pulsing bass breathing */}
+            {/* Native Mobile High-Res Album Artwork Card */}
+            <div className="relative w-72 h-72 sm:w-80 sm:h-80 flex items-center justify-center my-2">
               <div
-                className="w-52 h-52 sm:w-56 sm:h-56 rounded-full overflow-hidden p-2.5 border-2 border-white/10 shadow-[0_0_50px_rgba(0,0,0,0.9)] relative group transition-transform duration-75"
+                className="w-full h-full rounded-[28px] sm:rounded-[32px] overflow-hidden border border-white/10 relative group transition-all duration-500"
                 style={{
-                  transform: isPlaying ? `scale(${1 + kickPulse * 0.045})` : 'scale(1)',
-                  boxShadow: isPlaying ? `0 0 ${35 + kickPulse * 30}px ${dynamicTheme.accentGlow}` : undefined,
+                  boxShadow: isPlaying
+                    ? `0 20px 50px -10px rgba(0,0,0,0.85), 0 0 40px ${dynamicTheme.accentGlow}`
+                    : '0 20px 50px -10px rgba(0,0,0,0.85)',
                 }}
               >
                 <img
                   src={currentTrack.coverUrl}
                   alt={currentTrack.title}
-                  className="w-full h-full rounded-full object-cover transition-transform duration-700"
+                  className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
                 />
-                <div className="absolute inset-0 rounded-full ring-2 ring-inset ring-white/15 pointer-events-none" />
+                <div className="absolute inset-0 ring-1 ring-inset ring-white/10 rounded-[28px] sm:rounded-[32px] pointer-events-none" />
               </div>
             </div>
 
             {/* Track Title, Artist & Like Heart Button */}
-            <div className="relative flex flex-col items-center justify-center text-center w-full max-w-xs mt-6 px-10">
-              <h2 className="text-xl sm:text-2xl font-black text-white truncate w-full font-heading tracking-tight text-center">
-                {currentTrack.title}
-              </h2>
-              <p className="text-sm font-semibold text-[#94A3B8] truncate w-full mt-1 text-center">
-                {currentTrack.artist}
-              </p>
+            <div className="flex items-center justify-between w-full max-w-sm mt-6 px-4">
+              <div className="flex flex-col min-w-0 pr-3">
+                <h2 className="text-xl sm:text-2xl font-black text-white truncate font-heading tracking-tight text-left">
+                  {currentTrack.title}
+                </h2>
+                <p className="text-sm font-semibold text-white/60 truncate mt-0.5 text-left">
+                  {currentTrack.artist}
+                </p>
+              </div>
 
               <button
                 onClick={() => toggleLike(currentTrack.id)}
-                className="absolute right-0 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-white/5 border border-white/10 flex items-center justify-center shadow-lg active:scale-90 transition-transform flex-shrink-0"
+                className="w-11 h-11 rounded-full bg-white/5 hover:bg-white/10 border border-white/10 flex items-center justify-center shadow-lg active:scale-90 transition-transform flex-shrink-0 cursor-pointer"
                 title={liked ? 'Unlike' : 'Like song'}
               >
                 <Heart
@@ -470,13 +345,13 @@ export const MobileFullPlayer: React.FC = () => {
 
           <button
             onClick={() => {
-              toggleMobilePlayer()
-              navigateTo('visualizer')
+              openDedicatedVisualizer()
             }}
-            className="flex items-center gap-1.5 text-xs hover:text-white transition-colors py-1.5 px-3 rounded-full cursor-pointer"
+            className="flex items-center gap-1.5 text-xs text-purple-300 hover:text-white transition-colors py-1.5 px-3 rounded-full cursor-pointer bg-purple-500/20 border border-purple-500/30 shadow-[0_0_12px_rgba(168,85,247,0.3)] active:scale-95"
+            title="Open Immersive Visualizer"
           >
             <Activity className="w-4 h-4 text-purple-400" />
-            <span>Visualizer</span>
+            <span className="font-semibold">Visualizer</span>
           </button>
 
           <button

@@ -353,11 +353,11 @@ export const SearchView: React.FC = () => {
               </div>
             )}
 
-            {/* All Matching Tracks List (Desktop) */}
+            {/* All Matching Tracks List */}
             {combinedTracks.length > 6 && (
               <section>
                 <h3 className="text-xl font-bold text-white font-heading mb-3">More Songs</h3>
-                <div className="grid grid-cols-2 gap-2">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
                   {combinedTracks.slice(6, 24).map((track) => {
                     const liked = isLiked(track.id)
                     return (

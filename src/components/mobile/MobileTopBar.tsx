@@ -3,7 +3,6 @@ import {
   ChevronLeft,
   Search,
   X,
-  Activity,
 } from 'lucide-react'
 import { usePlayer } from '../../context/PlayerContext'
 import { RaiwaveLogo } from '../RaiwaveLogo'
@@ -54,8 +53,6 @@ export const MobileTopBar: React.FC = () => {
         return 'Up Next Queue'
       case 'lyrics':
         return 'Live Synced Lyrics'
-      case 'visualizer':
-        return 'Audio Visualizer'
       default:
         return 'RAIWAVE'
     }
@@ -132,21 +129,8 @@ export const MobileTopBar: React.FC = () => {
         )}
       </div>
 
-      {/* Right Action Icons: Quick Visualizer + Profile Avatar */}
+      {/* Right Action: Profile Avatar */}
       <div className="flex items-center gap-2 flex-shrink-0">
-        {/* Quick Visualizer Shortcut */}
-        <button
-          onClick={() => navigateTo(currentView === 'visualizer' ? 'home' : 'visualizer')}
-          className={`w-8 h-8 rounded-full flex items-center justify-center transition-all cursor-pointer active:scale-95 ${
-            currentView === 'visualizer'
-              ? 'bg-purple-600/30 border border-purple-400 text-purple-300 shadow-[0_0_12px_rgba(168,85,247,0.4)]'
-              : 'bg-white/5 border border-white/8 text-white/60 hover:text-white'
-          }`}
-          title="Music Visualizer"
-        >
-          <Activity className="w-3.5 h-3.5" />
-        </button>
-
         {/* User Account / Profile Avatar */}
         <div
           onClick={toggleProfile}
