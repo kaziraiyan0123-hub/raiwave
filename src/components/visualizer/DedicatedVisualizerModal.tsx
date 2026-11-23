@@ -133,7 +133,7 @@ export const DedicatedVisualizerModal: React.FC = () => {
     hideTimerRef.current = setTimeout(() => {
       setControlsVisible(false)
       setShowSensitivitySlider(false)
-    }, 6000)
+    }, 10000)
   }, [])
 
   useEffect(() => {
@@ -697,7 +697,13 @@ export const DedicatedVisualizerModal: React.FC = () => {
       <canvas
         ref={canvasRef}
         className="w-full h-full block cursor-pointer"
-        onClick={() => setControlsVisible((prev) => !prev)}
+        onClick={() => {
+          setControlsVisible((prev) => {
+            if (!prev) resetHideTimer()
+            return !prev
+          })
+        }}
+        onPointerDown={resetHideTimer}
       />
 
       {/* =========================================================================
