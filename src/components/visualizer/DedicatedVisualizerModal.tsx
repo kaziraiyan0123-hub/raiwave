@@ -789,11 +789,11 @@ export const DedicatedVisualizerModal: React.FC = () => {
           MODE SWITCHER FLOATING PILL BAR (Top Center)
          ========================================================================= */}
       <div
-        className={`absolute top-20 sm:top-24 inset-x-0 flex justify-center px-4 pointer-events-none transition-all duration-500 z-20 ${
+        className={`absolute top-20 sm:top-24 inset-x-0 flex justify-start sm:justify-center px-3 sm:px-4 pointer-events-none transition-all duration-500 z-20 ${
           controlsVisible ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-2'
         }`}
       >
-        <div className="pointer-events-auto flex items-center gap-1.5 p-1 rounded-full bg-[#120E22]/85 backdrop-blur-2xl border border-white/10 shadow-2xl overflow-x-auto no-scrollbar max-w-full">
+        <div className="pointer-events-auto flex items-center gap-1.5 p-1 rounded-full bg-[#120E22]/90 backdrop-blur-2xl border border-white/10 shadow-2xl overflow-x-auto no-scrollbar max-w-full">
           {MODES.map((m) => {
             const Icon = m.icon
             const isCurrent = mode === m.id
@@ -804,7 +804,7 @@ export const DedicatedVisualizerModal: React.FC = () => {
                   setMode(m.id)
                   resetHideTimer()
                 }}
-                className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-semibold font-heading transition-all duration-200 active:scale-95 cursor-pointer whitespace-nowrap ${
+                className={`flex-shrink-0 flex items-center gap-1.5 px-3 py-1.5 sm:px-3.5 rounded-full text-xs font-semibold font-heading transition-all duration-200 active:scale-95 cursor-pointer whitespace-nowrap ${
                   isCurrent
                     ? 'bg-gradient-to-r from-purple-600 to-indigo-600 text-white shadow-[0_0_16px_rgba(147,51,234,0.5)] border border-purple-400/40'
                     : 'text-white/60 hover:text-white hover:bg-white/5'
