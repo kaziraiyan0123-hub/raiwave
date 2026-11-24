@@ -181,6 +181,9 @@ export const WelcomeScreen: React.FC = () => {
   if (!visible || appMode !== 'player') return null
 
   const completeFirstRun = (chosenName: string) => {
+    if (typeof document !== 'undefined' && document.activeElement instanceof HTMLElement) {
+      document.activeElement.blur()
+    }
     const trimmed = chosenName.trim()
     try {
       if (trimmed) {
@@ -258,7 +261,7 @@ export const WelcomeScreen: React.FC = () => {
               value={nameInput}
               onChange={(e) => setNameInput(e.target.value)}
               placeholder="Enter your name..."
-              autoFocus
+              autoFocus={typeof window !== 'undefined' ? window.innerWidth >= 768 : false}
               maxLength={32}
               className="w-full px-4 py-3.5 rounded-2xl bg-black/45 border border-white/15 focus:border-purple-400/70 focus:outline-none text-white placeholder-white/35 text-sm sm:text-base font-medium transition-colors mb-4"
             />
