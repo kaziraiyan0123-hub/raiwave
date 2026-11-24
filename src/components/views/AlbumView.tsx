@@ -15,6 +15,7 @@ export const AlbumView: React.FC = () => {
     addToQueue,
     addAlbumToQueue,
     goBack,
+    openArtist,
   } = usePlayer()
 
   if (!selectedAlbum) {
@@ -74,7 +75,12 @@ export const AlbumView: React.FC = () => {
             {selectedAlbum.title}
           </h1>
           <div className="flex items-center gap-2 text-xs font-semibold text-[#94A3B8] mt-2">
-            <span className="text-white font-bold">{selectedAlbum.artist}</span>
+            <span
+              onClick={() => openArtist(selectedAlbum.artist)}
+              className="text-white font-bold hover:underline hover:text-purple-300 cursor-pointer"
+            >
+              {selectedAlbum.artist}
+            </span>
             <span>•</span>
             <span>{selectedAlbum.year}</span>
             <span>•</span>
@@ -161,7 +167,15 @@ export const AlbumView: React.FC = () => {
                   <p className={`text-sm font-semibold truncate ${isSelectedThis ? 'text-[#8B5CF6]' : 'text-white'}`}>
                     {track.title}
                   </p>
-                  <p className="text-xs text-[#94A3B8] truncate">{track.artist}</p>
+                  <p
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      openArtist(track.artist)
+                    }}
+                    className="text-xs text-[#94A3B8] truncate hover:text-white hover:underline cursor-pointer"
+                  >
+                    {track.artist}
+                  </p>
                 </div>
 
                 <div className="col-span-3 md:col-span-1 flex items-center justify-end gap-2.5 text-xs text-[#94A3B8] pr-2">

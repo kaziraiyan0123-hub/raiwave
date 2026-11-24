@@ -14,6 +14,8 @@ import {
   type DynamicPalette,
 } from '../services/colorExtractionService'
 import { visualizerAudioService } from '../services/visualizerAudioService'
+import { artistService } from '../services/artistService'
+import { recommendationEngine } from '../services/recommendationEngine'
 import type { LyricLine } from '../types'
 
 interface PlayerContextType {
@@ -48,6 +50,7 @@ interface PlayerContextType {
 
   // User Library & Playlists
   likedTrackIds: string[]
+  likedTracks: Track[]
   userPlaylists: Playlist[]
 
   // Controls
@@ -62,7 +65,7 @@ interface PlayerContextType {
   prevTrack: () => void
   toggleShuffle: () => void
   toggleRepeat: () => void
-  toggleLike: (trackId: string) => void
+  toggleLike: (trackId: string, trackObj?: Track) => void
   isLiked: (trackId: string) => boolean
   addToQueue: (track: Track) => void
   addAlbumToQueue: (album: Album) => void
@@ -82,7 +85,7 @@ interface PlayerContextType {
   canGoBack: boolean
   openPlaylist: (playlist: Playlist) => void
   openAlbum: (album: Album) => void
-  openArtist: (artist: Artist) => void
+  openArtist: (artist: Artist | string) => void
   setSearchQuery: (query: string) => void
 
   // Brand, Mobile & Category Extensions
@@ -581,6 +584,18 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const [searchQuery, setSearchQuery] = useState<string>('')
 
   // Persistence
+  const [likedTracks, setLikedTracks] = useState<Track[]>(() => {
+    try {
+      const savedData = localStorage.getItem('raiwave_liked_tracks_data')
+      if (savedData) {
+        const parsed = JSON.parse(savedData)
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed
+      }
+    } catch {}
+    const initialIds = ['yt-weeknd-blinding-lights', 'yt-daft-punk-get-lucky']
+    return SAMPLE_TRACKS.filter((t) => initialIds.includes(t.id))
+  })
+
   const [likedTrackIds, setLikedTrackIds] = useState<string[]>(() => {
     try {
       const saved = localStorage.getItem('raiwave_liked_tracks') || localStorage.getItem('spotiflow_liked_tracks')
@@ -602,7 +617,8 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   // Save liked tracks
   useEffect(() => {
     localStorage.setItem('raiwave_liked_tracks', JSON.stringify(likedTrackIds))
-  }, [likedTrackIds])
+    localStorage.setItem('raiwave_liked_tracks_data', JSON.stringify(likedTracks))
+  }, [likedTrackIds, likedTracks])
 
   // Save user playlists
   useEffect(() => {
@@ -1021,6 +1037,7 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     }
 
     // Add to history & persist in localStorage
+    recommendationEngine.recordPlay(track)
     setHistory((prev) => {
       const filtered = prev.filter((t) => t.id !== track.id)
       const updated = [track, ...filtered].slice(0, 30)
@@ -1315,10 +1332,42 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     })
   }
 
-  const toggleLike = (trackId: string) => {
-    setLikedTrackIds((prev) =>
-      prev.includes(trackId) ? prev.filter((id) => id !== trackId) : [...prev, trackId]
-    )
+  const toggleLike = (trackId: string, trackObj?: Track) => {
+    setLikedTracks((prev) => {
+      const exists = prev.some((t) => t.id === trackId)
+      if (exists) {
+        const updated = prev.filter((t) => t.id !== trackId)
+        setLikedTrackIds(updated.map((t) => t.id))
+        showToast('Removed from Liked Songs')
+        const removedTrack = trackObj || prev.find((t) => t.id === trackId)
+        if (removedTrack) recommendationEngine.recordLike(removedTrack, false)
+        return updated
+      } else {
+        const resolved =
+          trackObj ||
+          (currentTrack?.id === trackId ? currentTrack : null) ||
+          queue.find((t) => t.id === trackId) ||
+          history.find((t) => t.id === trackId) ||
+          SAMPLE_TRACKS.find((t) => t.id === trackId) ||
+          ({
+            id: trackId,
+            title: 'Liked Track',
+            artist: 'Favorite Artist',
+            album: 'Liked Songs',
+            duration: 210,
+            coverUrl:
+              'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=600&auto=format&fit=crop&q=80',
+            source: 'youtube',
+            genre: 'Music',
+            releaseYear: new Date().getFullYear(),
+          } as Track)
+        const updated = [resolved, ...prev]
+        setLikedTrackIds(updated.map((t) => t.id))
+        showToast(`Added "${resolved.title}" to Liked Songs`)
+        recommendationEngine.recordLike(resolved, true)
+        return updated
+      }
+    })
   }
 
   const isLiked = (trackId: string) => likedTrackIds.includes(trackId)
@@ -1471,9 +1520,16 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     navigateTo('album')
   }
 
-  const openArtist = (artist: Artist) => {
-    setSelectedArtist(artist)
-    navigateTo('artist')
+  const openArtist = (artist: Artist | string) => {
+    if (typeof artist === 'string') {
+      artistService.getArtistProfile(artist).then((profile) => {
+        setSelectedArtist(profile)
+        navigateTo('artist')
+      })
+    } else {
+      setSelectedArtist(artist)
+      navigateTo('artist')
+    }
   }
 
   const createPlaylist = (name: string, description?: string): Playlist => {
@@ -1567,6 +1623,7 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         selectedArtist,
         searchQuery,
         likedTrackIds,
+        likedTracks,
         userPlaylists,
         playTrack,
         playCustomUrlOrId,

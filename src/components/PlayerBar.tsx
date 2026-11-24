@@ -45,6 +45,7 @@ export const PlayerBar: React.FC = () => {
     isLiked,
     currentView,
     navigateTo,
+    openArtist,
     isVideoOpen,
     toggleVideoOpen,
     saveOffline,
@@ -141,8 +142,8 @@ export const PlayerBar: React.FC = () => {
 
           <div className="flex items-center gap-2 truncate mt-0.5">
             <span
-              onClick={() => navigateTo('search')}
-              className="text-xs text-[#94A3B8] hover:text-white cursor-pointer truncate"
+              onClick={() => openArtist(currentTrack.artist)}
+              className="text-xs text-[#94A3B8] hover:text-white hover:underline cursor-pointer truncate"
               title={currentTrack.artist}
             >
               {currentTrack.artist}

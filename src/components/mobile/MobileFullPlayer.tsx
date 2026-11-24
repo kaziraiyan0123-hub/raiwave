@@ -36,8 +36,10 @@ export const MobileFullPlayer: React.FC = () => {
     isLiked,
     toggleLike,
     isMobilePlayerOpen,
+    setIsMobilePlayerOpen,
     toggleMobilePlayer,
     navigateTo,
+    openArtist,
     liveLyrics,
     isLoadingLyrics,
     saveOffline,
@@ -159,7 +161,13 @@ export const MobileFullPlayer: React.FC = () => {
                 <h2 className="text-xl sm:text-2xl font-black text-white truncate font-heading tracking-tight text-left">
                   {currentTrack.title}
                 </h2>
-                <p className="text-sm font-semibold text-white/60 truncate mt-0.5 text-left">
+                <p
+                  onClick={() => {
+                    setIsMobilePlayerOpen(false)
+                    openArtist(currentTrack.artist)
+                  }}
+                  className="text-sm font-semibold text-white/60 truncate mt-0.5 text-left hover:text-white hover:underline cursor-pointer"
+                >
                   {currentTrack.artist}
                 </p>
               </div>

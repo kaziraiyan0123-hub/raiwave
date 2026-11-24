@@ -1,12 +1,11 @@
 import React from 'react'
 import { Play, Pause, Heart, Clock, Music, ChevronLeft } from 'lucide-react'
 import { usePlayer } from '../../context/PlayerContext'
-import { SAMPLE_TRACKS } from '../../data/musicData'
 import { EqualizerBars } from '../EqualizerBars'
 
 export const LikedSongsView: React.FC = () => {
   const {
-    likedTrackIds,
+    likedTracks,
     toggleLike,
     playTrack,
     currentTrack,
@@ -14,10 +13,10 @@ export const LikedSongsView: React.FC = () => {
     togglePlay,
     toggleMobilePlayer,
     goBack,
+    openArtist,
   } = usePlayer()
 
-  const likedTracks = SAMPLE_TRACKS.filter((t) => likedTrackIds.includes(t.id))
-  const totalSeconds = likedTracks.reduce((acc, t) => acc + t.duration, 0)
+  const totalSeconds = likedTracks.reduce((acc, t) => acc + (t.duration || 0), 0)
   const totalMinutes = Math.floor(totalSeconds / 60)
 
   const isCurrentPlaying = isPlaying && likedTracks.some((t) => t.id === currentTrack?.id)
@@ -159,7 +158,15 @@ export const LikedSongsView: React.FC = () => {
                       >
                         {track.title}
                       </p>
-                      <p className="text-xs text-[#94A3B8] truncate">{track.artist}</p>
+                      <p
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          openArtist(track.artist)
+                        }}
+                        className="text-xs text-[#94A3B8] truncate hover:text-white hover:underline cursor-pointer"
+                      >
+                        {track.artist}
+                      </p>
                     </div>
                   </div>
 

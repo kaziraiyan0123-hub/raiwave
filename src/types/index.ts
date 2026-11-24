@@ -56,6 +56,11 @@ export interface Artist {
   bio: string
   topTracks: Track[]
   headerImage: string
+  albums?: Album[]
+  singles?: Track[]
+  relatedArtists?: { id: string; name: string; avatarUrl: string }[]
+  isVerified?: boolean
+  genre?: string
 }
 
 export type ViewMode =

@@ -24,6 +24,7 @@ import {
 } from '../../data/musicData'
 import { EqualizerBars } from '../EqualizerBars'
 import { useCarouselSwipe } from '../../hooks/useCarouselSwipe'
+import { recommendationEngine } from '../../services/recommendationEngine'
 
 export const HomeView: React.FC = () => {
   const {
@@ -35,11 +36,13 @@ export const HomeView: React.FC = () => {
     playTrack,
     openPlaylist,
     openAlbum,
+    openArtist,
     navigateTo,
     activeCategory,
     setActiveCategory,
     isLiked,
     toggleLike,
+    likedTracks,
     realtimeTopTracks,
     history,
     clearHistory,
@@ -54,6 +57,11 @@ export const HomeView: React.FC = () => {
     () => (realtimeTopTracks.length > 0 ? realtimeTopTracks : SAMPLE_TRACKS),
     [realtimeTopTracks]
   )
+
+  // Dynamic Personalized Recommendation Sections
+  const personalizedSections = useMemo(() => {
+    return recommendationEngine.generatePersonalizedSections(history, likedTracks)
+  }, [history.length, likedTracks.length])
 
   // Filtered tracks based on active category
   const categoryFilteredTracks = useMemo(() => {
@@ -195,7 +203,16 @@ export const HomeView: React.FC = () => {
                   {currentTrack.title}
                 </h3>
                 <p className="text-[11px] sm:text-xs text-[#94A3B8] truncate">
-                  {currentTrack.artist} &bull; <span className="text-white/70">{currentTrack.album}</span>
+                  <span
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      openArtist(currentTrack.artist)
+                    }}
+                    className="hover:underline hover:text-white cursor-pointer"
+                  >
+                    {currentTrack.artist}
+                  </span>{' '}
+                  &bull; <span className="text-white/70">{currentTrack.album}</span>
                 </p>
               </div>
             </div>
@@ -203,7 +220,7 @@ export const HomeView: React.FC = () => {
             {/* Right: Controls */}
             <div className="flex items-center gap-2 flex-shrink-0">
               <button
-                onClick={() => toggleLike(currentTrack.id)}
+                onClick={() => toggleLike(currentTrack.id, currentTrack)}
                 className={`p-2 rounded-xl bg-[#181B27] border border-white/5 transition-all active:scale-95 cursor-pointer ${
                   isLiked(currentTrack.id)
                     ? 'text-[#8B5CF6]'
@@ -341,7 +358,15 @@ export const HomeView: React.FC = () => {
                 <h4 className="text-xs sm:text-sm font-bold text-white truncate font-heading group-hover:text-[#A78BFA] transition-colors leading-tight">
                   {track.title}
                 </h4>
-                <p className="text-[11px] text-[#94A3B8] truncate mt-0.5">{track.artist}</p>
+                <p
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    openArtist(track.artist)
+                  }}
+                  className="text-[11px] text-[#94A3B8] truncate mt-0.5 hover:text-white hover:underline cursor-pointer"
+                >
+                  {track.artist}
+                </p>
               </div>
             )
           })}
@@ -421,7 +446,15 @@ export const HomeView: React.FC = () => {
                       >
                         {track.title}
                       </span>
-                      <span className="text-[11px] text-[#94A3B8] truncate">{track.artist}</span>
+                      <span
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          openArtist(track.artist)
+                        }}
+                        className="text-[11px] text-[#94A3B8] truncate hover:text-white hover:underline cursor-pointer"
+                      >
+                        {track.artist}
+                      </span>
                     </div>
                   </div>
 
@@ -432,7 +465,7 @@ export const HomeView: React.FC = () => {
                     <button
                       onClick={(e) => {
                         e.stopPropagation()
-                        toggleLike(track.id)
+                        toggleLike(track.id, track)
                       }}
                       className="p-1 hover:text-white transition-colors cursor-pointer"
                       title={liked ? 'Unlike' : 'Like'}
@@ -553,7 +586,13 @@ export const HomeView: React.FC = () => {
                 <h4 className="text-xs sm:text-sm font-bold text-white font-heading truncate group-hover:text-[#A78BFA] transition-colors leading-tight">
                   {album.title}
                 </h4>
-                <p className="text-[11px] text-[#94A3B8] truncate mt-0.5 font-medium">
+                <p
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    openArtist(album.artist)
+                  }}
+                  className="text-[11px] text-[#94A3B8] truncate mt-0.5 font-medium hover:text-white hover:underline cursor-pointer"
+                >
                   {album.artist}
                 </p>
               </div>
@@ -561,6 +600,85 @@ export const HomeView: React.FC = () => {
           })}
         </div>
       </section>
+
+      {/* =========================================================================
+          DYNAMIC PERSONALIZED DISCOVERY SECTIONS
+         ========================================================================= */}
+      {personalizedSections.map((section) => (
+        <section key={section.id} className="space-y-3">
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="text-base sm:text-xl font-bold text-white font-heading tracking-tight">
+                {section.title}
+              </h2>
+              <p className="text-[11px] sm:text-xs text-[#94A3B8] mt-0.5">{section.subtitle}</p>
+            </div>
+          </div>
+
+          <div className="carousel-swipe desktop-grid gap-3 sm:gap-4 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 -mx-4 px-4 sm:mx-0 sm:px-0">
+            {section.tracks?.slice(0, 6).map((track) => {
+              const isSelected = currentTrack?.id === track.id
+              const isTrackPlaying = isSelected && isPlaying
+
+              return (
+                <div
+                  key={track.id}
+                  onClick={() => {
+                    if (isSelected) toggleMobilePlayer()
+                    else playTrack(track, section.tracks)
+                  }}
+                  className={`w-[130px] sm:w-[145px] md:w-auto flex-shrink-0 p-2.5 sm:p-3 rounded-2xl bg-[#12141D]/90 hover:bg-[#181B27] border border-white/5 hover:border-purple-500/30 cursor-pointer group transition-all duration-200 relative overflow-hidden shadow-md md:hover:-translate-y-1 ${
+                    isSelected ? 'ring-1 ring-[#8B5CF6] shadow-[0_0_16px_rgba(139,92,246,0.3)]' : ''
+                  }`}
+                >
+                  <div className="relative aspect-square rounded-xl overflow-hidden mb-2 shadow-sm border border-white/5">
+                    <img
+                      src={track.coverUrl}
+                      alt={track.title}
+                      loading="lazy"
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                    />
+                    <div
+                      className={`absolute inset-0 bg-black/40 flex items-center justify-center transition-opacity duration-200 ${
+                        isTrackPlaying ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
+                      }`}
+                    >
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          if (isTrackPlaying) togglePlay()
+                          else playTrack(track, section.tracks)
+                        }}
+                        className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-gradient-to-r from-[#8B5CF6] to-[#7C3AED] text-white flex items-center justify-center shadow-lg transform group-hover:scale-105 active:scale-95 transition-transform border border-purple-400/30 cursor-pointer"
+                        title={isTrackPlaying ? 'Pause' : 'Play'}
+                      >
+                        {isTrackPlaying ? (
+                          <Pause className="w-4 h-4 fill-current" />
+                        ) : (
+                          <Play className="w-4 h-4 fill-current ml-0.5" />
+                        )}
+                      </button>
+                    </div>
+                  </div>
+
+                  <h4 className="text-xs sm:text-sm font-bold text-white truncate font-heading group-hover:text-[#A78BFA] transition-colors leading-tight">
+                    {track.title}
+                  </h4>
+                  <p
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      openArtist(track.artist)
+                    }}
+                    className="text-[11px] text-[#94A3B8] truncate mt-0.5 hover:text-white hover:underline cursor-pointer"
+                  >
+                    {track.artist}
+                  </p>
+                </div>
+              )
+            })}
+          </div>
+        </section>
+      ))}
 
       {/* =========================================================================
           6. MADE FOR YOU (RECOMMENDED PLAYLISTS)

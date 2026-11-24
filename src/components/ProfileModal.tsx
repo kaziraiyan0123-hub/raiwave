@@ -1,6 +1,23 @@
 import React, { useState, useEffect } from 'react'
-import { X, Mail, User, Music, CheckCircle2, Sparkles, Download, RefreshCw, Smartphone, Globe } from 'lucide-react'
+import {
+  X,
+  Mail,
+  User,
+  Music,
+  CheckCircle2,
+  Sparkles,
+  Download,
+  RefreshCw,
+  Smartphone,
+  Globe,
+  Wifi,
+  WifiOff,
+  Sliders,
+  Zap,
+} from 'lucide-react'
 import { usePlayer } from '../context/PlayerContext'
+import { useNetworkStatus } from '../hooks/useNetworkStatus'
+import { recommendationEngine, type DiscoveryPreference } from '../services/recommendationEngine'
 
 export const ProfileModal: React.FC = () => {
   const {
@@ -18,6 +35,16 @@ export const ProfileModal: React.FC = () => {
   const [isSaved, setIsSaved] = useState(false)
   const [isUpdating, setIsUpdating] = useState(false)
   const [updateStatus, setUpdateStatus] = useState<string | null>(null)
+
+  const { isOnline, effectiveType, dataSaverEnabled, toggleDataSaver } = useNetworkStatus()
+  const [discoveryPref, setDiscoveryPref] = useState<DiscoveryPreference>(() => {
+    return recommendationEngine.getProfile().discoveryPreference || 'balanced'
+  })
+
+  const handleSetDiscoveryPref = (pref: DiscoveryPreference) => {
+    setDiscoveryPref(pref)
+    recommendationEngine.setDiscoveryPreference(pref)
+  }
 
   // Keep local fields in sync with userProfile
   useEffect(() => {
@@ -226,6 +253,88 @@ export const ProfileModal: React.FC = () => {
               </button>
             </div>
           </form>
+
+          {/* Network & Low-Data / Data Saver Mode */}
+          <div className="p-4 rounded-2xl bg-[#181B27] border border-[#202A34] space-y-2.5">
+            <div className="flex items-center justify-between">
+              <div>
+                <h4 className="text-xs font-bold text-white font-display flex items-center gap-1.5">
+                  {isOnline ? (
+                    <Wifi className="w-3.5 h-3.5 text-emerald-400" />
+                  ) : (
+                    <WifiOff className="w-3.5 h-3.5 text-rose-400" />
+                  )}
+                  <span>Network & Data Saver</span>
+                </h4>
+                <p className="text-[11px] text-[#94A3B8]">
+                  Status: {isOnline ? `Online (${effectiveType.toUpperCase()})` : 'Offline • Cached Mode'}
+                </p>
+              </div>
+
+              {/* Data Saver Toggle Switch */}
+              <button
+                type="button"
+                onClick={() => toggleDataSaver()}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer ${
+                  dataSaverEnabled
+                    ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 shadow-sm'
+                    : 'bg-white/5 text-[#94A3B8] border border-white/10 hover:text-white'
+                }`}
+              >
+                <Zap className="w-3 h-3" />
+                <span>{dataSaverEnabled ? 'Data Saver ON' : 'Data Saver OFF'}</span>
+              </button>
+            </div>
+            <p className="text-[11px] text-[#94A3B8] leading-tight">
+              {dataSaverEnabled
+                ? 'Active: downscaled artwork thumbnails and reduced background network queries to save cellular data.'
+                : 'Standard mode: full studio fidelity artwork and live dynamic discovery.'}
+            </p>
+          </div>
+
+          {/* Music Discovery Preference */}
+          <div className="p-4 rounded-2xl bg-[#181B27] border border-[#202A34] space-y-2.5">
+            <div className="flex items-center justify-between">
+              <div>
+                <h4 className="text-xs font-bold text-white font-display flex items-center gap-1.5">
+                  <Sliders className="w-3.5 h-3.5 text-purple-400" />
+                  <span>Discovery Preference</span>
+                </h4>
+                <p className="text-[11px] text-[#94A3B8]">
+                  Balance familiar favorites vs fresh music discoveries
+                </p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-3 gap-2">
+              {(
+                [
+                  { id: 'familiar', label: 'Familiar', desc: 'Mostly Favorites' },
+                  { id: 'balanced', label: 'Balanced', desc: '50/50 Mix' },
+                  { id: 'discover', label: 'Discover', desc: 'Fresh Tracks' },
+                ] as const
+              ).map((opt) => {
+                const isSelected = discoveryPref === opt.id
+                return (
+                  <button
+                    key={opt.id}
+                    type="button"
+                    onClick={() => handleSetDiscoveryPref(opt.id)}
+                    className={`p-2 rounded-xl border text-center transition-all cursor-pointer ${
+                      isSelected
+                        ? 'bg-purple-600/30 border-purple-500/60 text-white shadow-sm'
+                        : 'bg-white/5 border-white/5 text-[#94A3B8] hover:text-white'
+                    }`}
+                  >
+                    <p className={`text-xs font-bold ${isSelected ? 'text-purple-300' : 'text-white'}`}>
+                      {opt.label}
+                    </p>
+                    <p className="text-[10px] text-[#94A3B8] mt-0.5">{opt.desc}</p>
+                  </button>
+                )
+              })}
+            </div>
+          </div>
 
           {/* Application Updates Section (for both Mobile & Desktop) */}
           <div className="p-4 rounded-2xl bg-[#181B27] border border-[#202A34] space-y-3">
