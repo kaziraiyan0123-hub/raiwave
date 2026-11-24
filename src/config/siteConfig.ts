@@ -111,7 +111,7 @@ Thank you for being part of this journey.
       subtitle: 'Pure mobile experience with real offline downloads, queue control & background audio',
       version: 'v1.3.0',
       fileName: 'RAIWAVE.apk',
-      fileSize: '5.4 MB',
+      fileSize: '5.36 MB',
       releaseDate: 'November 25, 2026',
       requirements: 'Android 8.0 (Oreo, API 26) or higher',
       downloadUrl: '/RAIWAVE.apk',
