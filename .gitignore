@@ -38,3 +38,6 @@ android/.gradle/
 android/app/build/
 android/local.properties
 scratch/
+
+.vercel
+.env*
