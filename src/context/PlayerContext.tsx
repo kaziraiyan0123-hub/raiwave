@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, useRef } from 'react'
+import React, { createContext, useContext, useState, useEffect, useRef, useMemo } from 'react'
 import type { Track, Playlist, RepeatMode, ViewMode, Album, Artist, UserProfile, AudioRecording } from '../types'
 import { SAMPLE_TRACKS } from '../data/musicData'
 import { youtubeService } from '../services/youtubePlayer'
@@ -6,7 +6,7 @@ import { parseMediaUrl } from '../utils/urlParser'
 import { searchGlobalMusic } from '../services/musicSearch'
 import { realtimeMusicService } from '../services/realtimeMusicService'
 import { fetchLiveLyrics } from '../services/lyricsService'
-import { offlineService } from '../services/offlineService'
+import { offlineService, type TrackDownloadState } from '../services/offlineService'
 import { smartQueueService } from '../services/smartQueueService'
 import {
   extractPaletteFromImage,
@@ -14,7 +14,7 @@ import {
   type DynamicPalette,
 } from '../services/colorExtractionService'
 import { visualizerAudioService } from '../services/visualizerAudioService'
-import { artistService } from '../services/artistService'
+import { artistService, extractPrimaryArtistName } from '../services/artistService'
 import { recommendationEngine } from '../services/recommendationEngine'
 import type { LyricLine } from '../types'
 
@@ -87,6 +87,8 @@ interface PlayerContextType {
   openPlaylist: (playlist: Playlist) => void
   openAlbum: (album: Album) => void
   openArtist: (artist: Artist | string) => void
+  isLoadingAlbum: boolean
+  isLoadingArtist: boolean
   setSearchQuery: (query: string) => void
 
   // Brand, Mobile & Category Extensions
@@ -135,7 +137,7 @@ interface PlayerContextType {
   realtimeTopTracks: Track[]
   realtimeRecommended: Track[]
   isLoadingRealtime: boolean
-  refreshRealtimeMusic: () => Promise<void>
+  refreshRealtimeMusic: (force?: boolean) => Promise<void>
 
   // Recently Played
   clearHistory: () => void
@@ -146,9 +148,12 @@ interface PlayerContextType {
 
   // Offline Mode & Downloads
   offlineTrackIds: string[]
+  downloadStates: Record<string, TrackDownloadState>
   saveOffline: (track: Track) => Promise<boolean>
+  cancelDownload: (trackId: string) => void
   removeOffline: (trackId: string) => Promise<boolean>
   isOffline: (trackId: string) => boolean
+  isTrackDownloadable: (track: Track) => { downloadable: boolean; reason?: string }
 
   // Smart Queue & Autoplay
   isSmartQueueEnabled: boolean
@@ -162,21 +167,70 @@ interface PlayerContextType {
   dynamicTheme: DynamicPalette
 }
 
+const QUEUE_STORAGE_KEY = 'raiwave_queue_v1'
+
+function dedupTracksById(list: Track[]): Track[] {
+  const seen = new Set<string>()
+  const out: Track[] = []
+  for (const t of list) {
+    if (t && t.id && !seen.has(t.id)) {
+      seen.add(t.id)
+      out.push(t)
+    }
+  }
+  return out
+}
+
+function fisherYatesShuffle<T>(arr: T[]): T[] {
+  const copy = [...arr]
+  for (let i = copy.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1))
+    ;[copy[i], copy[j]] = [copy[j], copy[i]]
+  }
+  return copy
+}
+
+function loadSavedQueueState(): { queue: Track[]; queueIndex: number } {
+  try {
+    const raw = localStorage.getItem(QUEUE_STORAGE_KEY)
+    if (raw) {
+      const parsed = JSON.parse(raw) as { queue?: Track[]; queueIndex?: number }
+      if (Array.isArray(parsed.queue)) {
+        const clean = dedupTracksById(parsed.queue)
+        const idx =
+          typeof parsed.queueIndex === 'number' && parsed.queueIndex >= 0 && parsed.queueIndex < clean.length
+            ? parsed.queueIndex
+            : 0
+        return { queue: clean, queueIndex: idx }
+      }
+    }
+  } catch {
+    // Fallback to clean empty queue
+  }
+  return { queue: [], queueIndex: 0 }
+}
+
 const PlayerContext = createContext<PlayerContextType | null>(null)
 
 export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const initialQueueState = useMemo(() => loadSavedQueueState(), [])
+
   const audioRef = useRef<HTMLAudioElement | null>(null)
   const currentEngineRef = useRef<'audio' | 'youtube'>('audio')
   const currentTrackRef = useRef<Track | null>(null)
   const repeatModeRef = useRef<RepeatMode>('off')
-  const queueRef = useRef<Track[]>(SAMPLE_TRACKS)
-  const queueIndexRef = useRef<number>(0)
+  const queueRef = useRef<Track[]>(initialQueueState.queue)
+  const queueIndexRef = useRef<number>(initialQueueState.queueIndex)
+  const originalQueueRef = useRef<Track[]>(initialQueueState.queue)
   const isShuffleRef = useRef<boolean>(false)
   const blockedVideoIdsRef = useRef<Set<string>>(new Set())
   const playRequestIdRef = useRef<number>(0)
   const lastPlayTimeRef = useRef<number>(0)
+  const lastBlobUrlRef = useRef<string | null>(null)
+  const artistRequestIdRef = useRef<number>(0)
+  const albumRequestIdRef = useRef<number>(0)
 
-  // Current track & queue state (Default idle - never autoplay on load)
+  // Current track & queue state (Default idle - starts clean, persisted queue)
   const [currentTrack, setCurrentTrack] = useState<Track | null>(null)
   const [isPlaying, setIsPlaying] = useState<boolean>(false)
   const [currentTime, setCurrentTime] = useState<number>(0)
@@ -185,8 +239,22 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const [isMuted, setIsMuted] = useState<boolean>(false)
   const [repeatMode, setRepeatMode] = useState<RepeatMode>('off')
   const [isShuffle, setIsShuffle] = useState<boolean>(false)
-  const [queue, setQueue] = useState<Track[]>(SAMPLE_TRACKS)
-  const [queueIndex, setQueueIndex] = useState<number>(0)
+  const [queue, setQueue] = useState<Track[]>(initialQueueState.queue)
+  const [queueIndex, setQueueIndex] = useState<number>(initialQueueState.queueIndex)
+
+  const syncQueueState = (nextQueue: Track[], nextIdx: number) => {
+    const clean = dedupTracksById(nextQueue)
+    const clampedIdx = clean.length === 0 ? 0 : Math.max(0, Math.min(nextIdx, clean.length - 1))
+    queueRef.current = clean
+    queueIndexRef.current = clampedIdx
+    setQueue(clean)
+    setQueueIndex(clampedIdx)
+    try {
+      localStorage.setItem(QUEUE_STORAGE_KEY, JSON.stringify({ queue: clean, queueIndex: clampedIdx }))
+    } catch {
+      // Ignore quota errors
+    }
+  }
   const [history, setHistory] = useState<Track[]>(() => {
     try {
       const saved = localStorage.getItem('raiwave_recently_played')
@@ -207,31 +275,63 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const [liveLyrics, setLiveLyrics] = useState<LyricLine[]>([])
   const [isLoadingLyrics, setIsLoadingLyrics] = useState<boolean>(false)
 
-  // Offline Mode & Downloads State
+  // Offline Mode & Downloads State (Real verified files only)
   const [offlineTrackIds, setOfflineTrackIds] = useState<string[]>(() => offlineService.getOfflineTrackIds())
+  const [downloadStates, setDownloadStates] = useState<Record<string, TrackDownloadState>>(() =>
+    offlineService.getAllDownloadStates()
+  )
+
+  useEffect(() => {
+    const unsub = offlineService.subscribe((trackId, state) => {
+      setDownloadStates((prev) => ({ ...prev, [trackId]: state }))
+      if (state.status === 'downloaded' || state.status === 'idle') {
+        setOfflineTrackIds(offlineService.getOfflineTrackIds())
+      }
+    })
+    offlineService.verifyAndSyncVault().then((validIds) => {
+      setOfflineTrackIds(validIds)
+      setDownloadStates(offlineService.getAllDownloadStates())
+    })
+    return unsub
+  }, [])
 
   const saveOffline = async (track: Track): Promise<boolean> => {
-    showToast(`⏳ Saving "${track.title}" offline...`)
-    const success = await offlineService.saveTrackOffline(track)
-    if (success) {
-      setOfflineTrackIds(offlineService.getOfflineTrackIds())
-      showToast(`✅ "${track.title}" downloaded & ready offline!`)
-    } else {
-      showToast(`❌ Could not save "${track.title}" offline`)
+    const eligibility = offlineService.isTrackDownloadable(track)
+    if (!eligibility.downloadable) {
+      showToast(`ℹ️ ${eligibility.reason}`)
+      return false
     }
-    return success
+    showToast(`Downloading "${track.title}"...`)
+    const result = await offlineService.saveTrackOffline(track)
+    setOfflineTrackIds(offlineService.getOfflineTrackIds())
+    if (result.success) {
+      showToast(`Saved "${track.title}" offline & verified`)
+      return true
+    }
+    if (result.cancelled) {
+      showToast(`Cancelled download for "${track.title}"`)
+      return false
+    }
+    showToast(`Could not download "${track.title}": ${result.error || 'Failed'}`)
+    return false
+  }
+
+  const cancelDownload = (trackId: string) => {
+    offlineService.cancelDownload(trackId)
+    showToast('Download cancelled')
   }
 
   const removeOffline = async (trackId: string): Promise<boolean> => {
     const success = await offlineService.removeTrackOffline(trackId)
     if (success) {
       setOfflineTrackIds(offlineService.getOfflineTrackIds())
-      showToast(`Removed from offline downloads`)
+      showToast('Removed offline file & freed space')
     }
     return success
   }
 
   const isOffline = (trackId: string) => offlineTrackIds.includes(trackId)
+  const isTrackDownloadable = (track: Track) => offlineService.isTrackDownloadable(track)
 
   // Smart Queue & Autoplay
   const [isSmartQueueEnabled, setIsSmartQueueEnabled] = useState<boolean>(true)
@@ -253,8 +353,10 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const [activeCategory, setActiveCategory] = useState<string>('All')
   const [isMobilePlayerOpen, setIsMobilePlayerOpen] = useState<boolean>(false)
   const [isDedicatedVisualizerOpen, setIsDedicatedVisualizerOpen] = useState<boolean>(false)
+  const [isLoadingAlbum, setIsLoadingAlbum] = useState<boolean>(false)
+  const [isLoadingArtist, setIsLoadingArtist] = useState<boolean>(false)
 
-  // User Profile & Account (Gmail maintained)
+  // User Profile & Account
   const [userProfile, setUserProfile] = useState<UserProfile>(() => {
     let savedName = ''
     try {
@@ -265,14 +367,17 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       if (saved) {
         const parsed = JSON.parse(saved)
         if (!parsed.name && savedName) parsed.name = savedName
-        return parsed
+        return {
+          ...parsed,
+          developerCredit: 'Created with passion by Raiyan.',
+        }
       }
     } catch {}
     return {
       name: savedName,
       email: '',
       avatarUrl: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=200&auto=format&fit=crop&q=80',
-      developerCredit: 'Kazi Raiyan (Lead Developer & Creator)',
+      developerCredit: 'Created with passion by Raiyan.',
       joinedDate: 'November 2026',
       recordings: [],
     }
@@ -408,12 +513,12 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const [realtimeRecommended, setRealtimeRecommended] = useState<Track[]>([])
   const [isLoadingRealtime, setIsLoadingRealtime] = useState<boolean>(false)
 
-  const refreshRealtimeMusic = async () => {
+  const refreshRealtimeMusic = async (force = false) => {
     setIsLoadingRealtime(true)
     try {
       const [top, rec] = await Promise.all([
-        realtimeMusicService.fetchLiveTop50(),
-        realtimeMusicService.fetchRealtimeByCategory(activeCategory),
+        realtimeMusicService.fetchLiveTop50({ force }),
+        realtimeMusicService.fetchRealtimeByCategory(activeCategory, { force }),
       ])
       if (top.length > 0) setRealtimeTopTracks(top)
       if (rec.length > 0) setRealtimeRecommended(rec)
@@ -424,9 +529,18 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     }
   }
 
-  // Fetch real-time music on mount and when active category changes
+  // Fetch real-time music on mount, reconnect, and when active category changes
   useEffect(() => {
-    refreshRealtimeMusic()
+    refreshRealtimeMusic(false)
+    const onReconnect = () => refreshRealtimeMusic(false)
+    if (typeof window !== 'undefined') {
+      window.addEventListener('online', onReconnect)
+    }
+    return () => {
+      if (typeof window !== 'undefined') {
+        window.removeEventListener('online', onReconnect)
+      }
+    }
   }, [])
 
   useEffect(() => {
@@ -503,9 +617,22 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   // RAIWAVE MUST run strictly as the standalone music application and never show the website.
   const checkIsStandaloneApp = () => {
     if (typeof window === 'undefined') return false
+    const PLAYER_VIEW_HASHES = [
+      '#app',
+      '#home',
+      '#explore',
+      '#search',
+      '#library',
+      '#playlist',
+      '#album',
+      '#artist',
+      '#liked',
+      '#lyrics',
+      '#queue',
+    ]
     const hasAndroidBridge = Boolean((window as unknown as { AndroidMedia?: unknown }).AndroidMedia)
     const hasDesktopBridge = Boolean((window as unknown as { chrome?: { webview?: unknown } }).chrome?.webview)
-    const hasAppHash = window.location.hash === '#app'
+    const hasAppHash = PLAYER_VIEW_HASHES.includes(window.location.hash)
     const hasAppPath = window.location.pathname === '/app'
     const hasPlayerQuery =
       window.location.search.includes('mode=player') ||
@@ -577,7 +704,6 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     if (mode === 'website' && checkIsStandaloneApp()) {
       return
     }
-    setAppModeState(mode)
     try {
       if (mode === 'website') {
         window.history.pushState({ mode: 'website' }, '', window.location.pathname)
@@ -585,6 +711,7 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         window.history.pushState({ mode: 'player' }, '', '#app')
       }
     } catch {}
+    setAppModeState(mode)
   }
 
   // Views & navigation
@@ -598,34 +725,25 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   // Clean legacy demo seeds from user's storage so liked songs starts pristine & empty
   const DEMO_SEEDS = ['yt-weeknd-blinding-lights', 'yt-daft-punk-get-lucky']
 
-  // Persistence - Starts completely empty (0 songs) for new users; clean legacy demo seeds
+  // Single source of truth: likedTrackIds is always derived from likedTracks (never out of sync)
   const [likedTracks, setLikedTracks] = useState<Track[]>(() => {
     try {
       const savedData = localStorage.getItem('raiwave_liked_tracks_data')
       if (savedData) {
         const parsed = JSON.parse(savedData)
         if (Array.isArray(parsed)) {
-          const cleaned = parsed.filter((t: Track) => !DEMO_SEEDS.includes(t.id))
-          return cleaned
+          return dedupTracksById(parsed.filter((t: Track) => t && t.id && !DEMO_SEEDS.includes(t.id)))
         }
       }
     } catch {}
     return []
   })
 
-  const [likedTrackIds, setLikedTrackIds] = useState<string[]>(() => {
-    try {
-      const saved = localStorage.getItem('raiwave_liked_tracks') || localStorage.getItem('spotiflow_liked_tracks')
-      if (saved) {
-        const parsed = JSON.parse(saved)
-        if (Array.isArray(parsed)) {
-          const cleaned = parsed.filter((id: string) => !DEMO_SEEDS.includes(id))
-          return cleaned
-        }
-      }
-    } catch {}
-    return []
-  })
+  const likedTrackIds = useMemo(() => likedTracks.map((t) => t.id), [likedTracks])
+  const likedTracksRef = useRef<Track[]>(likedTracks)
+  useEffect(() => {
+    likedTracksRef.current = likedTracks
+  }, [likedTracks])
 
   const [userPlaylists, setUserPlaylists] = useState<Playlist[]>(() => {
     try {
@@ -636,10 +754,12 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     }
   })
 
-  // Save liked tracks
+  // Keep storage synced strictly from single-source likedTracks
   useEffect(() => {
-    localStorage.setItem('raiwave_liked_tracks', JSON.stringify(likedTrackIds))
-    localStorage.setItem('raiwave_liked_tracks_data', JSON.stringify(likedTracks))
+    try {
+      localStorage.setItem('raiwave_liked_tracks', JSON.stringify(likedTrackIds))
+      localStorage.setItem('raiwave_liked_tracks_data', JSON.stringify(likedTracks))
+    } catch {}
   }, [likedTrackIds, likedTracks])
 
   // Save user playlists
@@ -738,6 +858,26 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         if (currentEngineRef.current === 'youtube') {
           if (state === 'playing') {
             setIsPlaying(true)
+            // Re-assert MediaSession after YT iframe focus so Windows SMTC shows RAIWAVE track art
+            window.setTimeout(() => {
+              const t = currentTrackRef.current
+              if ('mediaSession' in navigator && t) {
+                try {
+                  const fallbackUrl = `${window.location.origin}/icon-512.png`
+                  const artSrc = t.coverUrl?.trim() || fallbackUrl
+                  navigator.mediaSession.metadata = new MediaMetadata({
+                    title: t.title,
+                    artist: t.artist,
+                    album: t.album || 'RAIWAVE Lossless Stream',
+                    artwork: [
+                      { src: artSrc, sizes: '192x192' },
+                      { src: artSrc, sizes: '512x512' },
+                    ],
+                  })
+                  navigator.mediaSession.playbackState = 'playing'
+                } catch {}
+              }
+            }, 350)
           } else if (state === 'paused') {
             setIsPlaying(false)
           } else if (state === 'ended') {
@@ -752,6 +892,7 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         }
       },
       onError: (code) => {
+        if (currentEngineRef.current !== 'youtube') return
         console.warn('YouTube player error code:', code)
         const track = currentTrackRef.current
         if (!track) return
@@ -847,26 +988,45 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     }
   }, [])
 
-  // Update MediaSession metadata only when track changes
+  // Update MediaSession metadata whenever track or cover updates (with verified artwork fallback)
   useEffect(() => {
-    if ('mediaSession' in navigator && currentTrack) {
+    if (!('mediaSession' in navigator) || !currentTrack) return
+    let cancelled = false
+
+    const applyMetadata = (artSrc: string, mimeType?: string) => {
+      if (cancelled) return
       try {
+        const entry96 = mimeType ? { src: artSrc, sizes: '96x96', type: mimeType } : { src: artSrc, sizes: '96x96' }
+        const entry192 = mimeType ? { src: artSrc, sizes: '192x192', type: mimeType } : { src: artSrc, sizes: '192x192' }
+        const entry512 = mimeType ? { src: artSrc, sizes: '512x512', type: mimeType } : { src: artSrc, sizes: '512x512' }
         navigator.mediaSession.metadata = new MediaMetadata({
           title: currentTrack.title,
           artist: currentTrack.artist,
           album: currentTrack.album || 'RAIWAVE Lossless Stream',
-          artwork: [
-            { src: currentTrack.coverUrl, sizes: '96x96', type: 'image/jpeg' },
-            { src: currentTrack.coverUrl, sizes: '128x128', type: 'image/jpeg' },
-            { src: currentTrack.coverUrl, sizes: '192x192', type: 'image/jpeg' },
-            { src: currentTrack.coverUrl, sizes: '256x256', type: 'image/jpeg' },
-            { src: currentTrack.coverUrl, sizes: '384x384', type: 'image/jpeg' },
-            { src: currentTrack.coverUrl, sizes: '512x512', type: 'image/jpeg' },
-          ],
+          artwork: [entry96, entry192, entry512],
         })
       } catch {}
     }
-  }, [currentTrack?.id])
+
+    const fallbackUrl =
+      typeof window !== 'undefined' ? `${window.location.origin}/icon-512.png` : '/icon-512.png'
+    const cover = currentTrack.coverUrl?.trim()
+
+    if (!cover) {
+      applyMetadata(fallbackUrl, 'image/png')
+      return
+    }
+
+    // Apply track cover immediately, then verify loadability and fallback if image fails
+    applyMetadata(cover)
+    const tester = new Image()
+    tester.onerror = () => applyMetadata(fallbackUrl, 'image/png')
+    tester.src = cover
+
+    return () => {
+      cancelled = true
+    }
+  }, [currentTrack?.id, currentTrack?.title, currentTrack?.artist, currentTrack?.coverUrl])
 
   // Update MediaSession playback state & Android Bridge on play/pause transition
   useEffect(() => {
@@ -954,35 +1114,7 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     })
   }, [currentTrack?.id, queue.length])
 
-  // Central Playback Engine Router
-  const loadAndPlayTrack = (track: Track, shouldPlay = true) => {
-    const reqId = ++playRequestIdRef.current
-    setCurrentTrack(track)
-    currentTrackRef.current = track
-    setCurrentTime(0)
-    setDuration(track.duration || 180)
-    if (shouldPlay) {
-      setIsPlaying(true)
-      lastPlayTimeRef.current = Date.now()
-    }
-
-    showToast(`▶ Now Playing: ${track.title} • ${track.artist}`)
-
-    // TIER 0: Offline Mode (Cached audio from IndexedDB vault)
-    if ((typeof navigator !== 'undefined' && !navigator.onLine) || offlineService.isOffline(track.id)) {
-      offlineService.getOfflineAudioBlob(track.id).then((blob) => {
-        if (playRequestIdRef.current !== reqId) return
-        if (blob && audioRef.current) {
-          currentEngineRef.current = 'audio'
-          setActiveEngine('audio')
-          youtubeService.pause()
-          audioRef.current.src = URL.createObjectURL(blob)
-          audioRef.current.currentTime = 0
-          if (shouldPlay) audioRef.current.play().catch(() => {})
-        }
-      })
-    }
-
+  const startOnlinePlayback = (track: Track, shouldPlay: boolean, reqId: number) => {
     // TIER 1: YouTube Full-Length Audio/Video Stream (Streams the FULL song from start to finish)
     if (track.youtubeId || track.source === 'youtube') {
       currentEngineRef.current = 'youtube'
@@ -1035,6 +1167,9 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
             currentEngineRef.current = 'youtube'
             setActiveEngine('youtube')
             youtubeService.loadVideo(track.youtubeId, true)
+          } else {
+            setIsPlaying(false)
+            showToast(`Could not play "${track.title}".`)
           }
         })
       }
@@ -1057,6 +1192,75 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         }
       })
     }
+  }
+
+  // Central Playback Engine Router
+  const loadAndPlayTrack = (track: Track, shouldPlay = true) => {
+    const reqId = ++playRequestIdRef.current
+    if (lastBlobUrlRef.current) {
+      try {
+        URL.revokeObjectURL(lastBlobUrlRef.current)
+      } catch {}
+      lastBlobUrlRef.current = null
+    }
+
+    setCurrentTrack(track)
+    currentTrackRef.current = track
+    setCurrentTime(0)
+    setDuration(track.duration || 180)
+    if (shouldPlay) {
+      setIsPlaying(true)
+      lastPlayTimeRef.current = Date.now()
+    }
+
+    showToast(`▶ Now Playing: ${track.title} • ${track.artist}`)
+
+    const isOfflineSaved = offlineService.isOffline(track.id)
+    const isOnlineNow = typeof navigator === 'undefined' ? true : navigator.onLine
+
+    // TIER 0: Real Offline Mode (Native file or verified IndexedDB Blob)
+    if (isOfflineSaved || !isOnlineNow) {
+      currentEngineRef.current = 'audio'
+      setActiveEngine('audio')
+      youtubeService.pause()
+
+      offlineService.getPlayableOfflineUrl(track.id).then((playableUrl) => {
+        if (playRequestIdRef.current !== reqId) {
+          if (playableUrl?.startsWith('blob:')) {
+            try { URL.revokeObjectURL(playableUrl) } catch {}
+          }
+          return
+        }
+        if (playableUrl && audioRef.current) {
+          if (playableUrl.startsWith('blob:')) {
+            lastBlobUrlRef.current = playableUrl
+          }
+          currentEngineRef.current = 'audio'
+          setActiveEngine('audio')
+          youtubeService.pause()
+          audioRef.current.src = playableUrl
+          audioRef.current.currentTime = 0
+          if (shouldPlay) {
+            audioRef.current.play().catch(() => {
+              setIsPlaying(false)
+              showToast(`Unable to play offline audio for "${track.title}".`)
+            })
+          }
+          return
+        }
+
+        // Offline file missing/invalid
+        setOfflineTrackIds(offlineService.getOfflineTrackIds())
+        if (!navigator.onLine) {
+          setIsPlaying(false)
+          showToast(`Offline copy unavailable for "${track.title}". Connect to stream.`)
+        } else {
+          startOnlinePlayback(track, shouldPlay, reqId)
+        }
+      })
+    } else {
+      startOnlinePlayback(track, shouldPlay, reqId)
+    }
 
     // Add to history & persist in localStorage
     recommendationEngine.recordPlay(track)
@@ -1070,18 +1274,45 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     })
   }
 
+  const maybeRecordEarlySkip = (nextTrackId?: string) => {
+    const prevTrack = currentTrackRef.current
+    if (!prevTrack || prevTrack.id === nextTrackId) return
+    const elapsed = currentTimeRef.current
+    const dur = durationRef.current || prevTrack.duration || 180
+    if (elapsed >= 2 && elapsed < 25 && elapsed / Math.max(dur, 1) < 0.35) {
+      recommendationEngine.recordSkip(prevTrack)
+    }
+  }
+
   const playTrack = (track: Track, newQueue?: Track[]) => {
+    maybeRecordEarlySkip(track.id)
+
     if (newQueue && newQueue.length > 0) {
-      setQueue(newQueue)
-      const idx = newQueue.findIndex((t) => t.id === track.id)
-      setQueueIndex(idx >= 0 ? idx : 0)
-    } else {
-      const existingIdx = queue.findIndex((t) => t.id === track.id)
-      if (existingIdx >= 0) {
-        setQueueIndex(existingIdx)
+      const baseList = dedupTracksById(
+        newQueue.some((t) => t.id === track.id) ? newQueue : [track, ...newQueue]
+      )
+      originalQueueRef.current = baseList
+      if (isShuffleRef.current) {
+        const rest = fisherYatesShuffle(baseList.filter((t) => t.id !== track.id))
+        syncQueueState([track, ...rest], 0)
       } else {
-        setQueue((prev) => [...prev, track])
-        setQueueIndex(queue.length)
+        const idx = baseList.findIndex((t) => t.id === track.id)
+        syncQueueState(baseList, idx >= 0 ? idx : 0)
+      }
+    } else {
+      const curQueue = queueRef.current
+      const existingIdx = curQueue.findIndex((t) => t.id === track.id)
+      if (existingIdx >= 0) {
+        syncQueueState(curQueue, existingIdx)
+      } else if (curQueue.length === 0 || !currentTrackRef.current) {
+        originalQueueRef.current = [track]
+        syncQueueState([track], 0)
+      } else {
+        const insertAt = queueIndexRef.current + 1
+        const nextList = [...curQueue]
+        nextList.splice(insertAt, 0, track)
+        originalQueueRef.current = dedupTracksById([...originalQueueRef.current, track])
+        syncQueueState(nextList, insertAt)
       }
     }
 
@@ -1108,7 +1339,7 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         releaseYear: new Date().getFullYear(),
         color: '#dc2626',
       }
-      playTrack(newTrack, [newTrack, ...queue])
+      playTrack(newTrack, [newTrack, ...queueRef.current])
       return true
     }
 
@@ -1123,7 +1354,6 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
     showToast(`Searching & Streaming "${cleanQuery}"...`)
 
-    // First, check if global search has a matching track with direct preview audio
     try {
       const results = await searchGlobalMusic(cleanQuery)
       if (results.length > 0) {
@@ -1134,7 +1364,6 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       // ignore
     }
 
-    // Fallback: direct YouTube query
     const newTrack: Track = {
       id: `search-stream-${Date.now()}`,
       title: cleanQuery,
@@ -1154,8 +1383,9 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     setActiveEngine('youtube')
     setCurrentTime(0)
     setDuration(210)
-    setQueue((prev) => [newTrack, ...prev])
-    setQueueIndex(0)
+    const nextQueue = [newTrack, ...queueRef.current]
+    originalQueueRef.current = nextQueue
+    syncQueueState(nextQueue, 0)
 
     if (audioRef.current) audioRef.current.pause()
     youtubeService.loadSearchQuery(cleanQuery)
@@ -1166,7 +1396,11 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
   const togglePlay = () => {
     if (!currentTrack) {
-      if (queue.length > 0) playTrack(queue[0])
+      const curQueue = queueRef.current
+      if (curQueue.length > 0) {
+        const idx = Math.max(0, Math.min(queueIndexRef.current, curQueue.length - 1))
+        playTrack(curQueue[idx], curQueue)
+      }
       return
     }
 
@@ -1237,36 +1471,24 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     const curQueue = queueRef.current
     if (curQueue.length === 0) return
 
+    maybeRecordEarlySkip()
+
     let nextIdx = queueIndexRef.current + 1
-    if (isShuffleRef.current) {
-      // Pick randomly from remaining upcoming tracks to avoid repeats
-      const upcomingIndices: number[] = []
-      for (let i = queueIndexRef.current + 1; i < curQueue.length; i++) {
-        upcomingIndices.push(i)
-      }
-      if (upcomingIndices.length > 0) {
-        nextIdx = upcomingIndices[Math.floor(Math.random() * upcomingIndices.length)]
-      } else if (repeatModeRef.current === 'all' && curQueue.length > 1) {
-        // Wrap around but don't re-pick current track
-        const allOtherIndices: number[] = []
-        for (let i = 0; i < curQueue.length; i++) {
-          if (i !== queueIndexRef.current) allOtherIndices.push(i)
-        }
-        nextIdx = allOtherIndices[Math.floor(Math.random() * allOtherIndices.length)]
-      } else {
-        nextIdx = curQueue.length
-      }
-    } else if (nextIdx >= curQueue.length) {
+    if (nextIdx >= curQueue.length) {
       if (repeatModeRef.current === 'all') {
         nextIdx = 0
       } else if (isSmartQueueEnabledRef.current && currentTrackRef.current) {
-        // Smart Queue automatically fetches and queues next recommended track
+        // Smart Queue automatically fetches and appends next recommended track cleanly
         const queueIds = curQueue.map((t) => t.id)
         smartQueueService.getNextSmartTrack(currentTrackRef.current, queueIds).then((nextSug) => {
           if (nextSug) {
+            const latestQueue = queueRef.current
+            if (latestQueue.some((t) => t.id === nextSug.id)) return
+            const updatedQueue = [...latestQueue, nextSug]
+            originalQueueRef.current = dedupTracksById([...originalQueueRef.current, nextSug])
+            const targetIdx = updatedQueue.length - 1
+            syncQueueState(updatedQueue, targetIdx)
             showToast(`✨ Smart Queue Autoplay: ${nextSug.title} • ${nextSug.artist}`)
-            setQueue((prev) => [...prev, nextSug])
-            setQueueIndex(curQueue.length)
             loadAndPlayTrack(nextSug, true)
           } else {
             setIsPlaying(false)
@@ -1279,12 +1501,12 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       }
     }
 
-    setQueueIndex(nextIdx)
+    syncQueueState(curQueue, nextIdx)
     loadAndPlayTrack(curQueue[nextIdx], true)
   }
 
   const prevTrack = () => {
-    if (currentTime > 3) {
+    if (currentTimeRef.current > 3) {
       seek(0)
       return
     }
@@ -1297,7 +1519,7 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       prevIdx = repeatModeRef.current === 'all' ? curQueue.length - 1 : 0
     }
 
-    setQueueIndex(prevIdx)
+    syncQueueState(curQueue, prevIdx)
     loadAndPlayTrack(curQueue[prevIdx], true)
   }
 
@@ -1360,7 +1582,35 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     nextTrack()
   }
 
-  const toggleShuffle = () => setIsShuffle((prev) => !prev)
+  const toggleShuffle = () => {
+    const nextShuffle = !isShuffleRef.current
+    isShuffleRef.current = nextShuffle
+    setIsShuffle(nextShuffle)
+
+    const curQueue = queueRef.current
+    const curIdx = queueIndexRef.current
+    if (curQueue.length <= 1) {
+      showToast(nextShuffle ? 'Shuffle ON' : 'Shuffle OFF')
+      return
+    }
+
+    if (nextShuffle) {
+      originalQueueRef.current = [...curQueue]
+      const head = curQueue.slice(0, curIdx + 1)
+      const tail = fisherYatesShuffle(curQueue.slice(curIdx + 1))
+      syncQueueState([...head, ...tail], curIdx)
+      showToast('Shuffle ON — Upcoming order shuffled')
+    } else {
+      const currentId = curQueue[curIdx]?.id
+      const curIds = new Set(curQueue.map((t) => t.id))
+      const base = originalQueueRef.current.filter((t) => curIds.has(t.id))
+      const extras = curQueue.filter((t) => !base.some((b) => b.id === t.id))
+      const restored = dedupTracksById([...base, ...extras])
+      const restoredIdx = currentId ? restored.findIndex((t) => t.id === currentId) : 0
+      syncQueueState(restored, restoredIdx >= 0 ? restoredIdx : 0)
+      showToast('Shuffle OFF — Original order restored')
+    }
+  }
 
   const toggleRepeat = () => {
     setRepeatMode((prev) => {
@@ -1371,129 +1621,200 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   }
 
   const toggleLike = (trackId: string, trackObj?: Track) => {
-    setLikedTracks((prev) => {
-      const exists = prev.some((t) => t.id === trackId)
-      if (exists) {
-        const updated = prev.filter((t) => t.id !== trackId)
-        setLikedTrackIds(updated.map((t) => t.id))
-        showToast('Removed from Liked Songs')
-        const removedTrack = trackObj || prev.find((t) => t.id === trackId)
-        if (removedTrack) recommendationEngine.recordLike(removedTrack, false)
-        return updated
-      } else {
-        const resolved =
-          trackObj ||
-          (currentTrack?.id === trackId ? currentTrack : null) ||
-          queue.find((t) => t.id === trackId) ||
-          history.find((t) => t.id === trackId) ||
-          SAMPLE_TRACKS.find((t) => t.id === trackId) ||
-          ({
-            id: trackId,
-            title: 'Liked Track',
-            artist: 'Favorite Artist',
-            album: 'Liked Songs',
-            duration: 210,
-            coverUrl:
-              'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=600&auto=format&fit=crop&q=80',
-            source: 'youtube',
-            genre: 'Music',
-            releaseYear: new Date().getFullYear(),
-          } as Track)
-        const updated = [resolved, ...prev]
-        setLikedTrackIds(updated.map((t) => t.id))
-        showToast(`Added "${resolved.title}" to Liked Songs`)
-        recommendationEngine.recordLike(resolved, true)
-        return updated
-      }
-    })
+    const curLiked = likedTracksRef.current
+    const exists = curLiked.some((t) => t.id === trackId)
+    if (exists) {
+      const removedTrack = trackObj || curLiked.find((t) => t.id === trackId)
+      const updated = curLiked.filter((t) => t.id !== trackId)
+      likedTracksRef.current = updated
+      setLikedTracks(updated)
+      showToast('Removed from Liked Songs')
+      if (removedTrack) recommendationEngine.recordLike(removedTrack, false)
+    } else {
+      const resolved =
+        trackObj ||
+        (currentTrackRef.current?.id === trackId ? currentTrackRef.current : null) ||
+        queueRef.current.find((t) => t.id === trackId) ||
+        history.find((t) => t.id === trackId) ||
+        SAMPLE_TRACKS.find((t) => t.id === trackId) ||
+        ({
+          id: trackId,
+          title: 'Liked Track',
+          artist: 'Favorite Artist',
+          album: 'Liked Songs',
+          duration: 210,
+          coverUrl:
+            'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=600&auto=format&fit=crop&q=80',
+          source: 'youtube',
+          genre: 'Music',
+          releaseYear: new Date().getFullYear(),
+        } as Track)
+      const updated = dedupTracksById([resolved, ...curLiked])
+      likedTracksRef.current = updated
+      setLikedTracks(updated)
+      showToast(`Added "${resolved.title}" to Liked Songs`)
+      recommendationEngine.recordLike(resolved, true)
+    }
   }
 
   const isLiked = (trackId: string) => likedTrackIds.includes(trackId)
 
   const playNext = (track: Track) => {
-    setQueue((prev) => {
-      if (prev.length === 0) return [track]
-      const next = [...prev]
-      next.splice(queueIndex + 1, 0, track)
-      return next
-    })
+    const curQueue = queueRef.current
+    const curIdx = queueIndexRef.current
+    const curPlaying = currentTrackRef.current
+
+    if (curQueue.length === 0 || !curPlaying) {
+      originalQueueRef.current = dedupTracksById([track, ...curQueue])
+      syncQueueState(originalQueueRef.current, 0)
+      loadAndPlayTrack(track, true)
+      showToast(`Playing next: "${track.title}"`)
+      return
+    }
+
+    if (curPlaying.id === track.id) {
+      showToast(`"${track.title}" is currently playing`)
+      return
+    }
+
+    // Keep history prefix intact, remove any duplicate in upcoming, insert immediately at curIdx + 1
+    const prefix = curQueue.slice(0, curIdx + 1).filter((t) => t.id !== track.id)
+    const upcoming = curQueue.slice(curIdx + 1).filter((t) => t.id !== track.id)
+    const newCurIdx = prefix.length - 1
+    const nextQueue = [...prefix, track, ...upcoming]
+    originalQueueRef.current = dedupTracksById([...originalQueueRef.current, track])
+    syncQueueState(nextQueue, Math.max(0, newCurIdx))
     showToast(`Will play next: "${track.title}"`)
   }
 
   const addToQueue = (track: Track) => {
-    setQueue((prev) => [...prev, track])
+    const curQueue = queueRef.current
+    const curIdx = queueIndexRef.current
+    if (curQueue.some((t) => t.id === track.id)) {
+      showToast(`"${track.title}" is already in queue`)
+      return
+    }
+    const nextQueue = [...curQueue, track]
+    originalQueueRef.current = dedupTracksById([...originalQueueRef.current, track])
+    syncQueueState(nextQueue, curQueue.length === 0 ? 0 : curIdx)
     showToast(`Added "${track.title}" to queue`)
   }
 
   const addAlbumToQueue = (album: Album) => {
     if (!album.tracks || album.tracks.length === 0) return
-    setQueue((prev) => [...prev, ...album.tracks])
-    showToast(`Added ${album.tracks.length} songs from "${album.title}" to queue`)
+    const curQueue = queueRef.current
+    const curIdx = queueIndexRef.current
+    const nextQueue = dedupTracksById([...curQueue, ...album.tracks])
+    const addedCount = nextQueue.length - curQueue.length
+    originalQueueRef.current = dedupTracksById([...originalQueueRef.current, ...album.tracks])
+    syncQueueState(nextQueue, curQueue.length === 0 ? 0 : curIdx)
+    showToast(
+      addedCount > 0
+        ? `Added ${addedCount} songs from "${album.title}" to queue`
+        : `"${album.title}" tracks are already in queue`
+    )
   }
 
   const addPlaylistToQueue = (playlist: Playlist) => {
     if (!playlist.tracks || playlist.tracks.length === 0) return
-    setQueue((prev) => [...prev, ...playlist.tracks])
-    showToast(`Added ${playlist.tracks.length} songs from "${playlist.name}" to queue`)
+    const curQueue = queueRef.current
+    const curIdx = queueIndexRef.current
+    const nextQueue = dedupTracksById([...curQueue, ...playlist.tracks])
+    const addedCount = nextQueue.length - curQueue.length
+    originalQueueRef.current = dedupTracksById([...originalQueueRef.current, ...playlist.tracks])
+    syncQueueState(nextQueue, curQueue.length === 0 ? 0 : curIdx)
+    showToast(
+      addedCount > 0
+        ? `Added ${addedCount} songs from "${playlist.name}" to queue`
+        : `"${playlist.name}" tracks are already in queue`
+    )
   }
 
   const reorderQueue = (fromIndex: number, toIndex: number) => {
-    if (fromIndex === toIndex || fromIndex < 0 || toIndex < 0) return
-    setQueue((prev) => {
-      if (fromIndex >= prev.length || toIndex >= prev.length) return prev
-      const updated = [...prev]
-      const [moved] = updated.splice(fromIndex, 1)
-      updated.splice(toIndex, 0, moved)
-      return updated
-    })
-    setQueueIndex((currentIdx) => {
-      if (fromIndex === currentIdx) return toIndex
-      if (fromIndex < currentIdx && toIndex >= currentIdx) return currentIdx - 1
-      if (fromIndex > currentIdx && toIndex <= currentIdx) return currentIdx + 1
-      return currentIdx
-    })
+    const curQueue = queueRef.current
+    const curIdx = queueIndexRef.current
+    if (
+      fromIndex === toIndex ||
+      fromIndex < 0 ||
+      toIndex < 0 ||
+      fromIndex >= curQueue.length ||
+      toIndex >= curQueue.length
+    ) {
+      return
+    }
+
+    const updated = [...curQueue]
+    const [moved] = updated.splice(fromIndex, 1)
+    updated.splice(toIndex, 0, moved)
+
+    let nextIdx = curIdx
+    if (fromIndex === curIdx) nextIdx = toIndex
+    else if (fromIndex < curIdx && toIndex >= curIdx) nextIdx = curIdx - 1
+    else if (fromIndex > curIdx && toIndex <= curIdx) nextIdx = curIdx + 1
+
+    if (!isShuffleRef.current) {
+      originalQueueRef.current = updated
+    }
+    syncQueueState(updated, nextIdx)
   }
 
   const reorderUpcoming = (fromUpcomingIdx: number, toUpcomingIdx: number) => {
-    const fromIndex = queueIndex + 1 + fromUpcomingIdx
-    const toIndex = queueIndex + 1 + toUpcomingIdx
+    const curIdx = queueIndexRef.current
+    const offset = currentTrackRef.current ? curIdx + 1 : 0
+    const fromIndex = offset + fromUpcomingIdx
+    const toIndex = offset + toUpcomingIdx
     reorderQueue(fromIndex, toIndex)
   }
 
   const removeFromQueue = (index: number) => {
-    if (index < 0 || index >= queue.length) return
-    const removedTrack = queue[index]
-    setQueue((prev) => prev.filter((_, i) => i !== index))
-    if (index < queueIndex) {
-      setQueueIndex((prev) => Math.max(0, prev - 1))
-    } else if (index === queueIndex) {
-      if (queue.length > 1) {
-        const nextIdx = index < queue.length - 1 ? index : index - 1
-        const nextT = queue[nextIdx]
-        setQueueIndex(nextIdx)
-        loadAndPlayTrack(nextT, isPlaying)
+    const curQueue = queueRef.current
+    const curIdx = queueIndexRef.current
+    if (index < 0 || index >= curQueue.length) return
+
+    const removedTrack = curQueue[index]
+    const nextQueue = curQueue.filter((_, i) => i !== index)
+    originalQueueRef.current = originalQueueRef.current.filter((t) => t.id !== removedTrack.id)
+
+    if (nextQueue.length === 0) {
+      syncQueueState([], 0)
+      if (currentTrackRef.current?.id === removedTrack.id) {
+        if (audioRef.current) audioRef.current.pause()
+        youtubeService.pause()
+        setIsPlaying(false)
+        setCurrentTrack(null)
+        currentTrackRef.current = null
       }
+    } else if (index < curIdx) {
+      syncQueueState(nextQueue, curIdx - 1)
+    } else if (index === curIdx && currentTrackRef.current) {
+      const nextIdx = Math.min(index, nextQueue.length - 1)
+      const nextT = nextQueue[nextIdx]
+      syncQueueState(nextQueue, nextIdx)
+      loadAndPlayTrack(nextT, isPlayingRef.current)
+    } else {
+      syncQueueState(nextQueue, Math.min(curIdx, nextQueue.length - 1))
     }
-    if (removedTrack) {
-      showToast(`Removed "${removedTrack.title}" from queue`)
-    }
+
+    showToast(`Removed "${removedTrack.title}" from queue`)
   }
 
   const clearQueue = () => {
-    if (currentTrack) {
-      setQueue([currentTrack])
-      setQueueIndex(0)
+    if (currentTrackRef.current) {
+      originalQueueRef.current = [currentTrackRef.current]
+      syncQueueState([currentTrackRef.current], 0)
     } else {
-      setQueue([])
-      setQueueIndex(0)
+      originalQueueRef.current = []
+      syncQueueState([], 0)
     }
     showToast('🧹 Upcoming queue cleared')
   }
 
   const playQueuedTrackImmediately = (index: number) => {
-    if (index < 0 || index >= queue.length) return
-    const track = queue[index]
-    setQueueIndex(index)
+    const curQueue = queueRef.current
+    if (index < 0 || index >= curQueue.length) return
+    const track = curQueue[index]
+    maybeRecordEarlySkip(track.id)
+    syncQueueState(curQueue, index)
     loadAndPlayTrack(track, true)
     showToast(`▶ Now playing "${track.title}"`)
   }
@@ -1564,18 +1885,62 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   }
 
   const openAlbum = (album: Album) => {
+    const reqId = ++albumRequestIdRef.current
     setSelectedAlbum(album)
     navigateTo('album')
+
+    if (!album.tracks || album.tracks.length === 0) {
+      setIsLoadingAlbum(true)
+      artistService
+        .getAlbumTracks(album)
+        .then((tracks) => {
+          if (albumRequestIdRef.current !== reqId) return
+          if (tracks.length > 0) {
+            setSelectedAlbum({ ...album, tracks })
+          }
+        })
+        .finally(() => {
+          if (albumRequestIdRef.current === reqId) {
+            setIsLoadingAlbum(false)
+          }
+        })
+    } else {
+      setIsLoadingAlbum(false)
+    }
   }
 
   const openArtist = (artist: Artist | string) => {
+    const reqId = ++artistRequestIdRef.current
     if (typeof artist === 'string') {
-      artistService.getArtistProfile(artist).then((profile) => {
-        setSelectedArtist(profile)
-        navigateTo('artist')
+      const primaryName = extractPrimaryArtistName(artist)
+      setSelectedArtist({
+        id: `artist-loading-${primaryName.toLowerCase().replace(/\s+/g, '-')}`,
+        name: primaryName,
+        avatarUrl: '',
+        headerImage: '',
+        monthlyListeners: 0,
+        bio: '',
+        isFallbackBio: true,
+        topTracks: [],
+        albums: [],
+        singles: [],
       })
+      setIsLoadingArtist(true)
+      navigateTo('artist')
+      artistService
+        .getArtistProfile(primaryName)
+        .then((profile) => {
+          if (artistRequestIdRef.current !== reqId) return
+          setSelectedArtist(profile)
+        })
+        .finally(() => {
+          if (artistRequestIdRef.current === reqId) {
+            setIsLoadingArtist(false)
+          }
+        })
     } else {
       setSelectedArtist(artist)
+      setIsLoadingArtist(false)
       navigateTo('artist')
     }
   }
@@ -1653,9 +2018,12 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         liveLyrics,
         isLoadingLyrics,
         offlineTrackIds,
+        downloadStates,
         saveOffline,
+        cancelDownload,
         removeOffline,
         isOffline,
+        isTrackDownloadable,
         isSmartQueueEnabled,
         toggleSmartQueue,
         smartSuggestions,
@@ -1704,6 +2072,8 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         openPlaylist,
         openAlbum,
         openArtist,
+        isLoadingAlbum,
+        isLoadingArtist,
         setSearchQuery,
         createPlaylist,
         addTrackToPlaylist,

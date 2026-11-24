@@ -83,14 +83,15 @@ export const LikedSongsView: React.FC = () => {
       </div>
 
       {/* 3. Track List */}
-      <div className="px-6 sm:px-8 bg-[#0B0D13]">
+      <div className="px-4 sm:px-8 bg-[#0B0D13]">
         {/* Table Header */}
-        <div className="grid grid-cols-12 text-xs font-semibold uppercase text-[#94A3B8] border-b border-white/10 pb-2 px-4 mb-2 tracking-wider font-heading">
-          <div className="col-span-1 text-center">#</div>
-          <div className="col-span-6 md:col-span-5">Title</div>
-          <div className="hidden md:block col-span-3">Album</div>
-          <div className="hidden sm:block col-span-2">Date Added</div>
-          <div className="col-span-5 sm:col-span-3 md:col-span-1 flex justify-end pr-2">
+        <div className="flex items-center justify-between text-xs font-semibold uppercase text-[#94A3B8] border-b border-white/10 pb-2 px-3 sm:px-4 mb-2 tracking-wider font-heading">
+          <div className="flex items-center gap-3 flex-1">
+            <span className="w-6 text-center">#</span>
+            <span>Title</span>
+          </div>
+          <div className="hidden md:block w-[180px] pr-2">Album</div>
+          <div className="flex justify-end pr-2">
             <Clock className="w-4 h-4" />
           </div>
         </div>
@@ -117,40 +118,40 @@ export const LikedSongsView: React.FC = () => {
                       playTrack(track, likedTracks)
                     }
                   }}
-                  className={`grid grid-cols-12 items-center px-4 py-2.5 rounded-xl hover:bg-white/5 group cursor-pointer transition-colors ${
+                  className={`flex items-center justify-between gap-2.5 px-3 sm:px-4 py-2.5 rounded-xl hover:bg-white/5 group cursor-pointer transition-colors ${
                     isThisTrackSelected ? 'bg-white/10' : ''
                   }`}
                 >
-                  <div className="col-span-1 text-center text-xs font-mono font-medium flex items-center justify-center text-[#94A3B8]">
-                    <span className="group-hover:hidden">
-                      {isThisTrackPlaying ? <EqualizerBars size="sm" /> : idx + 1}
-                    </span>
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        if (isThisTrackPlaying) {
-                          togglePlay()
-                        } else {
-                          playTrack(track, likedTracks)
-                        }
-                      }}
-                      className="hidden group-hover:flex items-center justify-center text-[#8B5CF6]"
-                    >
-                      {isThisTrackPlaying ? (
-                        <Pause className="w-4 h-4 fill-current" />
-                      ) : (
-                        <Play className="w-4 h-4 fill-current ml-0.5" />
-                      )}
-                    </button>
-                  </div>
+                  <div className="flex items-center gap-3 min-w-0 flex-1">
+                    <div className="w-6 text-center text-xs font-mono font-medium flex items-center justify-center text-[#94A3B8] flex-shrink-0">
+                      <span className="md:group-hover:hidden">
+                        {isThisTrackPlaying ? <EqualizerBars size="sm" /> : idx + 1}
+                      </span>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          if (isThisTrackPlaying) {
+                            togglePlay()
+                          } else {
+                            playTrack(track, likedTracks)
+                          }
+                        }}
+                        className="hidden md:group-hover:flex items-center justify-center text-[#8B5CF6]"
+                      >
+                        {isThisTrackPlaying ? (
+                          <Pause className="w-4 h-4 fill-current" />
+                        ) : (
+                          <Play className="w-4 h-4 fill-current ml-0.5" />
+                        )}
+                      </button>
+                    </div>
 
-                  <div className="col-span-6 md:col-span-5 flex items-center gap-3 min-w-0 pr-4">
                     <img
                       src={track.coverUrl}
                       alt={track.title}
                       className="w-10 h-10 rounded-xl object-cover flex-shrink-0 shadow border border-white/5"
                     />
-                    <div className="truncate">
+                    <div className="min-w-0 flex-1">
                       <p
                         className={`text-sm font-semibold truncate transition-colors font-heading ${
                           isThisTrackSelected ? 'text-[#8B5CF6]' : 'text-white group-hover:text-[#8B5CF6]'
@@ -170,25 +171,22 @@ export const LikedSongsView: React.FC = () => {
                     </div>
                   </div>
 
-                  <div className="hidden md:block col-span-3 text-xs text-[#94A3B8] truncate pr-4">
+                  <div className="hidden md:block text-xs text-[#94A3B8] truncate max-w-[180px] pr-2">
                     {track.album}
                   </div>
 
-                  <div className="hidden sm:block col-span-2 text-xs text-[#94A3B8] font-mono">
-                    Recently
-                  </div>
-
-                  <div className="col-span-5 sm:col-span-3 md:col-span-1 flex items-center justify-end gap-3 text-xs text-[#94A3B8] pr-2">
+                  <div className="flex items-center justify-end gap-2.5 text-xs text-[#94A3B8] flex-shrink-0 pr-1">
                     <button
                       onClick={(e) => {
                         e.stopPropagation()
-                        toggleLike(track.id)
+                        toggleLike(track.id, track)
                       }}
-                      className="hover:scale-110 transition-transform"
+                      className="p-1.5 rounded-lg hover:bg-white/10 hover:scale-110 transition-all cursor-pointer"
+                      title="Remove from Liked Songs"
                     >
                       <Heart className="w-4 h-4 text-[#8B5CF6] fill-[#8B5CF6]" />
                     </button>
-                    <span className="font-mono">{formatDuration(track.duration)}</span>
+                    <span className="font-mono hidden sm:inline">{formatDuration(track.duration)}</span>
                   </div>
                 </div>
               )

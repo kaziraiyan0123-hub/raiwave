@@ -8,9 +8,12 @@ import {
   Sparkles,
   Plus,
   GripVertical,
+  ChevronUp,
+  ChevronDown,
 } from 'lucide-react'
 import { usePlayer } from '../../context/PlayerContext'
 import { EqualizerBars } from '../EqualizerBars'
+import { getOptimizedArtworkUrl } from '../../utils/networkImage'
 
 export const QueueView: React.FC = () => {
   const {
@@ -28,12 +31,14 @@ export const QueueView: React.FC = () => {
     toggleSmartQueue,
     smartSuggestions,
     dynamicTheme,
+    openArtist,
   } = usePlayer()
 
   const [draggedIdx, setDraggedIdx] = useState<number | null>(null)
   const [dragOverIdx, setDragOverIdx] = useState<number | null>(null)
 
-  const upcomingQueue = queue.slice(queueIndex + 1)
+  const upcomingOffset = currentTrack ? queueIndex + 1 : 0
+  const upcomingQueue = queue.slice(upcomingOffset)
 
   const formatDuration = (secs: number) => {
     if (isNaN(secs) || secs < 0) return '0:00'
@@ -77,7 +82,7 @@ export const QueueView: React.FC = () => {
   const accentColor = dynamicTheme.primary || '#A78BFA'
 
   return (
-    <div className="p-4 sm:p-8 select-none max-w-4xl mx-auto space-y-8 pb-44 md:pb-32">
+    <div className="p-4 sm:p-8 select-none w-full max-w-4xl mx-auto space-y-6 sm:space-y-8 pb-44 md:pb-32 overflow-x-hidden">
       {/* Queue Header with Smart Autoplay Switch & Clear Queue */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-white/10 pb-4">
         <div className="flex items-center gap-3">
@@ -141,20 +146,20 @@ export const QueueView: React.FC = () => {
           </div>
 
           <div
-            className="flex items-center justify-between p-4 rounded-2xl group transition-all border shadow-xl relative overflow-hidden"
+            className="flex items-center justify-between gap-2 p-3 sm:p-4 rounded-2xl group transition-all border shadow-xl relative overflow-hidden"
             style={{
               background: `linear-gradient(135deg, ${dynamicTheme.surfaceGlow} 0%, rgba(18, 14, 28, 0.95) 100%)`,
               borderColor: dynamicTheme.borderColor || 'rgba(255, 255, 255, 0.12)',
             }}
           >
-            <div className="flex items-center gap-4 min-w-0">
+            <div className="flex items-center gap-3 sm:gap-4 min-w-0 flex-1">
               <div
                 onClick={togglePlay}
-                className="relative w-16 h-16 rounded-xl overflow-hidden flex-shrink-0 shadow-md cursor-pointer group/art"
+                className="relative w-14 h-14 sm:w-16 sm:h-16 rounded-xl overflow-hidden flex-shrink-0 shadow-md cursor-pointer group/art"
                 title={isPlaying ? 'Pause' : 'Play'}
               >
                 <img
-                  src={currentTrack.coverUrl}
+                  src={getOptimizedArtworkUrl(currentTrack.coverUrl, 'thumb')}
                   alt={currentTrack.title}
                   className="w-full h-full object-cover transition-transform duration-500 group-hover/art:scale-110"
                 />
@@ -167,19 +172,25 @@ export const QueueView: React.FC = () => {
                 </div>
               </div>
 
-              <div className="truncate">
-                <div className="flex items-center gap-2">
-                  <p className="text-base sm:text-lg font-bold text-white truncate font-heading">
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center gap-2 min-w-0">
+                  <p className="text-sm sm:text-lg font-bold text-white truncate font-heading">
                     {currentTrack.title}
                   </p>
-                  {isPlaying && <EqualizerBars size="sm" />}
+                  {isPlaying && <div className="flex-shrink-0"><EqualizerBars size="sm" /></div>}
                 </div>
-                <p className="text-sm text-white/60 truncate mt-0.5">{currentTrack.artist}</p>
+                <button
+                  type="button"
+                  onClick={() => openArtist(currentTrack.artist)}
+                  className="text-xs sm:text-sm text-white/60 hover:text-white hover:underline truncate mt-0.5 block max-w-full text-left cursor-pointer"
+                >
+                  {currentTrack.artist}
+                </button>
               </div>
             </div>
 
-            <div className="flex items-center gap-4 text-xs text-white/50 font-mono flex-shrink-0">
-              <span className="text-xs px-2.5 py-1 rounded-full bg-purple-500/15 text-purple-300 font-bold uppercase tracking-wider border border-purple-500/30 flex items-center gap-1.5">
+            <div className="flex items-center gap-2 sm:gap-3 text-xs text-white/50 font-mono flex-shrink-0">
+              <span className="hidden sm:flex text-xs px-2.5 py-1 rounded-full bg-purple-500/15 text-purple-300 font-bold uppercase tracking-wider border border-purple-500/30 items-center gap-1.5">
                 <span className="w-2 h-2 rounded-full bg-purple-400 animate-pulse" />
                 Lossless FLAC
               </span>
@@ -189,7 +200,7 @@ export const QueueView: React.FC = () => {
         </section>
       )}
 
-      {/* 2. UP NEXT (Upcoming Queue with Drag & Drop) */}
+      {/* 2. UP NEXT (Upcoming Queue with Drag & Drop + Touch Controls) */}
       <section>
         <div className="flex items-center justify-between mb-3 px-1">
           <div className="flex items-center gap-2">
@@ -198,8 +209,9 @@ export const QueueView: React.FC = () => {
           </div>
           {upcomingQueue.length > 1 && (
             <span className="text-[11px] text-white/40 flex items-center gap-1">
-              <GripVertical className="w-3.5 h-3.5 text-white/30" />
-              Drag songs to rearrange
+              <GripVertical className="w-3.5 h-3.5 text-white/30 hidden sm:inline" />
+              <span className="hidden sm:inline">Drag or use arrows to reorder</span>
+              <span className="sm:hidden">Use arrows to reorder</span>
             </span>
           )}
         </div>
@@ -217,7 +229,7 @@ export const QueueView: React.FC = () => {
         ) : (
           <div className="space-y-2">
             {upcomingQueue.map((track, i) => {
-              const actualQueueIdx = queueIndex + 1 + i
+              const actualQueueIdx = upcomingOffset + i
               const isBeingDragged = draggedIdx === i
               const isDropTarget = dragOverIdx === i
 
@@ -229,7 +241,7 @@ export const QueueView: React.FC = () => {
                   onDragOver={(e) => handleDragOver(e, i)}
                   onDrop={(e) => handleDrop(e, i)}
                   onDragEnd={handleDragEnd}
-                  className={`flex items-center justify-between p-3 rounded-2xl border transition-all duration-200 group cursor-pointer ${
+                  className={`flex items-center justify-between gap-2 p-2.5 sm:p-3 rounded-2xl border transition-all duration-200 group cursor-pointer ${
                     isBeingDragged
                       ? 'opacity-40 scale-[0.98] border-purple-500/50 bg-purple-500/10'
                       : isDropTarget
@@ -239,11 +251,11 @@ export const QueueView: React.FC = () => {
                 >
                   <div
                     onClick={() => playQueuedTrackImmediately(actualQueueIdx)}
-                    className="flex items-center gap-3.5 min-w-0 flex-1"
+                    className="flex items-center gap-2.5 sm:gap-3.5 min-w-0 flex-1"
                   >
-                    {/* Drag Handle */}
+                    {/* Drag Handle (desktop) */}
                     <div
-                      className="cursor-grab active:cursor-grabbing p-1 text-white/30 hover:text-white/80 transition-colors flex-shrink-0"
+                      className="hidden sm:block cursor-grab active:cursor-grabbing p-1 text-white/30 hover:text-white/80 transition-colors flex-shrink-0"
                       title="Drag to rearrange"
                       onClick={(e) => e.stopPropagation()}
                     >
@@ -254,10 +266,11 @@ export const QueueView: React.FC = () => {
                       {i + 1}
                     </span>
 
-                    <div className="relative w-11 h-11 rounded-xl overflow-hidden flex-shrink-0 shadow-md group/art">
+                    <div className="relative w-10 h-10 sm:w-11 sm:h-11 rounded-xl overflow-hidden flex-shrink-0 shadow-md group/art">
                       <img
-                        src={track.coverUrl}
+                        src={getOptimizedArtworkUrl(track.coverUrl, 'thumb')}
                         alt={track.title}
+                        loading="lazy"
                         className="w-full h-full object-cover transition-transform duration-300 group-hover/art:scale-105"
                       />
                       <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center text-white transition-opacity">
@@ -265,23 +278,56 @@ export const QueueView: React.FC = () => {
                       </div>
                     </div>
 
-                    <div className="truncate pr-2">
+                    <div className="min-w-0 pr-1 flex-1">
                       <p className="text-sm font-semibold text-white truncate group-hover:text-purple-300 transition-colors">
                         {track.title}
                       </p>
-                      <p className="text-xs text-white/50 truncate mt-0.5">{track.artist}</p>
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          openArtist(track.artist)
+                        }}
+                        className="text-left block max-w-full text-xs text-white/50 hover:text-white hover:underline truncate mt-0.5 cursor-pointer"
+                      >
+                        {track.artist}
+                      </button>
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-3 text-xs text-white/50 flex-shrink-0">
-                    <span className="font-mono">{formatDuration(track.duration)}</span>
+                  <div className="flex items-center gap-1 sm:gap-2 text-xs text-white/50 flex-shrink-0">
+                    <span className="font-mono hidden sm:inline mr-1">{formatDuration(track.duration)}</span>
+
+                    {upcomingQueue.length > 1 && (
+                      <div className="flex items-center" onClick={(e) => e.stopPropagation()}>
+                        <button
+                          type="button"
+                          disabled={i === 0}
+                          onClick={() => reorderUpcoming(i, i - 1)}
+                          className="p-1.5 rounded-lg text-white/45 hover:text-white hover:bg-white/10 disabled:opacity-20 disabled:pointer-events-none transition-colors cursor-pointer"
+                          title="Move up"
+                        >
+                          <ChevronUp className="w-4 h-4" />
+                        </button>
+                        <button
+                          type="button"
+                          disabled={i === upcomingQueue.length - 1}
+                          onClick={() => reorderUpcoming(i, i + 1)}
+                          className="p-1.5 rounded-lg text-white/45 hover:text-white hover:bg-white/10 disabled:opacity-20 disabled:pointer-events-none transition-colors cursor-pointer"
+                          title="Move down"
+                        >
+                          <ChevronDown className="w-4 h-4" />
+                        </button>
+                      </div>
+                    )}
+
                     <button
                       onClick={(e) => {
                         e.stopPropagation()
                         removeFromQueue(actualQueueIdx)
                       }}
                       title="Remove from queue"
-                      className="opacity-0 group-hover:opacity-100 p-2 rounded-xl hover:bg-red-500/15 text-white/40 hover:text-red-400 transition-all cursor-pointer active:scale-95"
+                      className="md:opacity-0 md:group-hover:opacity-100 p-1.5 sm:p-2 rounded-xl hover:bg-red-500/15 text-white/50 hover:text-red-400 transition-all cursor-pointer active:scale-95"
                     >
                       <Trash2 className="w-4 h-4" />
                     </button>
@@ -293,35 +339,35 @@ export const QueueView: React.FC = () => {
         )}
       </section>
 
-      {/* 3. Smart Queue AI Recommendations */}
+      {/* 3. Smart Queue Recommendations */}
       {smartSuggestions.length > 0 && (
         <section className="space-y-3 pt-6 border-t border-white/10">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Sparkles className="w-4 h-4 text-purple-400" />
-              <h2 className="text-xs uppercase tracking-wider font-bold text-white font-heading">
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2 min-w-0">
+              <Sparkles className="w-4 h-4 text-purple-400 flex-shrink-0" />
+              <h2 className="text-xs uppercase tracking-wider font-bold text-white font-heading truncate">
                 Smart Queue Recommendations
               </h2>
             </div>
-            <span className="text-[11px] text-white/40">Matched to your vibe</span>
+            <span className="text-[11px] text-white/40 hidden sm:inline flex-shrink-0">Matched to your vibe</span>
           </div>
 
           <div className="space-y-2">
             {smartSuggestions.slice(0, 5).map((sugTrack) => (
               <div
                 key={sugTrack.id}
-                className="flex items-center justify-between p-3 rounded-2xl bg-white/[0.02] hover:bg-white/[0.06] border border-white/5 transition-all group"
+                className="flex items-center justify-between gap-2 p-2.5 sm:p-3 rounded-2xl bg-white/[0.02] hover:bg-white/[0.06] border border-white/5 transition-all group"
               >
                 <div
                   onClick={() => addToQueue(sugTrack)}
-                  className="flex items-center gap-3.5 min-w-0 flex-1 cursor-pointer"
+                  className="flex items-center gap-3 min-w-0 flex-1 cursor-pointer"
                 >
                   <img
-                    src={sugTrack.coverUrl}
+                    src={getOptimizedArtworkUrl(sugTrack.coverUrl, 'thumb')}
                     alt={sugTrack.title}
                     className="w-10 h-10 rounded-xl object-cover flex-shrink-0"
                   />
-                  <div className="truncate">
+                  <div className="min-w-0 flex-1">
                     <p className="text-sm font-semibold text-white truncate group-hover:text-purple-300 transition-colors">
                       {sugTrack.title}
                     </p>
@@ -329,7 +375,7 @@ export const QueueView: React.FC = () => {
                   </div>
                 </div>
 
-                <div className="flex items-center gap-2.5">
+                <div className="flex items-center gap-2 flex-shrink-0">
                   <span className="hidden sm:inline-block text-[10px] uppercase font-bold text-purple-300 bg-purple-500/15 px-2.5 py-0.5 rounded-full border border-purple-500/20">
                     {sugTrack.genre}
                   </span>

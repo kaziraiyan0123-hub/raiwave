@@ -17,6 +17,7 @@ export const AlbumView: React.FC = () => {
     addAlbumToQueue,
     goBack,
     openArtist,
+    isLoadingAlbum,
   } = usePlayer()
 
   if (!selectedAlbum) {
@@ -27,7 +28,7 @@ export const AlbumView: React.FC = () => {
     )
   }
 
-  const tracks = selectedAlbum.tracks
+  const tracks = selectedAlbum.tracks || []
   const isAlbumPlaying = isPlaying && tracks.some((t) => t.id === currentTrack?.id)
 
   const handlePlayAll = () => {
@@ -49,7 +50,7 @@ export const AlbumView: React.FC = () => {
     <div className="select-none pb-44 md:pb-28">
       {/* Header */}
       <div
-        className="p-6 sm:p-8 flex flex-col md:flex-row items-start md:items-end gap-6 relative"
+        className="p-4 sm:p-8 flex flex-col md:flex-row items-start md:items-end gap-5 sm:gap-6 relative"
         style={{
           background: `linear-gradient(to bottom, ${selectedAlbum.color || '#52D6C9'} 0%, #0B0D13 100%)`,
         }}
@@ -57,7 +58,7 @@ export const AlbumView: React.FC = () => {
         {/* Mobile In-Page Back Button */}
         <button
           onClick={goBack}
-          className="md:hidden flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-black/40 backdrop-blur-md text-white text-xs font-semibold border border-white/15 active:scale-95 transition-all mb-2 cursor-pointer"
+          className="md:hidden flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-black/40 backdrop-blur-md text-white text-xs font-semibold border border-white/15 active:scale-95 transition-all mb-1 cursor-pointer"
           title="Back"
         >
           <ChevronLeft className="w-4 h-4" />
@@ -67,15 +68,15 @@ export const AlbumView: React.FC = () => {
         <img
           src={selectedAlbum.coverUrl}
           alt={selectedAlbum.title}
-          className="w-48 h-48 sm:w-56 sm:h-56 rounded-2xl object-cover shadow-2xl flex-shrink-0 border border-white/10"
+          className="w-40 h-40 sm:w-56 sm:h-56 rounded-2xl object-cover shadow-2xl flex-shrink-0 border border-white/10"
         />
 
-        <div className="flex flex-col gap-2 min-w-0">
+        <div className="flex flex-col gap-2 min-w-0 w-full">
           <span className="text-xs uppercase font-extrabold tracking-wider text-[#8B5CF6]">Album</span>
-          <h1 className="text-4xl sm:text-6xl font-black text-white tracking-tight break-words font-display">
+          <h1 className="text-2xl sm:text-5xl font-black text-white tracking-tight break-words font-display">
             {selectedAlbum.title}
           </h1>
-          <div className="flex items-center gap-2 text-xs font-semibold text-[#94A3B8] mt-2">
+          <div className="flex flex-wrap items-center gap-2 text-xs font-semibold text-[#94A3B8] mt-1">
             <span
               onClick={() => openArtist(selectedAlbum.artist)}
               className="text-white font-bold hover:underline hover:text-purple-300 cursor-pointer"
@@ -85,13 +86,13 @@ export const AlbumView: React.FC = () => {
             <span>•</span>
             <span>{selectedAlbum.year}</span>
             <span>•</span>
-            <span>{tracks.length} songs</span>
+            <span>{isLoadingAlbum && tracks.length === 0 ? 'Loading tracks...' : `${tracks.length} songs`}</span>
           </div>
         </div>
       </div>
 
       {/* Controls */}
-      <div className="px-8 py-5 flex items-center gap-4 bg-[#0B0D13]">
+      <div className="px-4 sm:px-8 py-4 sm:py-5 flex flex-wrap items-center gap-3 sm:gap-4 bg-[#0B0D13]">
         <button
           onClick={handlePlayAll}
           className="w-14 h-14 rounded-full bg-[#8B5CF6] hover:bg-[#a3e655] text-black flex items-center justify-center transition-transform hover:scale-105 active:scale-95 shadow-xl shadow-[#8B5CF6]/20 cursor-pointer"
@@ -116,17 +117,29 @@ export const AlbumView: React.FC = () => {
       </div>
 
       {/* Track List */}
-      <div className="px-8 bg-[#0B0D13]">
-        <div className="grid grid-cols-12 text-xs font-semibold uppercase text-[#94A3B8] border-b border-white/10 pb-2 px-4 mb-2 tracking-wider">
-          <div className="col-span-1 text-center">#</div>
-          <div className="col-span-8 md:col-span-10">Title</div>
-          <div className="col-span-3 md:col-span-1 flex justify-end pr-2">
+      <div className="px-4 sm:px-8 bg-[#0B0D13]">
+        <div className="flex items-center justify-between text-xs font-semibold uppercase text-[#94A3B8] border-b border-white/10 pb-2 px-3 sm:px-4 mb-2 tracking-wider">
+          <div className="flex items-center gap-3">
+            <span className="w-6 text-center">#</span>
+            <span>Title</span>
+          </div>
+          <div className="flex justify-end pr-2">
             <Clock className="w-4 h-4" />
           </div>
         </div>
 
         <div className="space-y-1">
-          {tracks.map((track, idx) => {
+          {isLoadingAlbum && tracks.length === 0 ? (
+            <div className="py-12 text-center space-y-2">
+              <div className="w-7 h-7 rounded-full border-2 border-purple-500 border-t-transparent animate-spin mx-auto" />
+              <p className="text-xs text-[#94A3B8]">Loading album tracklist...</p>
+            </div>
+          ) : tracks.length === 0 ? (
+            <div className="py-12 text-center text-[#94A3B8]">
+              <p className="text-sm font-semibold text-white">No tracks listed for this album yet</p>
+              <p className="text-xs mt-1">Search "{selectedAlbum.title}" in Search to play individual tracks.</p>
+            </div>
+          ) : tracks.map((track, idx) => {
             const isPlayingThis = currentTrack?.id === track.id && isPlaying
             const isSelectedThis = currentTrack?.id === track.id
             const liked = isLiked(track.id)
@@ -138,66 +151,66 @@ export const AlbumView: React.FC = () => {
                   if (isPlayingThis) togglePlay()
                   else playTrack(track, tracks)
                 }}
-                className={`grid grid-cols-12 items-center px-4 py-2.5 rounded-xl hover:bg-[#12141D] group cursor-pointer transition-colors ${
+                className={`flex items-center justify-between gap-2 px-3 sm:px-4 py-2.5 rounded-xl hover:bg-[#12141D] group cursor-pointer transition-colors ${
                   isSelectedThis ? 'bg-[#12141D]/80 border border-[#202A34]' : 'border border-transparent'
                 }`}
               >
-                <div className="col-span-1 text-center text-sm font-medium flex items-center justify-center">
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      if (isPlayingThis) togglePlay()
-                      else playTrack(track, tracks)
-                    }}
-                    className="hidden group-hover:flex items-center justify-center text-white"
-                  >
-                    {isPlayingThis ? <Pause className="w-4 h-4 fill-white" /> : <Play className="w-4 h-4 fill-white" />}
-                  </button>
-                  <div className="group-hover:hidden flex items-center justify-center">
-                    {isPlayingThis ? (
-                      <EqualizerBars size="sm" color="bg-[#8B5CF6]" />
-                    ) : (
-                      <span className={`${isSelectedThis ? 'text-[#8B5CF6] font-bold' : 'text-[#94A3B8]'}`}>
-                        {idx + 1}
-                      </span>
-                    )}
+                <div className="flex items-center gap-3 min-w-0 flex-1">
+                  <div className="w-6 text-center text-sm font-medium flex items-center justify-center flex-shrink-0">
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        if (isPlayingThis) togglePlay()
+                        else playTrack(track, tracks)
+                      }}
+                      className="hidden md:group-hover:flex items-center justify-center text-white"
+                    >
+                      {isPlayingThis ? <Pause className="w-4 h-4 fill-white" /> : <Play className="w-4 h-4 fill-white" />}
+                    </button>
+                    <div className="md:group-hover:hidden flex items-center justify-center">
+                      {isPlayingThis ? (
+                        <EqualizerBars size="sm" color="bg-[#8B5CF6]" />
+                      ) : (
+                        <span className={`${isSelectedThis ? 'text-[#8B5CF6] font-bold' : 'text-[#94A3B8]'}`}>
+                          {idx + 1}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="min-w-0 flex-1">
+                    <p className={`text-sm font-semibold truncate ${isSelectedThis ? 'text-[#8B5CF6]' : 'text-white'}`}>
+                      {track.title}
+                    </p>
+                    <p
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        openArtist(track.artist)
+                      }}
+                      className="text-xs text-[#94A3B8] truncate hover:text-white hover:underline cursor-pointer"
+                    >
+                      {track.artist}
+                    </p>
                   </div>
                 </div>
 
-                <div className="col-span-8 md:col-span-10 truncate pr-2">
-                  <p className={`text-sm font-semibold truncate ${isSelectedThis ? 'text-[#8B5CF6]' : 'text-white'}`}>
-                    {track.title}
-                  </p>
-                  <p
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      openArtist(track.artist)
-                    }}
-                    className="text-xs text-[#94A3B8] truncate hover:text-white hover:underline cursor-pointer"
-                  >
-                    {track.artist}
-                  </p>
-                </div>
-
-                <div className="col-span-3 md:col-span-1 flex items-center justify-end gap-2.5 text-xs text-[#94A3B8] pr-2">
-                  {/* Play Next */}
+                <div className="flex items-center justify-end gap-1 sm:gap-2 text-xs text-[#94A3B8] flex-shrink-0">
                   <button
                     onClick={(e) => {
                       e.stopPropagation()
                       playNext(track)
                     }}
-                    className="opacity-0 group-hover:opacity-100 transition-all p-1 hover:text-purple-300 hover:scale-110 active:scale-90 cursor-pointer"
+                    className="md:opacity-0 md:group-hover:opacity-100 transition-all p-1.5 rounded-lg hover:bg-white/10 hover:text-purple-300 active:scale-90 cursor-pointer"
                     title="Play track next"
                   >
                     <ListStart className="w-4 h-4" />
                   </button>
-                  {/* Add Track to Queue */}
                   <button
                     onClick={(e) => {
                       e.stopPropagation()
                       addToQueue(track)
                     }}
-                    className="opacity-0 group-hover:opacity-100 transition-all p-1 hover:text-purple-300 hover:scale-110 active:scale-90 cursor-pointer"
+                    className="md:opacity-0 md:group-hover:opacity-100 transition-all p-1.5 rounded-lg hover:bg-white/10 hover:text-purple-300 active:scale-90 cursor-pointer"
                     title="Add track to queue"
                   >
                     <ListPlus className="w-4 h-4" />
@@ -205,13 +218,16 @@ export const AlbumView: React.FC = () => {
                   <button
                     onClick={(e) => {
                       e.stopPropagation()
-                      toggleLike(track.id)
+                      toggleLike(track.id, track)
                     }}
-                    className="opacity-0 group-hover:opacity-100 transition-opacity hover:scale-110"
+                    className={`p-1.5 rounded-lg hover:bg-white/10 transition-all cursor-pointer ${
+                      liked ? 'opacity-100' : 'md:opacity-0 md:group-hover:opacity-100'
+                    }`}
+                    title={liked ? 'Unlike' : 'Like song'}
                   >
-                    <Heart className={`w-4 h-4 ${liked ? 'text-[#8B5CF6] fill-[#8B5CF6] opacity-100' : 'hover:text-white'}`} />
+                    <Heart className={`w-4 h-4 ${liked ? 'text-[#8B5CF6] fill-[#8B5CF6]' : 'hover:text-white'}`} />
                   </button>
-                  <span className="font-mono">{formatDuration(track.duration)}</span>
+                  <span className="font-mono hidden sm:inline w-10 text-right">{formatDuration(track.duration)}</span>
                 </div>
               </div>
             )

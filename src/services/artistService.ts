@@ -1,6 +1,7 @@
 import type { Artist, Track, Album } from '../types'
 import { SAMPLE_ARTISTS, SAMPLE_TRACKS, SAMPLE_ALBUMS } from '../data/musicData'
 import { searchGlobalMusic } from './musicSearch'
+import { getNetworkState } from '../utils/networkImage'
 
 // Persistent Followed Artists Store
 const FOLLOWED_ARTISTS_KEY = 'raiwave_followed_artists'
@@ -336,93 +337,331 @@ export const CURATED_ARTISTS: Artist[] = [
   },
 ]
 
+const ARTIST_CACHE_KEY = 'raiwave_artist_cache_v1'
+const ALBUM_CACHE_KEY = 'raiwave_album_cache_v1'
+const CACHE_TTL_MS = 1000 * 60 * 60 * 12 // 12 hours
+
 // Combined catalog pool of known artists
-const allKnownArtists = [...CURATED_ARTISTS]
+const allKnownArtists: Artist[] = [...CURATED_ARTISTS]
 for (const art of SAMPLE_ARTISTS) {
   if (!allKnownArtists.some((a) => a.name.toLowerCase() === art.name.toLowerCase())) {
     allKnownArtists.push(art)
   }
 }
 
+function normalizeArtistKey(name: string): string {
+  return name
+    .toLowerCase()
+    .replace(/\([^)]*\)/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+}
+
+export function extractPrimaryArtistName(rawArtist: string): string {
+  const cleaned = rawArtist.trim()
+  if (!cleaned) return 'Unknown Artist'
+  // Preserve multi-word band names while splitting feat/comma/ampersand lists safely
+  const parts = cleaned.split(/\s*(?:,|feat\.?|ft\.?|&|×| x )\s*/i).filter(Boolean)
+  return (parts[0] || cleaned).trim()
+}
+
+function readLocalCache<T>(storageKey: string, itemKey: string): T | null {
+  try {
+    const raw = localStorage.getItem(storageKey)
+    if (!raw) return null
+    const map = JSON.parse(raw) as Record<string, { ts: number; data: T }>
+    const entry = map[itemKey]
+    if (!entry) return null
+    if (Date.now() - entry.ts > CACHE_TTL_MS && getNetworkState().isOnline) {
+      return null
+    }
+    return entry.data
+  } catch {
+    return null
+  }
+}
+
+function writeLocalCache<T>(storageKey: string, itemKey: string, data: T): void {
+  try {
+    const raw = localStorage.getItem(storageKey)
+    const map: Record<string, { ts: number; data: T }> = raw ? JSON.parse(raw) : {}
+    map[itemKey] = { ts: Date.now(), data }
+    const keys = Object.keys(map)
+    if (keys.length > 25) {
+      const oldest = keys.sort((a, b) => map[a].ts - map[b].ts)[0]
+      delete map[oldest]
+    }
+    localStorage.setItem(storageKey, JSON.stringify(map))
+  } catch {
+    // Ignore storage quota overflow
+  }
+}
+
+function trackMatchesArtist(trackArtist: string, targetArtist: string): boolean {
+  const ta = normalizeArtistKey(trackArtist)
+  const target = normalizeArtistKey(targetArtist)
+  if (!ta || !target) return false
+  if (ta === target) return true
+  const segments = ta.split(/\s*(?:,|feat\.?|ft\.?|&|\/)\s*/i).map((s) => s.trim())
+  return segments.some((seg) => seg === target)
+}
+
 export const artistService = {
   /**
-   * Get artist profile by Name or ID with automatic fallback & dynamic resolution
+   * Get artist profile by Name or ID with curated + real remote metadata + offline cache
    */
   async getArtistProfile(nameOrId: string): Promise<Artist> {
-    const clean = nameOrId.trim().toLowerCase()
+    const rawInput = nameOrId.trim()
+    const clean = normalizeArtistKey(rawInput)
+    const cleanNoThe = clean.replace(/^the\s+/, '')
 
-    // 1. Search in-memory curated and sample artists
-    const found = allKnownArtists.find(
-      (a) => a.id.toLowerCase() === clean || a.name.toLowerCase() === clean
-    )
-    if (found) return found
+    // 1. Exact ID or normalized name match in curated/sample artists (no loose substring collision)
+    const found = allKnownArtists.find((a) => {
+      const aNorm = normalizeArtistKey(a.name)
+      const aNoThe = aNorm.replace(/^the\s+/, '')
+      return (
+        a.id.toLowerCase() === clean ||
+        aNorm === clean ||
+        (cleanNoThe.length >= 4 && aNoThe === cleanNoThe)
+      )
+    })
 
-    // 2. Partial name match in catalog
-    const partialMatch = allKnownArtists.find(
-      (a) => a.name.toLowerCase().includes(clean) || clean.includes(a.name.toLowerCase())
-    )
-    if (partialMatch) return partialMatch
-
-    // 3. Search local SAMPLE_TRACKS for any tracks by this artist
-    const localTracks = SAMPLE_TRACKS.filter(
-      (t) => t.artist.toLowerCase().includes(clean) || clean.includes(t.artist.toLowerCase())
-    )
-
-    // 4. Query global catalog online for the artist's real tracks
-    let fetchedTracks: Track[] = []
-    try {
-      fetchedTracks = await searchGlobalMusic(nameOrId)
-    } catch {}
-
-    const combinedTracks = [...localTracks]
-    for (const track of fetchedTracks) {
-      if (!combinedTracks.some((t) => t.id === track.id)) {
-        combinedTracks.push(track)
+    if (found) {
+      // Ensure Appears On tracks are attached if collaborations exist in catalog
+      const appearsOnTracks = SAMPLE_TRACKS.filter(
+        (t) =>
+          !found.topTracks.some((ft) => ft.id === t.id) &&
+          trackMatchesArtist(t.artist, found.name)
+      )
+      return {
+        ...found,
+        bannerUrl: found.bannerUrl || found.headerImage,
+        genres: found.genres || (found.genre ? [found.genre] : []),
+        appearsOn:
+          found.appearsOn ||
+          (appearsOnTracks.length > 0
+            ? [
+                {
+                  id: `appears-${found.id}`,
+                  title: 'Featured & Collaborations',
+                  artist: found.name,
+                  coverUrl: appearsOnTracks[0].coverUrl,
+                  year: appearsOnTracks[0].releaseYear,
+                  color: appearsOnTracks[0].color || '#8B5CF6',
+                  tracks: appearsOnTracks,
+                },
+              ]
+            : []),
       }
     }
 
-    const firstTrack = combinedTracks[0]
-    const avatarUrl = firstTrack?.coverUrl || 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=600&auto=format&fit=crop&q=80'
-    const headerImage = firstTrack?.coverUrl || 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=1200&auto=format&fit=crop&q=80'
+    // 2. Check persistent cached remote artist profile (essential for offline / Data Saver)
+    const cached = readLocalCache<Artist>(ARTIST_CACHE_KEY, clean)
+    const net = getNetworkState()
+    if (cached && (!net.isOnline || net.isLowDataMode)) {
+      return cached
+    }
 
-    // Deduce unique albums from tracks
-    const albumMap = new Map<string, Album>()
-    for (const t of combinedTracks) {
-      if (t.album && !albumMap.has(t.album)) {
-        albumMap.set(t.album, {
-          id: `album-${encodeURIComponent(t.album.toLowerCase().slice(0, 15))}`,
-          title: t.album,
-          artist: t.artist || nameOrId,
-          coverUrl: t.coverUrl,
-          year: t.releaseYear || new Date().getFullYear(),
-          color: t.color || '#8b5cf6',
-          tracks: [t],
-        })
+    // 3. Query local catalog for exact matching artist tracks
+    const localTracks = SAMPLE_TRACKS.filter((t) => trackMatchesArtist(t.artist, rawInput))
+
+    // 4. Query /api/yt-artist for real Wikipedia bio, iTunes discography, and YouTube Music tracks
+    let remoteArtist: Partial<Artist> | null = null
+    if (net.isOnline) {
+      try {
+        const res = await fetch(
+          `/api/yt-artist?name=${encodeURIComponent(rawInput)}${net.isLowDataMode ? '&lite=1' : ''}`
+        )
+        if (res.ok) {
+          const json = (await res.json()) as { artist?: Partial<Artist> }
+          if (json.artist) remoteArtist = json.artist
+        }
+      } catch {
+        // Fallback cleanly to searchGlobalMusic
       }
     }
 
-    const dynamicArtist: Artist = {
-      id: `artist-${encodeURIComponent(nameOrId.toLowerCase().replace(/\s+/g, '-'))}`,
-      name: nameOrId,
-      avatarUrl,
-      headerImage,
-      monthlyListeners: Math.floor(Math.random() * 5000000) + 500000,
-      isVerified: false,
-      genre: firstTrack?.genre || 'Music',
-      bio: `${nameOrId} is an artist streamed on RAIWAVE with lossless studio audio quality and dynamic visuals.`,
-      topTracks: combinedTracks.slice(0, 15),
-      albums: Array.from(albumMap.values()),
-      singles: combinedTracks.filter((t) => t.album?.toLowerCase().includes('single')),
-      relatedArtists: allKnownArtists.slice(0, 3).map((a) => ({
+    if (cached && !remoteArtist) {
+      return cached
+    }
+
+    // Supplement playable top tracks via musicSearch only if /api/yt-artist yielded too few tracks
+    let searchTracks: Track[] = []
+    if (net.isOnline && (!remoteArtist?.topTracks || remoteArtist.topTracks.length < 4)) {
+      try {
+        const rawSearch = await searchGlobalMusic(rawInput)
+        searchTracks = rawSearch.filter(
+          (t) =>
+            trackMatchesArtist(t.artist, rawInput) ||
+            t.title.toLowerCase().includes(clean)
+        )
+      } catch {
+        // Offline / failure fallback handled below
+      }
+    }
+
+    const combinedTracks: Track[] = [...localTracks]
+    const appendUnique = (list?: Track[]) => {
+      for (const track of list || []) {
+        const normT = `${track.title.toLowerCase().trim()}|${track.artist.toLowerCase().trim()}`
+        if (
+          !combinedTracks.some(
+            (t) =>
+              t.id === track.id ||
+              `${t.title.toLowerCase().trim()}|${t.artist.toLowerCase().trim()}` === normT
+          )
+        ) {
+          combinedTracks.push(track)
+        }
+      }
+    }
+    appendUnique(remoteArtist?.topTracks)
+    appendUnique(searchTracks)
+
+    const fallbackArt = combinedTracks[0]?.coverUrl || ''
+    const resolvedName = remoteArtist?.name || rawInput
+    const primaryGenre =
+      remoteArtist?.genre ||
+      combinedTracks.find((t) => t.genre && t.genre !== 'Music')?.genre ||
+      ''
+
+    // Derive albums from combined tracks when remote discography is empty
+    const remoteAlbums = remoteArtist?.albums || []
+    const derivedAlbumMap = new Map<string, Album>()
+    if (remoteAlbums.length === 0) {
+      for (const t of combinedTracks) {
+        if (t.album && !/^(single|top result)$/i.test(t.album)) {
+          const existing = derivedAlbumMap.get(t.album)
+          if (existing) {
+            existing.tracks.push(t)
+          } else {
+            derivedAlbumMap.set(t.album, {
+              id: `album-${encodeURIComponent(t.album.toLowerCase().slice(0, 20))}`,
+              title: t.album,
+              artist: t.artist || resolvedName,
+              coverUrl: t.coverUrl,
+              year: t.releaseYear || new Date().getFullYear(),
+              color: t.color || '#8b5cf6',
+              tracks: [t],
+            })
+          }
+        }
+      }
+    }
+
+    // Real related artists matching genre (never arbitrary top-3 slice)
+    const relatedFromCatalog = allKnownArtists
+      .filter(
+        (a) =>
+          normalizeArtistKey(a.name) !== clean &&
+          primaryGenre &&
+          a.genre?.toLowerCase().includes(primaryGenre.toLowerCase())
+      )
+      .slice(0, 4)
+      .map((a) => ({
         id: a.id,
         name: a.name,
         avatarUrl: a.avatarUrl,
-      })),
+      }))
+
+    const dynamicArtist: Artist = {
+      id: remoteArtist?.id || `artist-${encodeURIComponent(clean.replace(/\s+/g, '-'))}`,
+      name: resolvedName,
+      avatarUrl: remoteArtist?.avatarUrl || fallbackArt,
+      headerImage: remoteArtist?.headerImage || fallbackArt,
+      bannerUrl: remoteArtist?.bannerUrl || remoteArtist?.headerImage || fallbackArt,
+      monthlyListeners: remoteArtist?.monthlyListeners || 0,
+      isVerified: Boolean(remoteArtist?.isVerified || combinedTracks.length > 0),
+      genre: primaryGenre || 'Music',
+      genres: remoteArtist?.genres || (primaryGenre ? [primaryGenre] : []),
+      bio: remoteArtist?.bio || '',
+      isFallbackBio: Boolean(!remoteArtist?.bio),
+      topTracks: combinedTracks.slice(0, 15),
+      albums: remoteAlbums.length > 0 ? remoteAlbums : Array.from(derivedAlbumMap.values()),
+      eps: remoteArtist?.eps || [],
+      singles:
+        remoteArtist?.singles && remoteArtist.singles.length > 0
+          ? remoteArtist.singles
+          : combinedTracks.filter((t) => /single/i.test(t.album || '')),
+      appearsOn: [],
+      relatedArtists:
+        remoteArtist?.relatedArtists && remoteArtist.relatedArtists.length > 0
+          ? remoteArtist.relatedArtists
+          : relatedFromCatalog,
     }
 
-    // Cache to pool
-    allKnownArtists.push(dynamicArtist)
+    if (combinedTracks.length > 0 || (dynamicArtist.albums && dynamicArtist.albums.length > 0)) {
+      writeLocalCache(ARTIST_CACHE_KEY, clean, dynamicArtist)
+    }
+
     return dynamicArtist
+  },
+
+  /**
+   * Resolves tracks for an album that was fetched as metadata-only (e.g. iTunes collection or curated album stub)
+   */
+  async getAlbumTracks(album: Album): Promise<Track[]> {
+    if (album.tracks && album.tracks.length > 0) {
+      return album.tracks
+    }
+
+    const cacheKey = album.id.toLowerCase()
+    const cached = readLocalCache<Track[]>(ALBUM_CACHE_KEY, cacheKey)
+    if (cached && cached.length > 0) {
+      return cached
+    }
+
+    // 1. Check local catalog tracks matching the album name
+    const localMatches = SAMPLE_TRACKS.filter(
+      (t) =>
+        t.album.toLowerCase().includes(album.title.toLowerCase()) &&
+        trackMatchesArtist(t.artist, album.artist)
+    )
+    if (localMatches.length >= 3) {
+      writeLocalCache(ALBUM_CACHE_KEY, cacheKey, localMatches)
+      return localMatches
+    }
+
+    const net = getNetworkState()
+    if (!net.isOnline) {
+      return localMatches
+    }
+
+    // 2. If it came from iTunes discography, look up official tracklist via /api/yt-artist
+    if (album.id.startsWith('itunes-alb-')) {
+      try {
+        const res = await fetch(
+          `/api/yt-artist?albumId=${encodeURIComponent(album.id)}&artist=${encodeURIComponent(album.artist)}`
+        )
+        if (res.ok) {
+          const json = (await res.json()) as { tracks?: Track[] }
+          if (json.tracks && json.tracks.length > 0) {
+            writeLocalCache(ALBUM_CACHE_KEY, cacheKey, json.tracks)
+            return json.tracks
+          }
+        }
+      } catch {
+        // Fallback to search below
+      }
+    }
+
+    // 3. Query global search for the album title + artist
+    try {
+      const results = await searchGlobalMusic(`${album.title} ${album.artist} album`)
+      const matched = results.filter(
+        (t) =>
+          trackMatchesArtist(t.artist, album.artist) ||
+          t.title.toLowerCase().includes(album.title.toLowerCase()) ||
+          t.album.toLowerCase().includes(album.title.toLowerCase())
+      )
+      const finalTracks = (matched.length > 0 ? matched : results).slice(0, 12)
+      if (finalTracks.length > 0) {
+        writeLocalCache(ALBUM_CACHE_KEY, cacheKey, finalTracks)
+      }
+      return finalTracks
+    } catch {
+      return localMatches
+    }
   },
 
   /**

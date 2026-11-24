@@ -1,9 +1,11 @@
 // RAIWAVE Service Worker for Offline PWA & Fast Automatic Updates
-const CACHE_NAME = 'raiwave-v1.2.2'
+const CACHE_NAME = 'raiwave-v1.3.0'
 const ASSETS_TO_CACHE = [
   '/',
   '/index.html',
-  '/manifest.webmanifest'
+  '/manifest.webmanifest',
+  '/icon-192.png',
+  '/icon-512.png'
 ]
 
 // Message listener for instant updates from client

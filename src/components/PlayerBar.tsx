@@ -49,7 +49,10 @@ export const PlayerBar: React.FC = () => {
     isVideoOpen,
     toggleVideoOpen,
     saveOffline,
+    cancelDownload,
+    downloadStates,
     isOffline,
+    isTrackDownloadable,
     dynamicTheme,
     isQueuePanelOpen,
     toggleQueuePanel,
@@ -162,9 +165,9 @@ export const PlayerBar: React.FC = () => {
         </div>
 
         <button
-          onClick={() => toggleLike(currentTrack.id)}
+          onClick={() => toggleLike(currentTrack.id, currentTrack)}
           title={liked ? 'Remove from your Liked Songs' : 'Save to your Liked Songs'}
-          className="text-[#94A3B8] hover:text-white transition-transform hover:scale-115 active:scale-95 ml-1 flex-shrink-0"
+          className="text-[#94A3B8] hover:text-white transition-transform hover:scale-115 active:scale-95 ml-1 flex-shrink-0 cursor-pointer"
         >
           <Heart
             className="w-4 h-4 transition-colors"
@@ -173,12 +176,33 @@ export const PlayerBar: React.FC = () => {
         </button>
 
         <button
-          onClick={() => saveOffline(currentTrack)}
-          title={isOffline(currentTrack.id) ? 'Saved Offline' : 'Download song for offline mode'}
-          className="text-[#94A3B8] hover:text-white transition-transform hover:scale-115 active:scale-95 ml-1 flex-shrink-0"
+          onClick={() => {
+            const st = downloadStates[currentTrack.id]
+            if (st?.status === 'downloading') {
+              cancelDownload(currentTrack.id)
+            } else {
+              saveOffline(currentTrack)
+            }
+          }}
+          title={
+            isOffline(currentTrack.id)
+              ? 'Downloaded Offline (Verified)'
+              : downloadStates[currentTrack.id]?.status === 'downloading'
+                ? `Downloading ${downloadStates[currentTrack.id].progress}% (Click to cancel)`
+                : isTrackDownloadable(currentTrack).reason || 'Download song for offline mode'
+          }
+          className={`transition-transform hover:scale-115 active:scale-95 ml-1 flex-shrink-0 cursor-pointer ${
+            !isTrackDownloadable(currentTrack).downloadable && !isOffline(currentTrack.id)
+              ? 'text-white/25 hover:text-white/50'
+              : 'text-[#94A3B8] hover:text-white'
+          }`}
         >
           {isOffline(currentTrack.id) ? (
             <CheckCircle2 className="w-4 h-4" style={{ color: dynamicTheme.primary }} />
+          ) : downloadStates[currentTrack.id]?.status === 'downloading' ? (
+            <span className="text-[10px] font-bold font-mono text-purple-300">
+              {downloadStates[currentTrack.id].progress}%
+            </span>
           ) : (
             <ArrowDownToLine className="w-4 h-4" />
           )}

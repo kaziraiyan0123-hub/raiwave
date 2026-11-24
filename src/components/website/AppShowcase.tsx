@@ -267,7 +267,7 @@ export function AppShowcase() {
                   <div className="w-3 h-3 rounded-full bg-emerald-500/80" />
                 </div>
                 <div className="text-xs font-semibold text-white/70 tracking-wide">
-                  RAIWAVE Desktop v1.2.9
+                  RAIWAVE Desktop v1.3.0
                 </div>
                 <div className="w-12" />
               </div>

@@ -11,9 +11,12 @@ import {
   Music2,
   Clock,
   Layers,
+  ChevronUp,
+  ChevronDown,
 } from 'lucide-react'
 import { usePlayer } from '../context/PlayerContext'
 import { EqualizerBars } from './EqualizerBars'
+import { getOptimizedArtworkUrl } from '../utils/networkImage'
 
 export const UpNextPanel: React.FC = () => {
   const {
@@ -31,6 +34,7 @@ export const UpNextPanel: React.FC = () => {
     toggleQueuePanel,
     dynamicTheme,
     smartSuggestions,
+    openArtist,
   } = usePlayer()
 
   const [draggedIdx, setDraggedIdx] = useState<number | null>(null)
@@ -38,8 +42,8 @@ export const UpNextPanel: React.FC = () => {
 
   if (!isQueuePanelOpen) return null
 
-  // Slice upcoming songs after the currently playing song
-  const upcomingQueue = queue.slice(queueIndex + 1)
+  const upcomingOffset = currentTrack ? queueIndex + 1 : 0
+  const upcomingQueue = queue.slice(upcomingOffset)
 
   const formatDuration = (secs: number) => {
     if (isNaN(secs) || secs < 0) return '0:00'
@@ -282,10 +286,10 @@ export const UpNextPanel: React.FC = () => {
                 </p>
               </div>
             ) : (
-              /* Drag-and-drop Queue List */
+              /* Drag-and-drop & Touch-friendly Reorder Queue List */
               <div className="space-y-2">
                 {upcomingQueue.map((track, uIdx) => {
-                  const actualQueueIndex = queueIndex + 1 + uIdx
+                  const actualQueueIndex = upcomingOffset + uIdx
                   const isBeingDragged = draggedIdx === uIdx
                   const isDropTarget = dragOverIdx === uIdx
 
@@ -298,7 +302,7 @@ export const UpNextPanel: React.FC = () => {
                       onDragLeave={handleDragLeave}
                       onDrop={(e) => handleDrop(e, uIdx)}
                       onDragEnd={handleDragEnd}
-                      className={`relative flex items-center justify-between p-2.5 rounded-2xl border transition-all duration-200 group select-none ${
+                      className={`relative flex items-center justify-between gap-1.5 p-2.5 rounded-2xl border transition-all duration-200 group select-none ${
                         isBeingDragged
                           ? 'opacity-40 scale-[0.98] border-purple-500/50 bg-purple-500/10'
                           : isDropTarget
@@ -307,29 +311,30 @@ export const UpNextPanel: React.FC = () => {
                       }`}
                     >
                       {/* Left: Drag Handle + Number + Artwork + Info */}
-                      <div className="flex items-center gap-2.5 min-w-0 flex-1">
-                        {/* Drag Handle */}
+                      <div className="flex items-center gap-2 min-w-0 flex-1">
+                        {/* Drag Handle (desktop hover/grab) */}
                         <div
-                          className="cursor-grab active:cursor-grabbing p-1 text-white/30 hover:text-white/80 transition-colors flex-shrink-0"
+                          className="hidden sm:flex cursor-grab active:cursor-grabbing p-1 text-white/30 hover:text-white/80 transition-colors flex-shrink-0"
                           title="Drag to rearrange"
                         >
                           <GripVertical className="w-4 h-4" />
                         </div>
 
                         {/* Order Index */}
-                        <span className="text-xs font-mono font-medium text-white/40 w-3.5 text-center flex-shrink-0">
+                        <span className="text-xs font-mono font-medium text-white/40 w-4 text-center flex-shrink-0">
                           {uIdx + 1}
                         </span>
 
                         {/* Artwork with Quick Play Button Overlay */}
                         <div
                           onClick={() => playQueuedTrackImmediately(actualQueueIndex)}
-                          className="relative w-11 h-11 rounded-xl overflow-hidden flex-shrink-0 shadow-sm border border-white/10 cursor-pointer group/art"
+                          className="relative w-10 h-10 sm:w-11 sm:h-11 rounded-xl overflow-hidden flex-shrink-0 shadow-sm border border-white/10 cursor-pointer group/art"
                           title="Play immediately"
                         >
                           <img
-                            src={track.coverUrl}
+                            src={getOptimizedArtworkUrl(track.coverUrl, 'thumb')}
                             alt={track.title}
+                            loading="lazy"
                             className="w-full h-full object-cover transition-transform duration-300 group-hover/art:scale-110"
                           />
                           <div className="absolute inset-0 bg-black/50 opacity-0 group-hover/art:opacity-100 flex items-center justify-center transition-opacity">
@@ -338,39 +343,73 @@ export const UpNextPanel: React.FC = () => {
                         </div>
 
                         {/* Title & Artist */}
-                        <div
-                          onClick={() => playQueuedTrackImmediately(actualQueueIndex)}
-                          className="min-w-0 pr-1 flex-1 cursor-pointer"
-                          title="Play immediately"
-                        >
-                          <h4 className="text-sm font-semibold text-white truncate group-hover:text-purple-300 transition-colors">
+                        <div className="min-w-0 pr-1 flex-1">
+                          <button
+                            type="button"
+                            onClick={() => playQueuedTrackImmediately(actualQueueIndex)}
+                            className="text-left block w-full text-sm font-semibold text-white truncate group-hover:text-purple-300 transition-colors cursor-pointer"
+                            title="Play immediately"
+                          >
                             {track.title}
-                          </h4>
-                          <p className="text-xs text-white/50 truncate mt-0.5">
+                          </button>
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              toggleQueuePanel()
+                              openArtist(track.artist)
+                            }}
+                            className="text-left block max-w-full text-xs text-white/50 hover:text-white hover:underline truncate mt-0.5 cursor-pointer"
+                          >
                             {track.artist}
-                          </p>
+                          </button>
                         </div>
                       </div>
 
-                      {/* Right: Duration + Play Now + Remove Buttons */}
-                      <div className="flex items-center gap-2 flex-shrink-0">
-                        <span className="text-xs font-mono text-white/40 hidden sm:inline">
+                      {/* Right: Touch Up/Down Reorder + Play + Remove Buttons */}
+                      <div className="flex items-center gap-0.5 sm:gap-1 flex-shrink-0">
+                        <span className="text-xs font-mono text-white/40 hidden md:inline mr-1">
                           {formatDuration(track.duration)}
                         </span>
 
-                        {/* Play Now Button (visible on hover) */}
+                        {upcomingQueue.length > 1 && (
+                          <div className="flex items-center">
+                            <button
+                              type="button"
+                              disabled={uIdx === 0}
+                              onClick={() => reorderUpcoming(uIdx, uIdx - 1)}
+                              className="p-1.5 rounded-lg text-white/40 hover:text-white hover:bg-white/10 disabled:opacity-20 disabled:pointer-events-none transition-colors cursor-pointer"
+                              title="Move up"
+                            >
+                              <ChevronUp className="w-3.5 h-3.5" />
+                            </button>
+                            <button
+                              type="button"
+                              disabled={uIdx === upcomingQueue.length - 1}
+                              onClick={() => reorderUpcoming(uIdx, uIdx + 1)}
+                              className="p-1.5 rounded-lg text-white/40 hover:text-white hover:bg-white/10 disabled:opacity-20 disabled:pointer-events-none transition-colors cursor-pointer"
+                              title="Move down"
+                            >
+                              <ChevronDown className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        )}
+
+                        {/* Play Now Button */}
                         <button
+                          type="button"
                           onClick={() => playQueuedTrackImmediately(actualQueueIndex)}
-                          className="p-1.5 rounded-lg bg-white/10 hover:bg-white/20 text-white opacity-0 group-hover:opacity-100 transition-all active:scale-95 cursor-pointer"
+                          className="p-1.5 rounded-lg bg-white/10 hover:bg-white/20 text-white md:opacity-0 md:group-hover:opacity-100 transition-all active:scale-95 cursor-pointer"
                           title="Play immediately"
                         >
                           <Play className="w-3.5 h-3.5 fill-current ml-0.5" />
                         </button>
 
-                        {/* Remove from queue */}
+                        {/* Remove from queue (Always accessible on touch & desktop) */}
                         <button
+                          type="button"
                           onClick={() => removeFromQueue(actualQueueIndex)}
-                          className="p-1.5 rounded-lg text-white/40 hover:text-red-400 hover:bg-red-500/10 transition-colors active:scale-95 cursor-pointer"
+                          className="p-1.5 rounded-lg text-white/50 hover:text-red-400 hover:bg-red-500/10 transition-colors active:scale-95 cursor-pointer"
                           title="Remove from queue"
                         >
                           <Trash2 className="w-3.5 h-3.5" />

@@ -45,13 +45,14 @@ export const ProfileModal: React.FC = () => {
   const handleSetDiscoveryPref = (pref: DiscoveryPreference) => {
     setDiscoveryPref(pref)
     recommendationEngine.setDiscoveryPreference(pref)
+    showToast(`Discovery mix set to ${pref.charAt(0).toUpperCase() + pref.slice(1)}`)
   }
 
-  // Keep local fields in sync with userProfile
+  // Keep local fields in sync with userProfile (including when cleared)
   useEffect(() => {
-    if (userProfile.name) setName(userProfile.name)
-    if (userProfile.email) setEmail(userProfile.email)
-  }, [userProfile])
+    setName(userProfile.name || '')
+    setEmail(userProfile.email || '')
+  }, [userProfile.name, userProfile.email])
 
   if (!isProfileOpen) return null
 
@@ -95,7 +96,7 @@ export const ProfileModal: React.FC = () => {
     if (androidBridge && typeof androidBridge.downloadAndInstallApk === 'function') {
       androidBridge.downloadAndInstallApk('https://raiwave.vercel.app/RAIWAVE.apk')
       setIsUpdating(false)
-      setUpdateStatus('🚀 Downloading latest RAIWAVE v1.2.7 APK update! Check your notification bar to install.')
+      setUpdateStatus('Downloading latest RAIWAVE v1.3.0 APK update! Check your notification bar to install.')
       setTimeout(() => setUpdateStatus(null), 6000)
       return
     }
@@ -122,14 +123,14 @@ export const ProfileModal: React.FC = () => {
 
       setTimeout(() => {
         setIsUpdating(false)
-        setUpdateStatus('✓ RAIWAVE v1.2.7 is up to date! Reloading...')
+        setUpdateStatus('RAIWAVE v1.3.0 is up to date! Reloading...')
         setTimeout(() => {
           window.location.reload()
         }, 1000)
       }, 1200)
     } catch {
       setIsUpdating(false)
-      setUpdateStatus('✓ You are running the latest RAIWAVE release (v1.2.7).')
+      setUpdateStatus('You are running the latest RAIWAVE release (v1.3.0).')
       setTimeout(() => setUpdateStatus(null), 3500)
     }
   }
@@ -225,7 +226,7 @@ export const ProfileModal: React.FC = () => {
 
               <div className="p-3 rounded-2xl bg-[#181B27]/60 border border-[#202A34] text-center">
                 <Smartphone className="w-4 h-4 mx-auto text-[#8B5CF6] mb-1" />
-                <span className="text-sm font-black text-white font-display">v1.2.9</span>
+                <span className="text-sm font-black text-white font-display">v1.3.0</span>
                 <p className="text-[10px] text-[#94A3B8]">App Version</p>
               </div>
             </div>
@@ -353,7 +354,7 @@ export const ProfileModal: React.FC = () => {
                 </p>
               </div>
               <span className="px-2 py-0.5 rounded-full bg-[#8B5CF6]/15 text-[#8B5CF6] text-[10px] font-bold font-mono">
-                v1.2.9
+                v1.3.0
               </span>
             </div>
 

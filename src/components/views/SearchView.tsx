@@ -13,6 +13,9 @@ import { usePlayer } from '../../context/PlayerContext'
 import { SAMPLE_TRACKS, SAMPLE_ARTISTS, SAMPLE_ALBUMS, GENRE_CATEGORIES } from '../../data/musicData'
 import { CURATED_ARTISTS } from '../../services/artistService'
 import { searchGlobalMusic } from '../../services/musicSearch'
+import { recommendationEngine } from '../../services/recommendationEngine'
+import { useNetworkStatus } from '../../hooks/useNetworkStatus'
+import { getOptimizedArtworkUrl } from '../../utils/networkImage'
 import type { Track } from '../../types'
 import { EqualizerBars } from '../EqualizerBars'
 
@@ -31,14 +34,37 @@ export const SearchView: React.FC = () => {
     toggleMobilePlayer,
     playNext,
     addToQueue,
+    saveOffline,
   } = usePlayer()
 
+  const { isOnline } = useNetworkStatus()
   const [onlineResults, setOnlineResults] = useState<Track[]>([])
   const [isSearchingOnline, setIsSearchingOnline] = useState(false)
+  const [searchError, setSearchError] = useState<string | null>(null)
+  const [retryTick, setRetryTick] = useState(0)
   const [activeTab, setActiveTab] = useState<'all' | 'songs' | 'artists' | 'albums'>('all')
   const [activeMenuTrackId, setActiveMenuTrackId] = useState<string | null>(null)
 
   const abortControllerRef = useRef<AbortController | null>(null)
+
+  // Close open song dropdown on outside click or Escape
+  useEffect(() => {
+    if (!activeMenuTrackId) return
+    const closeMenu = (e: MouseEvent) => {
+      const target = e.target as Element | null
+      if (target?.closest?.('[data-track-menu]')) return
+      setActiveMenuTrackId(null)
+    }
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setActiveMenuTrackId(null)
+    }
+    window.addEventListener('click', closeMenu)
+    window.addEventListener('keydown', onKey)
+    return () => {
+      window.removeEventListener('click', closeMenu)
+      window.removeEventListener('keydown', onKey)
+    }
+  }, [activeMenuTrackId])
 
   const q = searchQuery.toLowerCase().trim()
 
@@ -73,11 +99,12 @@ export const SearchView: React.FC = () => {
       )
     : []
 
-  // Debounced online search with AbortController
+  // Debounced online search with AbortController & search affinity tracking
   useEffect(() => {
     if (!q) {
       setOnlineResults([])
       setIsSearchingOnline(false)
+      setSearchError(null)
       return
     }
 
@@ -88,18 +115,25 @@ export const SearchView: React.FC = () => {
     abortControllerRef.current = controller
 
     setIsSearchingOnline(true)
+    setSearchError(null)
 
     const timer = setTimeout(() => {
-      searchGlobalMusic(q)
+      searchGlobalMusic(q, controller.signal)
         .then((tracks) => {
           if (!controller.signal.aborted) {
             setOnlineResults(tracks)
             setIsSearchingOnline(false)
+            if (tracks.length > 0) {
+              recommendationEngine.recordSearch(q)
+            }
           }
         })
         .catch(() => {
           if (!controller.signal.aborted) {
             setIsSearchingOnline(false)
+            setSearchError(
+              navigator.onLine ? 'Search timed out. Please retry.' : 'You are offline. Showing saved matches.'
+            )
           }
         })
     }, 280)
@@ -108,7 +142,7 @@ export const SearchView: React.FC = () => {
       clearTimeout(timer)
       controller.abort()
     }
-  }, [q])
+  }, [q, retryTick])
 
   // Combine local & global online tracks (deduplicated)
   const combinedTracks = [...localFilteredTracks]
@@ -132,7 +166,14 @@ export const SearchView: React.FC = () => {
   }
 
   return (
-    <div className="p-3 sm:p-6 select-none space-y-5 pb-44 md:pb-28 max-w-7xl mx-auto w-full touch-pan-y">
+    <div
+      onTouchMove={() => {
+        if (typeof document !== 'undefined' && document.activeElement instanceof HTMLInputElement) {
+          document.activeElement.blur()
+        }
+      }}
+      className="p-3 sm:p-6 select-none space-y-5 pb-44 md:pb-28 max-w-7xl mx-auto w-full touch-pan-y"
+    >
       {/* Search Header */}
       {searchQuery && (
         <div className="flex items-center justify-between gap-2 border-b border-white/5 pb-3">
@@ -184,15 +225,30 @@ export const SearchView: React.FC = () => {
       {/* Query Present */}
       {searchQuery ? (
         <div className="space-y-6">
-          {combinedTracks.length === 0 && !isSearchingOnline && (
-            <div className="p-8 bg-[#12141D] rounded-2xl border border-white/5 text-center max-w-md mx-auto space-y-2">
+          {(combinedTracks.length === 0 || searchError) && !isSearchingOnline && (
+            <div className="p-6 sm:p-8 bg-[#12141D] rounded-2xl border border-white/5 text-center max-w-md mx-auto space-y-2.5">
               <Music className="w-8 h-8 text-[#94A3B8] mx-auto opacity-40" />
               <p className="text-sm font-bold text-white font-heading">
-                No songs found for "{searchQuery}"
+                {searchError
+                  ? searchError
+                  : !isOnline
+                    ? `Offline — no cached match for "${searchQuery}"`
+                    : `No songs found for "${searchQuery}"`}
               </p>
               <p className="text-xs text-[#94A3B8]">
-                Check spelling or try searching for another artist or song.
+                {isOnline
+                  ? 'Check spelling or try searching in English or বাংলা for another song or artist.'
+                  : 'Connect to internet to search globally, or open Offline Vault in Library.'}
               </p>
+              {isOnline && (
+                <button
+                  type="button"
+                  onClick={() => setRetryTick((t) => t + 1)}
+                  className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full bg-purple-600 hover:bg-purple-500 text-white text-xs font-semibold cursor-pointer mt-1"
+                >
+                  Retry Search
+                </button>
+              )}
             </div>
           )}
 
@@ -229,7 +285,7 @@ export const SearchView: React.FC = () => {
                       <div className="flex items-center gap-3 min-w-0 flex-1 pr-2">
                         <div className="relative w-11 h-11 sm:w-12 sm:h-12 flex-shrink-0 rounded-lg overflow-hidden shadow border border-white/10">
                           <img
-                            src={track.coverUrl}
+                            src={getOptimizedArtworkUrl(track.coverUrl, 'thumb')}
                             alt={track.title}
                             loading="lazy"
                             className="w-full h-full object-cover"
@@ -296,6 +352,7 @@ export const SearchView: React.FC = () => {
 
                         {/* More Options / Add to Queue */}
                         <button
+                          data-track-menu="1"
                           onClick={(e) => {
                             e.stopPropagation()
                             setActiveMenuTrackId(isMenuOpen ? null : track.id)
@@ -330,6 +387,7 @@ export const SearchView: React.FC = () => {
                         {/* Dropdown Menu */}
                         {isMenuOpen && (
                           <div
+                            data-track-menu="1"
                             onClick={(e) => e.stopPropagation()}
                             className="absolute right-2 top-12 z-30 w-44 bg-[#12141D] border border-white/10 rounded-xl shadow-2xl p-1 animate-in fade-in zoom-in-95 duration-150"
                           >
@@ -355,10 +413,20 @@ export const SearchView: React.FC = () => {
                             </button>
                             <button
                               onClick={() => {
+                                saveOffline(track)
+                                setActiveMenuTrackId(null)
+                              }}
+                              className="w-full flex items-center gap-2 px-3 py-2 text-xs text-white/80 hover:text-white hover:bg-white/5 rounded-lg text-left cursor-pointer"
+                            >
+                              <ListPlus className="w-3.5 h-3.5 text-emerald-400" />
+                              <span>Save Offline</span>
+                            </button>
+                            <button
+                              onClick={() => {
                                 openArtist(track.artist)
                                 setActiveMenuTrackId(null)
                               }}
-                              className="w-full flex items-center gap-2 px-3 py-2 text-xs text-white/80 hover:text-white hover:bg-white/5 rounded-lg text-left"
+                              className="w-full flex items-center gap-2 px-3 py-2 text-xs text-white/80 hover:text-white hover:bg-white/5 rounded-lg text-left cursor-pointer"
                             >
                               <Music className="w-3.5 h-3.5 text-indigo-400" />
                               <span>Go to Artist</span>

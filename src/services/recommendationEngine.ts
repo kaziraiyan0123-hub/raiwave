@@ -1,60 +1,104 @@
-import type { Track, Artist } from '../types'
+import type { Playlist, Track } from '../types'
 import { SAMPLE_TRACKS } from '../data/musicData'
 import { CURATED_ARTISTS } from './artistService'
 
 export type DiscoveryPreference = 'familiar' | 'balanced' | 'discover'
 
 export interface TasteProfile {
-  artistWeights: Record<string, number>
   genreWeights: Record<string, number>
-  playCounts: Record<string, number>
+  artistWeights: Record<string, number>
   skipCounts: Record<string, number>
-  likedTrackIds: string[]
+  playCounts: Record<string, number>
+  searchKeywords: string[]
   discoveryPreference: DiscoveryPreference
   lastUpdated: number
 }
 
-const TASTE_PROFILE_KEY = 'raiwave_taste_profile'
+const TASTE_KEY = 'raiwave_taste_profile_v1'
+export const TASTE_UPDATED_EVENT = 'raiwave-taste-updated'
 
-// Default Taste Profile
-const defaultProfile: TasteProfile = {
-  artistWeights: {},
-  genreWeights: {},
-  playCounts: {},
-  skipCounts: {},
-  likedTrackIds: [],
-  discoveryPreference: 'balanced',
-  lastUpdated: Date.now(),
+function defaultTasteProfile(): TasteProfile {
+  return {
+    genreWeights: {},
+    artistWeights: {},
+    skipCounts: {},
+    playCounts: {},
+    searchKeywords: [],
+    discoveryPreference: 'balanced',
+    lastUpdated: Date.now(),
+  }
 }
 
 export interface RecommendationSection {
   id: string
   title: string
   subtitle: string
-  type: 'tracks' | 'artists' | 'mix'
-  tracks?: Track[]
-  artists?: Artist[]
-  reason?: string
+  tracks: Track[]
+}
+
+function normalizeTrackIdentity(t: Track): string {
+  return `${t.title.toLowerCase().trim()}|${t.artist.toLowerCase().trim()}`
+}
+
+function deduplicateTracks(tracks: Track[]): Track[] {
+  const seen = new Set<string>()
+  const out: Track[] = []
+  for (const t of tracks) {
+    const key = normalizeTrackIdentity(t)
+    if (!seen.has(t.id) && !seen.has(key)) {
+      seen.add(t.id)
+      seen.add(key)
+      out.push(t)
+    }
+  }
+  return out
+}
+
+function getPreferredMixOrder(): string[] {
+  const hour = new Date().getHours()
+  if (hour >= 5 && hour < 12) return ['Acoustic', 'Lofi', 'Indie', 'Pop']
+  if (hour >= 12 && hour < 18) return ['Pop', 'Synthpop', 'Indie', 'Bengali']
+  return ['Lofi', 'Romantic', 'Bengali', 'Acoustic']
 }
 
 class RecommendationEngine {
-  private profile: TasteProfile = this.loadProfile()
+  private profile: TasteProfile
+
+  constructor() {
+    this.profile = this.loadProfile()
+  }
 
   private loadProfile(): TasteProfile {
     try {
-      const saved = localStorage.getItem(TASTE_PROFILE_KEY)
+      const saved = localStorage.getItem(TASTE_KEY)
       if (saved) {
-        return { ...defaultProfile, ...JSON.parse(saved) }
+        const parsed = JSON.parse(saved) as Partial<TasteProfile>
+        return {
+          ...defaultTasteProfile(),
+          ...parsed,
+          genreWeights: parsed.genreWeights || {},
+          artistWeights: parsed.artistWeights || {},
+          skipCounts: parsed.skipCounts || {},
+          playCounts: parsed.playCounts || {},
+          searchKeywords: parsed.searchKeywords || [],
+        }
       }
-    } catch {}
-    return { ...defaultProfile }
+    } catch {
+      // Ignore parse failures
+    }
+    return defaultTasteProfile()
   }
 
   private saveProfile() {
     try {
       this.profile.lastUpdated = Date.now()
-      localStorage.setItem(TASTE_PROFILE_KEY, JSON.stringify(this.profile))
-    } catch {}
+      localStorage.setItem(TASTE_KEY, JSON.stringify(this.profile))
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent(TASTE_UPDATED_EVENT))
+      }
+    } catch {
+      // Ignore storage quota errors
+    }
   }
 
   public getProfile(): TasteProfile {
@@ -66,243 +110,231 @@ class RecommendationEngine {
     this.saveProfile()
   }
 
-  /**
-   * Record when user plays a track
-   */
   public recordPlay(track: Track) {
     if (!track) return
-    const artist = track.artist
-    const genre = track.genre || 'Pop'
+    const g = track.genre || 'Music'
+    const a = track.artist || 'Artist'
 
-    // Increment artist weight
-    this.profile.artistWeights[artist] = (this.profile.artistWeights[artist] || 0) + 3
-    // Increment genre weight
-    this.profile.genreWeights[genre] = (this.profile.genreWeights[genre] || 0) + 2
-    // Increment play count
+    this.profile.genreWeights[g] = Math.min(25, (this.profile.genreWeights[g] || 0) + 1)
+    this.profile.artistWeights[a] = Math.min(25, (this.profile.artistWeights[a] || 0) + 1.5)
     this.profile.playCounts[track.id] = (this.profile.playCounts[track.id] || 0) + 1
 
+    if (this.profile.skipCounts[track.id]) {
+      this.profile.skipCounts[track.id] = Math.max(0, this.profile.skipCounts[track.id] - 1)
+    }
     this.saveProfile()
   }
 
-  /**
-   * Record when user likes a track
-   */
   public recordLike(track: Track, isLiked: boolean) {
     if (!track) return
-    const artist = track.artist
-    const genre = track.genre || 'Pop'
-    const delta = isLiked ? 5 : -4
+    const g = track.genre || 'Music'
+    const a = track.artist || 'Artist'
 
-    this.profile.artistWeights[artist] = Math.max(0, (this.profile.artistWeights[artist] || 0) + delta)
-    this.profile.genreWeights[genre] = Math.max(0, (this.profile.genreWeights[genre] || 0) + Math.round(delta * 0.7))
-
+    if (isLiked) {
+      this.profile.genreWeights[g] = Math.min(25, (this.profile.genreWeights[g] || 0) + 3)
+      this.profile.artistWeights[a] = Math.min(25, (this.profile.artistWeights[a] || 0) + 4)
+      delete this.profile.skipCounts[track.id]
+    } else {
+      this.profile.genreWeights[g] = Math.max(0, (this.profile.genreWeights[g] || 0) - 2)
+      this.profile.artistWeights[a] = Math.max(0, (this.profile.artistWeights[a] || 0) - 3)
+    }
     this.saveProfile()
   }
 
-  /**
-   * Record when user skips a track early (< 30s)
-   */
   public recordSkip(track: Track) {
     if (!track) return
+    const g = track.genre || 'Music'
+    const a = track.artist || 'Artist'
+
     this.profile.skipCounts[track.id] = (this.profile.skipCounts[track.id] || 0) + 1
-    const artist = track.artist
-    // Slight penalty to prevent over-recommending skipped track
-    this.profile.artistWeights[artist] = Math.max(0, (this.profile.artistWeights[artist] || 0) - 1)
+    this.profile.genreWeights[g] = Math.max(0, (this.profile.genreWeights[g] || 0) - 0.5)
+    this.profile.artistWeights[a] = Math.max(0, (this.profile.artistWeights[a] || 0) - 0.8)
     this.saveProfile()
   }
 
-  /**
-   * Get Top Favored Artists
-   */
-  public getTopArtists(limit = 3): string[] {
-    return Object.entries(this.profile.artistWeights)
-      .sort((a, b) => b[1] - a[1])
-      .slice(0, limit)
-      .map(([artist]) => artist)
+  public recordSearch(query: string) {
+    const clean = query.trim().toLowerCase()
+    if (clean.length < 2) return
+    const updated = [clean, ...this.profile.searchKeywords.filter((q) => q !== clean)].slice(0, 12)
+    this.profile.searchKeywords = updated
+    this.saveProfile()
   }
 
-  /**
-   * Get Top Favored Genres
-   */
-  public getTopGenres(limit = 3): string[] {
-    return Object.entries(this.profile.genreWeights)
-      .sort((a, b) => b[1] - a[1])
-      .slice(0, limit)
-      .map(([genre]) => genre)
+  private scoreTrack(
+    track: Track,
+    likedIds: Set<string>,
+    playlistArtistHits: Set<string>,
+    playlistGenreHits: Set<string>
+  ): number {
+    const g = track.genre || 'Music'
+    const a = track.artist || 'Artist'
+    const pref = this.profile.discoveryPreference
+
+    const gWeight = this.profile.genreWeights[g] || 0
+    const aWeight = this.profile.artistWeights[a] || 0
+    const plays = this.profile.playCounts[track.id] || 0
+    const skips = this.profile.skipCounts[track.id] || 0
+    const isLiked = likedIds.has(track.id)
+
+    let score = gWeight * 2.1 + aWeight * 2.8
+
+    if (playlistArtistHits.has(a.toLowerCase())) score += 5
+    if (playlistGenreHits.has(g.toLowerCase())) score += 3.5
+
+    // Search history affinity boost
+    const hay = `${track.title} ${track.artist} ${track.genre}`.toLowerCase()
+    for (let i = 0; i < Math.min(5, this.profile.searchKeywords.length); i++) {
+      if (hay.includes(this.profile.searchKeywords[i])) {
+        score += 4 - i * 0.5
+      }
+    }
+
+    // Time-of-day vibe alignment when taste profile is sparse
+    const timeGenres = getPreferredMixOrder()
+    if (timeGenres.some((tg) => g.toLowerCase().includes(tg.toLowerCase()))) {
+      score += 2
+    }
+
+    if (isLiked) score += pref === 'discover' ? -3 : 6
+
+    if (pref === 'familiar') {
+      score += plays * 3.2
+    } else if (pref === 'discover') {
+      score -= plays * 4.5
+      if (plays === 0 && !isLiked) score += 8
+    } else {
+      score += Math.min(plays, 4) * 1.4
+    }
+
+    score -= skips * 6
+    return score
   }
 
-  /**
-   * Generate All Personalized Sections
-   */
   public generatePersonalizedSections(
-    history: Track[] = [],
-    likedTracks: Track[] = []
+    history: Track[],
+    likedTracks: Track[],
+    playlists: Playlist[] = [],
+    realtimePool: Track[] = []
   ): RecommendationSection[] {
+    const poolRaw: Track[] = [...SAMPLE_TRACKS, ...realtimePool]
+    for (const ca of CURATED_ARTISTS) {
+      poolRaw.push(...ca.topTracks)
+    }
+    for (const pl of playlists) {
+      poolRaw.push(...(pl.tracks || []))
+    }
+    const allPool = deduplicateTracks(poolRaw)
+    const likedIds = new Set(likedTracks.map((t) => t.id))
+
+    // Harvest genre & artist signals from user's playlists
+    const playlistArtistHits = new Set<string>()
+    const playlistGenreHits = new Set<string>()
+    for (const pl of playlists) {
+      for (const pt of pl.tracks || []) {
+        if (pt.artist) playlistArtistHits.add(pt.artist.toLowerCase())
+        if (pt.genre) playlistGenreHits.add(pt.genre.toLowerCase())
+      }
+    }
+
+    // Filter out heavily skipped tracks (>= 2 early skips) unless user explicitly liked them
+    const eligiblePool = allPool.filter(
+      (t) => likedIds.has(t.id) || (this.profile.skipCounts[t.id] || 0) < 2
+    )
+
+    const scoredPool = eligiblePool
+      .map((t) => ({
+        track: t,
+        score: this.scoreTrack(t, likedIds, playlistArtistHits, playlistGenreHits),
+      }))
+      .sort((a, b) => b.score - a.score)
+
     const sections: RecommendationSection[] = []
 
-    // Pool of available candidate tracks
-    const allPool: Track[] = [...SAMPLE_TRACKS]
-    // Add curated artist tracks to pool
-    for (const ca of CURATED_ARTISTS) {
-      for (const t of ca.topTracks) {
-        if (!allPool.some((p) => p.id === t.id)) {
-          allPool.push(t)
-        }
-      }
-    }
-    // Add liked tracks to pool
-    for (const lt of likedTracks) {
-      if (!allPool.some((p) => p.id === lt.id)) {
-        allPool.push(lt)
-      }
-    }
+    // 1. Primary Personalized Mix reacting live to Familiar / Balanced / Discover
+    const pref = this.profile.discoveryPreference
+    const hasPersonalData =
+      history.length > 0 ||
+      likedTracks.length > 0 ||
+      playlists.some((p) => (p.tracks?.length || 0) > 0) ||
+      this.profile.searchKeywords.length > 0
 
-    const topArtists = this.getTopArtists(2)
-    const recentTrack = history[0] || likedTracks[0] || SAMPLE_TRACKS[0]
+    const topRecommended = scoredPool.map((x) => x.track).slice(0, 10)
+    const modeLabel =
+      pref === 'familiar'
+        ? 'Your Familiar Favorites'
+        : pref === 'discover'
+          ? 'Fresh Discovery Picks'
+          : hasPersonalData
+            ? 'Recommended For You'
+            : 'Featured Handpicked Mix'
 
-    // 1. Made For You / Your Daily Mix
-    const dailyMixTracks = this.buildDailyMix(allPool, history, likedTracks)
-    if (dailyMixTracks.length >= 3) {
+    const modeSubtitle =
+      pref === 'familiar'
+        ? 'Focused on artists, likes, and replay favorites you love'
+        : pref === 'discover'
+          ? 'Unheard tracks and adjacent genres tailored to your taste'
+          : hasPersonalData
+            ? 'Shaped by your plays, playlists, searches, and likes'
+            : 'Start playing or liking songs to sharpen your personal mix'
+
+    if (topRecommended.length > 0) {
       sections.push({
-        id: 'rec-daily-mix',
-        title: 'Your Daily Mix',
-        subtitle: 'A blend of your favorites and discoveries tailored to your ears',
-        type: 'tracks',
-        tracks: dailyMixTracks,
-        reason: 'Curated daily from your listening affinity',
+        id: 'recommended-for-you',
+        title: modeLabel,
+        subtitle: modeSubtitle,
+        tracks: topRecommended,
       })
     }
 
-    // 2. Because You Like [Top Artist]
-    const primaryArtist = topArtists[0] || (recentTrack ? recentTrack.artist : null)
-    if (primaryArtist) {
-      const artistTracks = allPool.filter(
-        (t) => t.artist.toLowerCase().includes(primaryArtist.toLowerCase())
-      )
-      const relatedTracks = allPool.filter(
-        (t) =>
-          !t.artist.toLowerCase().includes(primaryArtist.toLowerCase()) &&
-          t.genre.toLowerCase() === (artistTracks[0]?.genre?.toLowerCase() || 'pop')
-      )
-      const combined = [...artistTracks, ...relatedTracks].slice(0, 8)
-      if (combined.length >= 2) {
+    // 2. "Because You Listened To [Anchor]" (from recent play or liked track)
+    const anchor = history[0] || likedTracks[0]
+    if (anchor) {
+      const targetGenre = (anchor.genre || '').toLowerCase()
+      const anchorKey = normalizeTrackIdentity(anchor)
+      const similarTracks = scoredPool
+        .map((x) => x.track)
+        .filter((t) => {
+          if (normalizeTrackIdentity(t) === anchorKey) return false
+          return (
+            (targetGenre && (t.genre || '').toLowerCase().includes(targetGenre)) ||
+            t.artist.toLowerCase() === anchor.artist.toLowerCase()
+          )
+        })
+        .slice(0, 8)
+
+      if (similarTracks.length >= 2) {
         sections.push({
-          id: 'rec-because-artist',
-          title: `Because You Like ${primaryArtist}`,
-          subtitle: `Songs by ${primaryArtist} and artists in similar sonic wavelengths`,
-          type: 'tracks',
-          tracks: combined,
-          reason: `Based on your plays of ${primaryArtist}`,
+          id: 'because-you-listened',
+          title: `Because You Listened To ${anchor.artist}`,
+          subtitle: `Vibes matching ${anchor.title}`,
+          tracks: similarTracks,
         })
       }
     }
 
-    // 3. Discover Your Next Favorite
-    const unplayedTracks = allPool.filter(
-      (t) =>
-        !history.some((h) => h.id === t.id) &&
-        !likedTracks.some((l) => l.id === t.id)
-    )
-    if (unplayedTracks.length >= 3) {
-      sections.push({
-        id: 'rec-discover-next',
-        title: 'Discover Your Next Favorite',
-        subtitle: 'Fresh tunes outside your daily rotation waiting to be found',
-        type: 'tracks',
-        tracks: unplayedTracks.slice(0, 8),
-        reason: 'Matched against your genre profile',
+    // 3. Curated Bengali / Indie / English Mix & Discovery Mix
+    const topRecIds = new Set(topRecommended.map((t) => t.id))
+    const discoveryTracks = scoredPool
+      .map((x) => x.track)
+      .filter((t) => {
+        if (pref === 'familiar') return !topRecIds.has(t.id)
+        return (this.profile.playCounts[t.id] || 0) === 0 && !topRecIds.has(t.id)
       })
-    }
+      .slice(0, 8)
 
-    // 4. Bengali Music For You
-    const bengaliTracks = allPool.filter(
-      (t) =>
-        t.artist.toLowerCase().includes('anupam') ||
-        t.genre.toLowerCase().includes('bengali') ||
-        t.title.toLowerCase().includes('amake') ||
-        t.artist.toLowerCase().includes('arijit')
-    )
-    if (bengaliTracks.length >= 2) {
+    if (discoveryTracks.length >= 3) {
       sections.push({
-        id: 'rec-bengali-mix',
-        title: 'Bengali Acoustic & Rock For You',
-        subtitle: 'Poetic melodies, soulful acoustic ballads, and timeless lyrics',
-        type: 'tracks',
-        tracks: bengaliTracks,
-        reason: 'Popular regional spotlights on RAIWAVE',
-      })
-    }
-
-    // 5. English & Global Hits For You
-    const globalHits = allPool.filter(
-      (t) =>
-        t.genre.toLowerCase().includes('synthpop') ||
-        t.genre.toLowerCase().includes('pop') ||
-        t.genre.toLowerCase().includes('disco') ||
-        t.genre.toLowerCase().includes('rock')
-    ).slice(0, 8)
-    if (globalHits.length >= 3) {
-      sections.push({
-        id: 'rec-global-hits',
-        title: 'Global Pop & Synth Anthems',
-        subtitle: 'Lossless studio hits streamed worldwide',
-        type: 'tracks',
-        tracks: globalHits,
-        reason: 'Trending globally on RAIWAVE',
-      })
-    }
-
-    // 6. Mood-Based Mix: Late Night Chill
-    const chillTracks = allPool.filter(
-      (t) =>
-        t.genre.toLowerCase().includes('chill') ||
-        t.genre.toLowerCase().includes('acoustic') ||
-        t.genre.toLowerCase().includes('lofi') ||
-        t.genre.toLowerCase().includes('r&b')
-    ).slice(0, 8)
-    if (chillTracks.length >= 3) {
-      sections.push({
-        id: 'rec-mood-chill',
-        title: 'Midnight Atmospheric Waves',
-        subtitle: 'Mellow basslines, ambient echoes, and calming vocal tracks',
-        type: 'tracks',
-        tracks: chillTracks,
-        reason: 'Calibrated for relaxation',
+        id: 'discover-mix',
+        title: pref === 'familiar' ? 'More From Your Vault' : 'Discover Weekly Mix',
+        subtitle:
+          pref === 'familiar'
+            ? 'Familiar tracks from artists across your library'
+            : 'Fresh Bengali, Indie & Global tracks outside your recent queue',
+        tracks: discoveryTracks,
       })
     }
 
     return sections
-  }
-
-  /**
-   * Daily Mix Builder applying user's discovery preference
-   */
-  private buildDailyMix(pool: Track[], history: Track[], likedTracks: Track[]): Track[] {
-    const pref = this.profile.discoveryPreference
-    let familiarRatio = 0.5 // balanced
-    if (pref === 'familiar') familiarRatio = 0.8
-    if (pref === 'discover') familiarRatio = 0.2
-
-    const familiarCandidates = [...likedTracks, ...history]
-    const familiarCount = Math.round(8 * familiarRatio)
-    const discoveryCount = 8 - familiarCount
-
-    const familiar = familiarCandidates.slice(0, familiarCount)
-    const discovery = pool
-      .filter((t) => !familiarCandidates.some((f) => f.id === t.id))
-      .slice(0, discoveryCount)
-
-    const mixed = [...familiar, ...discovery]
-    // Fill if still low
-    if (mixed.length < 6) {
-      for (const t of pool) {
-        if (!mixed.some((m) => m.id === t.id)) {
-          mixed.push(t)
-        }
-        if (mixed.length >= 8) break
-      }
-    }
-    return mixed
   }
 }
 

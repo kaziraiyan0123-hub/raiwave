@@ -30,6 +30,7 @@ export const PlaylistView: React.FC = () => {
     addToQueue,
     addPlaylistToQueue,
     goBack,
+    openArtist,
   } = usePlayer()
 
   if (!selectedPlaylist) {
@@ -142,14 +143,15 @@ export const PlaylistView: React.FC = () => {
       </div>
 
       {/* 3. Track List Table */}
-      <div className="px-6 sm:px-8 bg-[#0B0D13]">
+      <div className="px-4 sm:px-8 bg-[#0B0D13]">
         {/* Table Header */}
-        <div className="grid grid-cols-12 text-xs font-semibold uppercase text-[#94A3B8] border-b border-white/10 pb-2 px-4 mb-2 tracking-wider font-heading">
-          <div className="col-span-1 text-center">#</div>
-          <div className="col-span-6 md:col-span-5">Title</div>
-          <div className="hidden md:block col-span-3">Album</div>
-          <div className="hidden sm:block col-span-2">Date Added</div>
-          <div className="col-span-5 sm:col-span-3 md:col-span-1 flex justify-end pr-2">
+        <div className="flex items-center justify-between text-xs font-semibold uppercase text-[#94A3B8] border-b border-white/10 pb-2 px-3 sm:px-4 mb-2 tracking-wider font-heading">
+          <div className="flex items-center gap-3 flex-1">
+            <span className="w-6 text-center">#</span>
+            <span>Title</span>
+          </div>
+          <div className="hidden md:block w-[160px] pr-2">Album</div>
+          <div className="flex justify-end pr-2">
             <Clock className="w-4 h-4" />
           </div>
         </div>
@@ -178,83 +180,84 @@ export const PlaylistView: React.FC = () => {
                       playTrack(track, tracks)
                     }
                   }}
-                  className={`grid grid-cols-12 items-center px-4 py-2.5 rounded-md hover:bg-white/10 group cursor-pointer transition-colors ${
+                  className={`flex items-center justify-between gap-2 px-3 sm:px-4 py-2.5 rounded-xl hover:bg-white/10 group cursor-pointer transition-colors ${
                     isThisTrackSelected ? 'bg-white/5' : ''
                   }`}
                 >
-                  {/* # or Play/Pause Icon or Equalizer */}
-                  <div className="col-span-1 text-center text-sm font-medium flex items-center justify-center">
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        if (isThisTrackPlaying) {
-                          togglePlay()
-                        } else {
-                          playTrack(track, tracks)
-                        }
-                      }}
-                      className="hidden group-hover:flex items-center justify-center text-[#8B5CF6]"
-                    >
-                      {isThisTrackPlaying ? (
-                        <Pause className="w-4 h-4 fill-current" />
-                      ) : (
-                        <Play className="w-4 h-4 fill-current ml-0.5" />
-                      )}
-                    </button>
-                    <div className="group-hover:hidden flex items-center justify-center">
-                      {isThisTrackPlaying ? (
-                        <EqualizerBars size="sm" />
-                      ) : (
-                        <span
-                          className={`font-mono text-xs ${
-                            isThisTrackSelected ? 'text-[#8B5CF6] font-bold' : 'text-[#94A3B8]'
-                          }`}
-                        >
-                          {idx + 1}
-                        </span>
-                      )}
+                  {/* Left: Index + Artwork + Title & Artist */}
+                  <div className="flex items-center gap-3 min-w-0 flex-1">
+                    <div className="w-6 text-center text-sm font-medium flex items-center justify-center flex-shrink-0">
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          if (isThisTrackPlaying) {
+                            togglePlay()
+                          } else {
+                            playTrack(track, tracks)
+                          }
+                        }}
+                        className="hidden md:group-hover:flex items-center justify-center text-[#8B5CF6] cursor-pointer"
+                      >
+                        {isThisTrackPlaying ? (
+                          <Pause className="w-4 h-4 fill-current" />
+                        ) : (
+                          <Play className="w-4 h-4 fill-current ml-0.5" />
+                        )}
+                      </button>
+                      <div className="md:group-hover:hidden flex items-center justify-center">
+                        {isThisTrackPlaying ? (
+                          <EqualizerBars size="sm" />
+                        ) : (
+                          <span
+                            className={`font-mono text-xs ${
+                              isThisTrackSelected ? 'text-[#8B5CF6] font-bold' : 'text-[#94A3B8]'
+                            }`}
+                          >
+                            {idx + 1}
+                          </span>
+                        )}
+                      </div>
                     </div>
-                  </div>
 
-                  {/* Title & Artist */}
-                  <div className="col-span-6 md:col-span-5 flex items-center gap-3 min-w-0 pr-2">
                     <img
                       src={track.coverUrl}
                       alt={track.title}
                       className="w-10 h-10 rounded object-cover flex-shrink-0"
                     />
-                    <div className="truncate">
+                    <div className="min-w-0 flex-1">
                       <p
                         className={`text-sm font-semibold truncate ${
-                          isThisTrackSelected ? 'text-[#1db954]' : 'text-white'
+                          isThisTrackSelected ? 'text-[#8B5CF6]' : 'text-white'
                         }`}
                       >
                         {track.title}
                       </p>
-                      <p className="text-xs text-[#b3b3b3] truncate hover:underline hover:text-white">
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          openArtist(track.artist)
+                        }}
+                        className="text-xs text-[#94A3B8] truncate hover:underline hover:text-white block max-w-full text-left cursor-pointer"
+                      >
                         {track.artist}
-                      </p>
+                      </button>
                     </div>
                   </div>
 
                   {/* Album */}
-                  <div className="hidden md:block col-span-3 text-sm text-[#b3b3b3] truncate pr-2 hover:underline hover:text-white">
+                  <div className="hidden md:block text-sm text-[#94A3B8] truncate max-w-[160px] pr-2">
                     {track.album}
                   </div>
 
-                  {/* Date Added */}
-                  <div className="hidden sm:block col-span-2 text-xs text-[#b3b3b3]">
-                    {track.releaseYear}
-                  </div>
-
-                  {/* Add to Queue + Heart Like + Duration */}
-                  <div className="col-span-5 sm:col-span-3 md:col-span-1 flex items-center justify-end gap-2.5 text-xs text-[#b3b3b3] pr-2">
+                  {/* Play Next + Add to Queue + Heart Like + Duration */}
+                  <div className="flex items-center justify-end gap-1 sm:gap-2 text-xs text-[#b3b3b3] flex-shrink-0">
                     <button
                       onClick={(e) => {
                         e.stopPropagation()
                         playNext(track)
                       }}
-                      className="opacity-0 group-hover:opacity-100 transition-all p-1 hover:text-purple-300 hover:scale-110 active:scale-90 cursor-pointer"
+                      className="md:opacity-0 md:group-hover:opacity-100 transition-all p-1.5 rounded-lg hover:bg-white/10 hover:text-purple-300 active:scale-90 cursor-pointer"
                       title="Play track next"
                     >
                       <ListStart className="w-4 h-4" />
@@ -264,7 +267,7 @@ export const PlaylistView: React.FC = () => {
                         e.stopPropagation()
                         addToQueue(track)
                       }}
-                      className="opacity-0 group-hover:opacity-100 transition-all p-1 hover:text-purple-300 hover:scale-110 active:scale-90 cursor-pointer"
+                      className="md:opacity-0 md:group-hover:opacity-100 transition-all p-1.5 rounded-lg hover:bg-white/10 hover:text-purple-300 active:scale-90 cursor-pointer"
                       title="Add to queue"
                     >
                       <ListPlus className="w-4 h-4" />
@@ -272,17 +275,20 @@ export const PlaylistView: React.FC = () => {
                     <button
                       onClick={(e) => {
                         e.stopPropagation()
-                        toggleLike(track.id)
+                        toggleLike(track.id, track)
                       }}
-                      className="opacity-0 group-hover:opacity-100 transition-opacity hover:scale-110 cursor-pointer"
+                      className={`p-1.5 rounded-lg hover:bg-white/10 transition-all cursor-pointer ${
+                        liked ? 'opacity-100' : 'md:opacity-0 md:group-hover:opacity-100'
+                      }`}
+                      title={liked ? 'Remove from Liked Songs' : 'Save to Liked Songs'}
                     >
                       <Heart
                         className={`w-4 h-4 ${
-                          liked ? 'text-[#1db954] fill-[#1db954] opacity-100' : 'hover:text-white'
+                          liked ? 'text-[#8B5CF6] fill-[#8B5CF6]' : 'hover:text-white'
                         }`}
                       />
                     </button>
-                    <span className="font-mono">{formatDuration(track.duration)}</span>
+                    <span className="font-mono hidden sm:inline w-10 text-right">{formatDuration(track.duration)}</span>
                   </div>
                 </div>
               )

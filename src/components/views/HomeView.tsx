@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react'
+import React, { useMemo, useState, useEffect } from 'react'
 import {
   Play,
   Pause,
@@ -15,6 +15,8 @@ import {
   ChevronRight,
   Radio,
   ListStart,
+  WifiOff,
+  RefreshCw,
 } from 'lucide-react'
 import { usePlayer } from '../../context/PlayerContext'
 import {
@@ -25,7 +27,9 @@ import {
 } from '../../data/musicData'
 import { EqualizerBars } from '../EqualizerBars'
 import { useCarouselSwipe } from '../../hooks/useCarouselSwipe'
-import { recommendationEngine } from '../../services/recommendationEngine'
+import { recommendationEngine, TASTE_UPDATED_EVENT } from '../../services/recommendationEngine'
+import { useNetworkStatus } from '../../hooks/useNetworkStatus'
+import { getOptimizedArtworkUrl } from '../../utils/networkImage'
 
 export const HomeView: React.FC = () => {
   const {
@@ -44,15 +48,30 @@ export const HomeView: React.FC = () => {
     isLiked,
     toggleLike,
     likedTracks,
+    userPlaylists,
     playNext,
     realtimeTopTracks,
+    isLoadingRealtime,
+    refreshRealtimeMusic,
     history,
     clearHistory,
     saveOffline,
+    cancelDownload,
+    downloadStates,
     isOffline,
+    isTrackDownloadable,
     toggleMobilePlayer,
     userProfile,
   } = usePlayer()
+
+  const { isOnline, dataSaverEnabled, isSlowConnection } = useNetworkStatus()
+  const [tasteVersion, setTasteVersion] = useState(0)
+
+  useEffect(() => {
+    const onTasteUpdate = () => setTasteVersion((v) => v + 1)
+    window.addEventListener(TASTE_UPDATED_EVENT, onTasteUpdate)
+    return () => window.removeEventListener(TASTE_UPDATED_EVENT, onTasteUpdate)
+  }, [])
 
   // Real-time top tracks or fallback sample tracks
   const liveCharts = useMemo(
@@ -60,10 +79,16 @@ export const HomeView: React.FC = () => {
     [realtimeTopTracks]
   )
 
-  // Dynamic Personalized Recommendation Sections
+  // Dynamic Personalized Recommendation Sections reactive to plays, likes, skips, playlists & DiscoveryPreference
   const personalizedSections = useMemo(() => {
-    return recommendationEngine.generatePersonalizedSections(history, likedTracks)
-  }, [history.length, likedTracks.length])
+    return recommendationEngine.generatePersonalizedSections(
+      history,
+      likedTracks,
+      userPlaylists,
+      realtimeTopTracks
+    )
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [history, likedTracks, userPlaylists, realtimeTopTracks, tasteVersion])
 
   // Filtered tracks based on active category
   const categoryFilteredTracks = useMemo(() => {
@@ -142,6 +167,35 @@ export const HomeView: React.FC = () => {
             <p className="text-[11px] sm:text-xs text-[#94A3B8] font-medium mt-0.5">
               Listen to your favorite artists, albums, and global frequencies
             </p>
+            {(!isOnline || dataSaverEnabled || isSlowConnection || (isOnline && realtimeTopTracks.length === 0 && !isLoadingRealtime)) && (
+              <div className="flex flex-wrap items-center gap-2 mt-2">
+                {!isOnline && (
+                  <button
+                    type="button"
+                    onClick={() => navigateTo('library')}
+                    className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-amber-500/15 border border-amber-500/30 text-amber-300 text-[11px] font-medium cursor-pointer"
+                  >
+                    <WifiOff className="w-3 h-3" />
+                    <span>Offline • Open Saved Vault</span>
+                  </button>
+                )}
+                {isOnline && (dataSaverEnabled || isSlowConnection) && (
+                  <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 text-[11px] font-medium">
+                    <span>{dataSaverEnabled ? 'Data Saver Active' : 'Slow Network • Optimized Artwork'}</span>
+                  </span>
+                )}
+                {isOnline && realtimeTopTracks.length === 0 && !isLoadingRealtime && (
+                  <button
+                    type="button"
+                    onClick={() => refreshRealtimeMusic(true)}
+                    className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-purple-500/15 border border-purple-500/30 text-purple-300 hover:bg-purple-500/25 text-[11px] font-medium cursor-pointer"
+                  >
+                    <RefreshCw className="w-3 h-3" />
+                    <span>Retry Live Charts</span>
+                  </button>
+                )}
+              </div>
+            )}
           </div>
 
           {/* Category Filter Chips */}
@@ -421,8 +475,8 @@ export const HomeView: React.FC = () => {
                   }`}
                 >
                   {/* Left: Rank + Art + Title/Artist */}
-                  <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
-                    <span className="w-5 text-center text-[11px] font-mono font-bold text-[#94A3B8] group-hover:hidden">
+                  <div className="flex items-center gap-2.5 sm:gap-3 min-w-0 flex-1 pr-2">
+                    <span className="w-5 text-center text-[11px] font-mono font-bold text-[#94A3B8] group-hover:hidden flex-shrink-0">
                       {idx + 1 < 10 ? `0${idx + 1}` : idx + 1}
                     </span>
                     <button
@@ -431,7 +485,7 @@ export const HomeView: React.FC = () => {
                         if (isTrackPlaying) togglePlay()
                         else playTrack(track, categoryFilteredTracks)
                       }}
-                      className="w-5 h-5 hidden group-hover:flex items-center justify-center text-[#8B5CF6]"
+                      className="w-5 h-5 hidden group-hover:flex items-center justify-center text-[#8B5CF6] flex-shrink-0"
                     >
                       {isTrackPlaying ? (
                         <Pause className="w-3.5 h-3.5 fill-current" />
@@ -441,12 +495,13 @@ export const HomeView: React.FC = () => {
                     </button>
 
                     <img
-                      src={track.coverUrl}
+                      src={getOptimizedArtworkUrl(track.coverUrl, 'thumb')}
                       alt={track.title}
+                      loading="lazy"
                       className="w-10 h-10 sm:w-11 sm:h-11 rounded-lg object-cover flex-shrink-0 shadow border border-white/5"
                     />
 
-                    <div className="flex flex-col min-w-0">
+                    <div className="flex flex-col min-w-0 flex-1">
                       <span
                         className={`text-xs sm:text-sm font-semibold truncate font-heading ${
                           isSelected ? 'text-[#A78BFA] font-bold' : 'text-white group-hover:text-[#A78BFA]'
@@ -467,7 +522,7 @@ export const HomeView: React.FC = () => {
                   </div>
 
                   {/* Right: Actions */}
-                  <div className="flex items-center gap-2.5 text-xs text-[#94A3B8] flex-shrink-0">
+                  <div className="flex items-center gap-1.5 sm:gap-2.5 text-xs text-[#94A3B8] flex-shrink-0">
                     {isTrackPlaying && <EqualizerBars size="sm" />}
 
                     <button
@@ -475,7 +530,7 @@ export const HomeView: React.FC = () => {
                         e.stopPropagation()
                         toggleLike(track.id, track)
                       }}
-                      className="p-1 hover:text-white transition-colors cursor-pointer"
+                      className="p-1.5 hover:text-white transition-colors cursor-pointer"
                       title={liked ? 'Unlike' : 'Like'}
                     >
                       <Heart
@@ -490,7 +545,7 @@ export const HomeView: React.FC = () => {
                         e.stopPropagation()
                         playNext(track)
                       }}
-                      className="p-1 hover:text-[#A78BFA] transition-colors cursor-pointer"
+                      className="p-1.5 hover:text-[#A78BFA] transition-colors cursor-pointer"
                       title="Play Next in queue"
                     >
                       <ListStart className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
@@ -499,13 +554,29 @@ export const HomeView: React.FC = () => {
                     <button
                       onClick={(e) => {
                         e.stopPropagation()
-                        saveOffline(track)
+                        const st = downloadStates[track.id]
+                        if (st?.status === 'downloading') cancelDownload(track.id)
+                        else saveOffline(track)
                       }}
-                      className="p-1 hover:text-[#A78BFA] transition-colors cursor-pointer"
-                      title={isOffline(track.id) ? 'Downloaded Offline' : 'Download song for offline mode'}
+                      className={`p-1.5 transition-colors cursor-pointer ${
+                        !isTrackDownloadable(track).downloadable && !isOffline(track.id)
+                          ? 'text-white/25 hover:text-white/50'
+                          : 'hover:text-[#A78BFA]'
+                      }`}
+                      title={
+                        isOffline(track.id)
+                          ? 'Downloaded Offline (Verified)'
+                          : downloadStates[track.id]?.status === 'downloading'
+                            ? `Downloading ${downloadStates[track.id].progress}% (Tap to cancel)`
+                            : isTrackDownloadable(track).reason || 'Download song for offline mode'
+                      }
                     >
                       {isOffline(track.id) ? (
                         <CheckCircle2 className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-[#8B5CF6]" />
+                      ) : downloadStates[track.id]?.status === 'downloading' ? (
+                        <span className="text-[10px] font-bold font-mono text-purple-300">
+                          {downloadStates[track.id].progress}%
+                        </span>
                       ) : (
                         <ArrowDownToLine className="w-3.5 h-3.5 sm:w-4 sm:h-4 hover:text-[#A78BFA]" />
                       )}

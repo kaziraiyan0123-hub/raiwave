@@ -25,15 +25,30 @@ import android.webkit.JavascriptInterface;
 import android.webkit.PermissionRequest;
 import android.webkit.URLUtil;
 import android.webkit.WebChromeClient;
+import android.webkit.WebResourceRequest;
+import android.webkit.WebResourceResponse;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
 import android.widget.Toast;
 import androidx.activity.OnBackPressedCallback;
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
+import java.io.ByteArrayInputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.InputStream;
+import java.net.HttpURLConnection;
+import java.net.URL;
+import org.json.JSONObject;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -44,6 +59,34 @@ public class MainActivity extends AppCompatActivity {
     private static MainActivity instance;
     private BackgroundAudioWebView webView;
     private PermissionRequest pendingPermissionRequest;
+    private final ConcurrentHashMap<String, AtomicBoolean> activeDownloadCancels = new ConcurrentHashMap<>();
+
+    private String sanitizeId(String trackId) {
+        if (trackId == null) return "unknown";
+        return trackId.replaceAll("[^a-zA-Z0-9._-]", "_");
+    }
+
+    private File getOfflineDir() {
+        File dir = new File(getFilesDir(), "offline_audio");
+        if (!dir.exists()) {
+            dir.mkdirs();
+        }
+        return dir;
+    }
+
+    private File getOfflineAudioFile(String trackId) {
+        return new File(getOfflineDir(), sanitizeId(trackId) + ".audio");
+    }
+
+    private void emitDownloadJsEvent(final String script) {
+        if (webView != null) {
+            runOnUiThread(() -> {
+                if (webView != null) {
+                    webView.evaluateJavascript(script, null);
+                }
+            });
+        }
+    }
 
     public static void handleMediaAction(String action) {
         if (instance != null && instance.webView != null) {
@@ -180,6 +223,87 @@ public class MainActivity extends AppCompatActivity {
         });
 
         webView.setWebViewClient(new WebViewClient() {
+            @Nullable
+            @Override
+            public WebResourceResponse shouldInterceptRequest(WebView view, WebResourceRequest request) {
+                Uri reqUri = request.getUrl();
+                if (reqUri != null && "raiwave-offline.local".equals(reqUri.getHost())) {
+                    try {
+                        String path = reqUri.getPath();
+                        if (path != null && path.startsWith("/track/")) {
+                            String rawId = path.substring("/track/".length());
+                            File audioFile = getOfflineAudioFile(rawId);
+                            if (audioFile.exists() && audioFile.length() > 1024) {
+                                long totalLen = audioFile.length();
+                                String rangeHeader = request.getRequestHeaders() != null
+                                        ? request.getRequestHeaders().get("Range")
+                                        : null;
+
+                                Map<String, String> headers = new HashMap<>();
+                                headers.put("Access-Control-Allow-Origin", "*");
+                                headers.put("Accept-Ranges", "bytes");
+                                headers.put("Cache-Control", "no-store");
+
+                                if (rangeHeader != null && rangeHeader.startsWith("bytes=")) {
+                                    String rangeSpec = rangeHeader.substring("bytes=".length()).trim();
+                                    String[] parts = rangeSpec.split("-", 2);
+                                    long start = parts[0].isEmpty() ? 0 : Long.parseLong(parts[0]);
+                                    long end = (parts.length > 1 && !parts[1].isEmpty())
+                                            ? Math.min(totalLen - 1, Long.parseLong(parts[1]))
+                                            : (totalLen - 1);
+                                    if (start < 0 || start >= totalLen || end < start) {
+                                        start = 0;
+                                        end = totalLen - 1;
+                                    }
+                                    final long sliceLen = end - start + 1;
+                                    final FileInputStream fis = new FileInputStream(audioFile);
+                                    if (start > 0) {
+                                        long skipped = 0;
+                                        while (skipped < start) {
+                                            long n = fis.skip(start - skipped);
+                                            if (n <= 0) break;
+                                            skipped += n;
+                                        }
+                                    }
+                                    InputStream bounded = new InputStream() {
+                                        private long remaining = sliceLen;
+                                        @Override
+                                        public int read() throws java.io.IOException {
+                                            if (remaining <= 0) return -1;
+                                            int b = fis.read();
+                                            if (b != -1) remaining--;
+                                            return b;
+                                        }
+                                        @Override
+                                        public int read(byte[] b, int off, int len) throws java.io.IOException {
+                                            if (remaining <= 0) return -1;
+                                            int toRead = (int) Math.min(len, remaining);
+                                            int count = fis.read(b, off, toRead);
+                                            if (count > 0) remaining -= count;
+                                            return count;
+                                        }
+                                        @Override
+                                        public void close() throws java.io.IOException {
+                                            fis.close();
+                                        }
+                                    };
+                                    headers.put("Content-Range", "bytes " + start + "-" + end + "/" + totalLen);
+                                    headers.put("Content-Length", String.valueOf(sliceLen));
+                                    return new WebResourceResponse("audio/mpeg", null, 206, "Partial Content", headers, bounded);
+                                }
+
+                                headers.put("Content-Length", String.valueOf(totalLen));
+                                return new WebResourceResponse("audio/mpeg", null, 200, "OK", headers, new FileInputStream(audioFile));
+                            }
+                            return new WebResourceResponse("text/plain", "UTF-8", 404, "Not Found", null, new ByteArrayInputStream(new byte[0]));
+                        }
+                    } catch (Exception e) {
+                        Log.w("RAIWAVE_OFFLINE", "Failed serving offline file", e);
+                    }
+                }
+                return super.shouldInterceptRequest(view, request);
+            }
+
             @Override
             public boolean shouldOverrideUrlLoading(WebView view, String url) {
                 view.loadUrl(url);
@@ -320,6 +444,160 @@ public class MainActivity extends AppCompatActivity {
                     } catch (Exception ignored) {}
                 }
             });
+        }
+
+        @JavascriptInterface
+        public void downloadOfflineAudio(final String trackId, final String audioUrl) {
+            if (trackId == null || audioUrl == null ||
+                    !(audioUrl.startsWith("https://") || audioUrl.startsWith("http://"))) {
+                emitDownloadJsEvent("window.__raiwaveNativeDownloadComplete && window.__raiwaveNativeDownloadComplete("
+                        + JSONObject.quote(trackId == null ? "" : trackId)
+                        + ", false, 'Unsupported or missing audio URL', 0, '')");
+                return;
+            }
+
+            final String safeId = sanitizeId(trackId);
+            final AtomicBoolean cancelled = new AtomicBoolean(false);
+            AtomicBoolean prevCancel = activeDownloadCancels.put(safeId, cancelled);
+            if (prevCancel != null) {
+                prevCancel.set(true);
+            }
+
+            new Thread(() -> {
+                File tmpFile = new File(getOfflineDir(), safeId + ".tmp");
+                File finalFile = getOfflineAudioFile(trackId);
+                HttpURLConnection conn = null;
+                try {
+                    if (finalFile.exists() && finalFile.length() > 1024) {
+                        String localUrl = "https://raiwave-offline.local/track/" + safeId;
+                        emitDownloadJsEvent("window.__raiwaveNativeDownloadComplete && window.__raiwaveNativeDownloadComplete("
+                                + JSONObject.quote(trackId) + ", true, '', " + finalFile.length() + ", "
+                                + JSONObject.quote(localUrl) + ")");
+                        activeDownloadCancels.remove(safeId, cancelled);
+                        return;
+                    }
+
+                    long existingBytes = tmpFile.exists() ? tmpFile.length() : 0;
+                    URL url = new URL(audioUrl);
+                    conn = (HttpURLConnection) url.openConnection();
+                    conn.setConnectTimeout(15000);
+                    conn.setReadTimeout(20000);
+                    conn.setInstanceFollowRedirects(true);
+                    conn.setRequestProperty("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/124.0.0.0 Safari/537.36");
+                    if (existingBytes > 0) {
+                        conn.setRequestProperty("Range", "bytes=" + existingBytes + "-");
+                    }
+
+                    int status = conn.getResponseCode();
+                    boolean appendMode = (status == HttpURLConnection.HTTP_PARTIAL && existingBytes > 0);
+                    if (status != HttpURLConnection.HTTP_OK && status != HttpURLConnection.HTTP_PARTIAL) {
+                        if (tmpFile.exists()) tmpFile.delete();
+                        throw new Exception("HTTP " + status);
+                    }
+
+                    long totalBytes = conn.getContentLengthLong();
+                    if (appendMode && totalBytes > 0) {
+                        totalBytes += existingBytes;
+                    } else if (!appendMode) {
+                        existingBytes = 0;
+                    }
+
+                    String contentType = conn.getContentType();
+                    if (contentType != null && !contentType.startsWith("audio/") && !contentType.contains("octet-stream")) {
+                        throw new Exception("Invalid audio content type: " + contentType);
+                    }
+
+                    long downloaded = existingBytes;
+                    int lastPct = -1;
+                    try (InputStream in = conn.getInputStream();
+                         FileOutputStream out = new FileOutputStream(tmpFile, appendMode)) {
+                        byte[] buf = new byte[16384];
+                        int n;
+                        while ((n = in.read(buf)) != -1) {
+                            if (cancelled.get()) {
+                                throw new InterruptedException("CANCELLED");
+                            }
+                            out.write(buf, 0, n);
+                            downloaded += n;
+                            if (totalBytes > 0) {
+                                int pct = (int) Math.min(99, (downloaded * 100L) / totalBytes);
+                                if (pct != lastPct) {
+                                    lastPct = pct;
+                                    emitDownloadJsEvent("window.__raiwaveNativeDownloadProgress && window.__raiwaveNativeDownloadProgress("
+                                            + JSONObject.quote(trackId) + ", " + pct + ", " + downloaded + ", " + totalBytes + ")");
+                                }
+                            }
+                        }
+                        out.getFD().sync();
+                    }
+
+                    if (cancelled.get()) {
+                        throw new InterruptedException("CANCELLED");
+                    }
+
+                    if (!tmpFile.exists() || tmpFile.length() <= 1024 || (totalBytes > 0 && tmpFile.length() < totalBytes)) {
+                        throw new Exception("Incomplete audio file downloaded");
+                    }
+
+                    if (finalFile.exists()) finalFile.delete();
+                    if (!tmpFile.renameTo(finalFile)) {
+                        throw new Exception("Failed to save audio file");
+                    }
+
+                    String localUrl = "https://raiwave-offline.local/track/" + safeId;
+                    emitDownloadJsEvent("window.__raiwaveNativeDownloadComplete && window.__raiwaveNativeDownloadComplete("
+                            + JSONObject.quote(trackId) + ", true, '', " + finalFile.length() + ", "
+                            + JSONObject.quote(localUrl) + ")");
+                } catch (InterruptedException cancelEx) {
+                    if (tmpFile.exists()) tmpFile.delete();
+                    emitDownloadJsEvent("window.__raiwaveNativeDownloadComplete && window.__raiwaveNativeDownloadComplete("
+                            + JSONObject.quote(trackId) + ", false, 'cancelled', 0, '')");
+                } catch (Exception e) {
+                    emitDownloadJsEvent("window.__raiwaveNativeDownloadComplete && window.__raiwaveNativeDownloadComplete("
+                            + JSONObject.quote(trackId) + ", false, "
+                            + JSONObject.quote(e.getMessage() != null ? e.getMessage() : "Download failed")
+                            + ", 0, '')");
+                } finally {
+                    if (conn != null) conn.disconnect();
+                    activeDownloadCancels.remove(safeId, cancelled);
+                }
+            }).start();
+        }
+
+        @JavascriptInterface
+        public boolean cancelOfflineAudio(String trackId) {
+            String safeId = sanitizeId(trackId);
+            AtomicBoolean flag = activeDownloadCancels.get(safeId);
+            if (flag != null) {
+                flag.set(true);
+                return true;
+            }
+            return false;
+        }
+
+        @JavascriptInterface
+        public boolean deleteOfflineAudio(String trackId) {
+            String safeId = sanitizeId(trackId);
+            File tmpFile = new File(getOfflineDir(), safeId + ".tmp");
+            if (tmpFile.exists()) tmpFile.delete();
+            File f = getOfflineAudioFile(trackId);
+            return !f.exists() || f.delete();
+        }
+
+        @JavascriptInterface
+        public String getOfflineAudioInfo(String trackId) {
+            try {
+                String safeId = sanitizeId(trackId);
+                File f = getOfflineAudioFile(trackId);
+                JSONObject obj = new JSONObject();
+                boolean exists = f.exists() && f.length() > 1024;
+                obj.put("exists", exists);
+                obj.put("sizeBytes", exists ? f.length() : 0);
+                obj.put("localUrl", exists ? ("https://raiwave-offline.local/track/" + safeId) : "");
+                return obj.toString();
+            } catch (Exception e) {
+                return "{\"exists\":false,\"sizeBytes\":0,\"localUrl\":\"\"}";
+            }
         }
 
         @JavascriptInterface

@@ -21,7 +21,7 @@ import {
   Check,
 } from 'lucide-react'
 import { usePlayer } from '../context/PlayerContext'
-import { RaiwaveLogo } from './RaiwaveLogo'
+import { RaiwaveIcon } from './RaiwaveLogo'
 
 export const AndroidMediaNotificationCard: React.FC = () => {
   const {
@@ -39,6 +39,7 @@ export const AndroidMediaNotificationCard: React.FC = () => {
     toggleRepeat,
     isLiked,
     toggleLike,
+    openArtist,
     volume,
     setVolume,
     isMuted,
@@ -63,7 +64,7 @@ export const AndroidMediaNotificationCard: React.FC = () => {
 
   useEffect(() => {
     setCoverError(false)
-  }, [currentTrack?.id])
+  }, [currentTrack?.id, currentTrack?.coverUrl])
 
   // Close output menu when clicking outside
   useEffect(() => {
@@ -185,7 +186,7 @@ export const AndroidMediaNotificationCard: React.FC = () => {
             {/* Left: Album Artwork (Rounded Square) */}
             <div
               onClick={toggleNotificationExpanded}
-              className="relative w-14 h-14 sm:w-16 sm:h-16 flex-shrink-0 rounded-[18px] sm:rounded-[20px] overflow-hidden shadow-lg border border-white/10 group cursor-pointer bg-[#181B27] flex items-center justify-center"
+              className="relative w-14 h-14 sm:w-16 sm:h-16 flex-shrink-0 rounded-[18px] sm:rounded-[20px] overflow-hidden shadow-lg border border-white/10 group cursor-pointer bg-[#141A23] flex items-center justify-center"
               title="Click to expand player"
             >
               {!coverError && currentTrack.coverUrl ? (
@@ -197,11 +198,13 @@ export const AndroidMediaNotificationCard: React.FC = () => {
                   className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
                 />
               ) : (
-                <RaiwaveLogo size="sm" showText={false} />
+                <div className="w-full h-full flex items-center justify-center">
+                  <RaiwaveIcon size={34} />
+                </div>
               )}
             </div>
 
-            {/* Center: Spotify Indicator + Song Title + Artist */}
+            {/* Center: Music / Device Indicator + Song Title + Artist */}
             <div
               onClick={toggleNotificationExpanded}
               className="flex-1 min-w-0 pr-1 cursor-pointer"
@@ -216,7 +219,7 @@ export const AndroidMediaNotificationCard: React.FC = () => {
                 }}
                 title="Select output device"
               >
-                <RaiwaveLogo size="sm" showText={false} />
+                <RaiwaveIcon size={16} />
                 <span className="text-[12px] font-medium tracking-wide truncate">
                   {selectedOutput}
                 </span>
@@ -227,10 +230,17 @@ export const AndroidMediaNotificationCard: React.FC = () => {
                 {currentTrack.title}
               </h4>
 
-              {/* Artist Name */}
-              <p className="text-xs sm:text-[13px] font-medium text-white/60 truncate mt-0.5">
+              {/* Artist Name (Clickable) */}
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation()
+                  openArtist(currentTrack.artist)
+                }}
+                className="text-xs sm:text-[13px] font-medium text-white/60 hover:text-white hover:underline truncate mt-0.5 block max-w-full text-left cursor-pointer"
+              >
                 {currentTrack.artist}
-              </p>
+              </button>
             </div>
 
             {/* Right: Solid White Circular Play/Pause & Chevron Down */}
@@ -284,7 +294,7 @@ export const AndroidMediaNotificationCard: React.FC = () => {
             {/* Top Row: Album Artwork (Left) + Track Info & Timeline (Right) */}
             <div className="flex items-start gap-3.5 sm:gap-4">
               {/* Album Artwork: Rounded Square */}
-              <div className="relative w-24 h-24 sm:w-28 sm:h-28 flex-shrink-0 rounded-[20px] sm:rounded-[22px] overflow-hidden shadow-2xl border border-white/10 group bg-[#181B27] flex items-center justify-center">
+              <div className="relative w-24 h-24 sm:w-28 sm:h-28 flex-shrink-0 rounded-[20px] sm:rounded-[22px] overflow-hidden shadow-2xl border border-white/10 group bg-[#141A23] flex items-center justify-center">
                 {!coverError && currentTrack.coverUrl ? (
                   <img
                     src={currentTrack.coverUrl}
@@ -294,7 +304,9 @@ export const AndroidMediaNotificationCard: React.FC = () => {
                     className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
                   />
                 ) : (
-                  <RaiwaveLogo size="md" showText={false} />
+                  <div className="w-full h-full flex items-center justify-center">
+                    <RaiwaveIcon size={50} />
+                  </div>
                 )}
               </div>
 
@@ -302,13 +314,13 @@ export const AndroidMediaNotificationCard: React.FC = () => {
               <div className="flex-1 flex flex-col justify-between min-w-0 h-24 sm:h-28 pr-0.5">
                 {/* Header: Device Indicator + Collapse Chevron */}
                 <div className="flex items-center justify-between">
-                  {/* Spotify indicator / device button */}
+                  {/* Output indicator / device button */}
                   <button
                     onClick={() => setIsOutputMenuOpen(!isOutputMenuOpen)}
                     className="flex items-center gap-1.5 text-white/75 hover:text-white transition-colors group cursor-pointer"
                     title="Select audio output"
                   >
-                    <RaiwaveLogo size="sm" showText={false} />
+                    <RaiwaveIcon size={16} />
                     <span className="text-[12px] sm:text-[13px] font-medium tracking-wide truncate max-w-[140px]">
                       {selectedOutput}
                     </span>
@@ -338,9 +350,13 @@ export const AndroidMediaNotificationCard: React.FC = () => {
                   <h3 className="text-lg sm:text-[21px] font-bold tracking-tight text-white font-heading truncate leading-tight drop-shadow-sm">
                     {currentTrack.title}
                   </h3>
-                  <p className="text-xs sm:text-[13.5px] font-medium text-white/60 truncate mt-0.5">
+                  <button
+                    type="button"
+                    onClick={() => openArtist(currentTrack.artist)}
+                    className="text-xs sm:text-[13.5px] font-medium text-white/60 hover:text-white hover:underline truncate mt-0.5 block max-w-full text-left cursor-pointer"
+                  >
                     {currentTrack.artist}
-                  </p>
+                  </button>
                 </div>
 
                 {/* Progress Bar & Timestamps (Directly underneath in right column) */}
@@ -458,7 +474,7 @@ export const AndroidMediaNotificationCard: React.FC = () => {
               {/* Left Group: Heart + UP NEXT queue button */}
               <div className="flex items-center gap-2">
                 <button
-                  onClick={() => toggleLike(currentTrack.id)}
+                  onClick={() => toggleLike(currentTrack.id, currentTrack)}
                   className={`p-1.5 rounded-full transition-all active:scale-90 cursor-pointer ${
                     liked
                       ? 'text-[#EC4899] drop-shadow-[0_0_8px_rgba(236,72,153,0.6)]'

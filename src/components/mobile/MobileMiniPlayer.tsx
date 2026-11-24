@@ -1,6 +1,7 @@
 import React from 'react'
 import { Play, Pause, SkipForward, Heart } from 'lucide-react'
 import { usePlayer } from '../../context/PlayerContext'
+import { useMobileKeyboardOpen } from '../../hooks/useMobileKeyboardOpen'
 import { EqualizerBars } from '../EqualizerBars'
 
 export const MobileMiniPlayer: React.FC = () => {
@@ -17,8 +18,9 @@ export const MobileMiniPlayer: React.FC = () => {
     dynamicTheme,
     openArtist,
   } = usePlayer()
+  const isKeyboardOpen = useMobileKeyboardOpen()
 
-  if (!currentTrack) return null
+  if (!currentTrack || isKeyboardOpen) return null
 
   const progressPercent = duration > 0 ? (currentTime / duration) * 100 : 0
   const liked = isLiked(currentTrack.id)
@@ -82,7 +84,7 @@ export const MobileMiniPlayer: React.FC = () => {
           <button
             onClick={(e) => {
               e.stopPropagation()
-              toggleLike(currentTrack.id)
+              toggleLike(currentTrack.id, currentTrack)
             }}
             className="w-9 h-9 rounded-full flex items-center justify-center text-white/60 hover:text-white active:scale-90 transition-all cursor-pointer"
             title={liked ? 'Unlike' : 'Like'}

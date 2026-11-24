@@ -56,11 +56,16 @@ export interface Artist {
   bio: string
   topTracks: Track[]
   headerImage: string
+  bannerUrl?: string
   albums?: Album[]
+  eps?: Album[]
+  appearsOn?: Album[]
   singles?: Track[]
   relatedArtists?: { id: string; name: string; avatarUrl: string }[]
   isVerified?: boolean
   genre?: string
+  genres?: string[]
+  isFallbackBio?: boolean
 }
 
 export type ViewMode =

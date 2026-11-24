@@ -1,11 +1,11 @@
-import React, { useState, useEffect } from 'react'
-import { Plus, Heart, Bookmark, ArrowDownToLine, CheckCircle2, Music } from 'lucide-react'
+import React, { useState, useEffect, useMemo } from 'react'
+import { Plus, Heart, Bookmark, ArrowDownToLine, CheckCircle2, Music, Trash2 } from 'lucide-react'
 import { usePlayer } from '../../context/PlayerContext'
 import { SAMPLE_PLAYLISTS, SAMPLE_ALBUMS, SAMPLE_ARTISTS } from '../../data/musicData'
 import { CURATED_ARTISTS } from '../../services/artistService'
 import { CreatePlaylistModal } from '../CreatePlaylistModal'
-import { offlineService } from '../../services/offlineService'
-import type { Track } from '../../types'
+import { offlineService, formatBytes, type OfflineVaultItem } from '../../services/offlineService'
+import { getOptimizedArtworkUrl } from '../../utils/networkImage'
 
 export const LibraryView: React.FC = () => {
   const {
@@ -18,18 +18,25 @@ export const LibraryView: React.FC = () => {
     userProfile,
     playTrack,
     offlineTrackIds,
+    removeOffline,
   } = usePlayer()
 
   const [activeFilter, setActiveFilter] = useState<'all' | 'offline' | 'playlists' | 'albums' | 'artists'>('all')
   const [isModalOpen, setIsModalOpen] = useState(false)
-  const [savedOfflineTracks, setSavedOfflineTracks] = useState<Track[]>([])
+  const [vaultItems, setVaultItems] = useState<OfflineVaultItem[]>([])
 
-  // Load saved offline tracks
+  // Load verified offline vault items & storage sizes
   useEffect(() => {
-    offlineService.getOfflineTracks().then((tracks) => {
-      setSavedOfflineTracks(tracks)
+    offlineService.getOfflineVaultItems().then((items) => {
+      setVaultItems(items)
     })
   }, [offlineTrackIds.length])
+
+  const savedOfflineTracks = useMemo(() => vaultItems.map((i) => i.track), [vaultItems])
+  const totalVaultBytes = useMemo(
+    () => vaultItems.reduce((sum, item) => sum + (item.sizeBytes || 0), 0),
+    [vaultItems]
+  )
 
   const allPlaylists = [...userPlaylists, ...SAMPLE_PLAYLISTS]
 
@@ -122,46 +129,69 @@ export const LibraryView: React.FC = () => {
         {/* Offline Downloads Vault Section */}
         {(activeFilter === 'all' || activeFilter === 'offline') && (
           <section className="space-y-3">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <ArrowDownToLine className="w-4 h-4 text-[#52D6C9]" />
-                <h2 className="text-sm sm:text-base font-bold text-white font-display">
-                  Offline Music Vault ({savedOfflineTracks.length})
+            <div className="flex items-center justify-between gap-2">
+              <div className="flex items-center gap-2 min-w-0">
+                <ArrowDownToLine className="w-4 h-4 text-[#52D6C9] flex-shrink-0" />
+                <h2 className="text-sm sm:text-base font-bold text-white font-display truncate">
+                  Offline Music Vault ({vaultItems.length})
                 </h2>
               </div>
-              <span className="text-[11px] text-[#52D6C9] font-mono">No Wi-Fi Needed</span>
+              <span className="text-[11px] text-[#52D6C9] font-mono flex-shrink-0">
+                {vaultItems.length > 0 ? `${formatBytes(totalVaultBytes)} saved` : 'Verified Offline Files'}
+              </span>
             </div>
 
-            {savedOfflineTracks.length === 0 ? (
+            {vaultItems.length === 0 ? (
               <div className="p-5 rounded-2xl bg-[#12141D]/50 border border-dashed border-[#202A34] text-center space-y-1">
                 <Music className="w-7 h-7 text-[#94A3B8] mx-auto mb-1.5 opacity-60" />
                 <p className="text-xs sm:text-sm font-semibold text-white font-heading">
-                  No offline tracks saved yet
+                  No verified offline tracks saved yet
                 </p>
-                <p className="text-[11px] text-[#94A3B8]">
-                  Tap the download icon on any song to save for offline listening.
+                <p className="text-[11px] text-[#94A3B8] max-w-md mx-auto">
+                  Tracks with direct downloadable audio files can be saved here for internet-free playback.
                 </p>
               </div>
             ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2.5">
-                {savedOfflineTracks.map((track) => (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5">
+                {vaultItems.map(({ track, sizeBytes }) => (
                   <div
                     key={track.id}
                     onClick={() => playTrack(track, savedOfflineTracks)}
-                    className="flex items-center gap-3 p-2.5 rounded-xl bg-[#12141D] hover:bg-[#181B27] border border-white/5 cursor-pointer group transition-all"
+                    className="flex items-center gap-2.5 p-2.5 rounded-xl bg-[#12141D] hover:bg-[#181B27] border border-white/5 cursor-pointer group transition-all"
                   >
                     <img
-                      src={track.coverUrl}
+                      src={getOptimizedArtworkUrl(track.coverUrl, 'thumb')}
                       alt={track.title}
+                      loading="lazy"
                       className="w-11 h-11 rounded-lg object-cover flex-shrink-0"
                     />
-                    <div className="truncate flex-1 min-w-0">
+                    <div className="min-w-0 flex-1">
                       <p className="text-xs sm:text-sm font-bold text-white truncate group-hover:text-purple-400 transition-colors">
                         {track.title}
                       </p>
-                      <p className="text-[11px] text-[#94A3B8] truncate">{track.artist}</p>
+                      <div className="flex items-center gap-1.5 text-[11px] text-[#94A3B8] truncate">
+                        <span className="truncate">{track.artist}</span>
+                        <span>•</span>
+                        <span className="font-mono text-emerald-400/90 flex-shrink-0">
+                          {formatBytes(sizeBytes)}
+                        </span>
+                      </div>
                     </div>
-                    <CheckCircle2 className="w-4 h-4 text-emerald-400 flex-shrink-0" />
+                    <CheckCircle2
+                      className="w-4 h-4 text-emerald-400 flex-shrink-0"
+                      aria-label="Verified offline audio"
+                    />
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        removeOffline(track.id)
+                      }}
+                      title="Remove download & free storage"
+                      className="p-1.5 rounded-lg text-white/45 hover:text-red-400 hover:bg-red-500/10 transition-colors cursor-pointer flex-shrink-0"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
                   </div>
                 ))}
               </div>

@@ -243,7 +243,15 @@ public class MediaNotificationService extends Service {
             metaBuilder.putLong(MediaMetadataCompat.METADATA_KEY_DURATION, durationMs);
         }
 
-        if (cachedArtwork != null && coverUrl != null && coverUrl.equals(lastCoverUrl)) {
+        // Clear stale artwork immediately if song cover URL changed or became empty
+        if (coverUrl == null || coverUrl.isEmpty()) {
+            lastCoverUrl = "";
+            cachedArtwork = BitmapFactory.decodeResource(getResources(), R.drawable.ic_launcher);
+        } else if (!coverUrl.equals(lastCoverUrl)) {
+            cachedArtwork = null;
+        }
+
+        if (cachedArtwork != null) {
             metaBuilder.putBitmap(MediaMetadataCompat.METADATA_KEY_ALBUM_ART, cachedArtwork);
             metaBuilder.putBitmap(MediaMetadataCompat.METADATA_KEY_ART, cachedArtwork);
         }
@@ -273,7 +281,7 @@ public class MediaNotificationService extends Service {
                         .setMediaSession(mediaSession.getSessionToken())
                         .setShowActionsInCompactView(0, 1, 2));
 
-        if (cachedArtwork != null && coverUrl != null && coverUrl.equals(lastCoverUrl)) {
+        if (cachedArtwork != null) {
             builder.setLargeIcon(cachedArtwork);
         }
 
@@ -297,28 +305,37 @@ public class MediaNotificationService extends Service {
 
         // Fetch artwork in background thread if changed
         if (coverUrl != null && !coverUrl.isEmpty() && !coverUrl.equals(lastCoverUrl)) {
-            lastCoverUrl = coverUrl;
+            final String requestedUrl = coverUrl;
+            lastCoverUrl = requestedUrl;
             new Thread(() -> {
+                Bitmap bitmap = null;
                 try {
-                    URL url = new URL(coverUrl);
+                    URL url = new URL(requestedUrl);
                     HttpURLConnection conn = (HttpURLConnection) url.openConnection();
                     conn.setDoInput(true);
                     conn.setConnectTimeout(4000);
                     conn.setReadTimeout(4000);
                     conn.connect();
-                    InputStream input = conn.getInputStream();
-                    Bitmap bitmap = BitmapFactory.decodeStream(input);
-                    if (bitmap != null) {
-                        cachedArtwork = bitmap;
-                        builder.setLargeIcon(bitmap);
-                        metaBuilder.putBitmap(MediaMetadataCompat.METADATA_KEY_ALBUM_ART, bitmap);
-                        metaBuilder.putBitmap(MediaMetadataCompat.METADATA_KEY_ART, bitmap);
-                        if (mediaSession != null) {
-                            mediaSession.setMetadata(metaBuilder.build());
-                        }
-                        notificationManager.notify(NOTIFICATION_ID, builder.build());
+                    try (InputStream input = conn.getInputStream()) {
+                        bitmap = BitmapFactory.decodeStream(input);
                     }
+                    conn.disconnect();
                 } catch (Exception ignored) {}
+
+                if (bitmap == null) {
+                    bitmap = BitmapFactory.decodeResource(getResources(), R.drawable.ic_launcher);
+                }
+
+                if (bitmap != null && requestedUrl.equals(lastCoverUrl)) {
+                    cachedArtwork = bitmap;
+                    builder.setLargeIcon(bitmap);
+                    metaBuilder.putBitmap(MediaMetadataCompat.METADATA_KEY_ALBUM_ART, bitmap);
+                    metaBuilder.putBitmap(MediaMetadataCompat.METADATA_KEY_ART, bitmap);
+                    if (mediaSession != null) {
+                        mediaSession.setMetadata(metaBuilder.build());
+                    }
+                    notificationManager.notify(NOTIFICATION_ID, builder.build());
+                }
             }).start();
         }
     }

@@ -11,7 +11,7 @@ import { MobileFullPlayer } from './components/mobile/MobileFullPlayer'
 import { YouTubeIframeContainer } from './components/YouTubeIframeContainer'
 import { ToastNotification } from './components/ToastNotification'
 import { ProfileModal } from './components/ProfileModal'
-import { WelcomeModal } from './components/WelcomeModal'
+import { WelcomeScreen } from './components/WelcomeScreen'
 import { AndroidMediaNotificationCard } from './components/AndroidMediaNotificationCard'
 import { UpNextPanel } from './components/UpNextPanel'
 import { DedicatedVisualizerModal } from './components/visualizer/DedicatedVisualizerModal'
@@ -55,8 +55,8 @@ function MainAppShell() {
       {/* User Gmail Profile & Account Modal */}
       <ProfileModal />
 
-      {/* Personalized Welcome Onboarding Modal */}
-      <WelcomeModal />
+      {/* Personalized Opening / Welcome Screen */}
+      <WelcomeScreen />
 
       {/* Premium Android-Style Music Notification Card (Compact & Expanded) */}
       <AndroidMediaNotificationCard />

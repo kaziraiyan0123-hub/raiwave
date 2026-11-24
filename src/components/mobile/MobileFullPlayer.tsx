@@ -43,7 +43,10 @@ export const MobileFullPlayer: React.FC = () => {
     liveLyrics,
     isLoadingLyrics,
     saveOffline,
+    cancelDownload,
+    downloadStates,
     isOffline,
+    isTrackDownloadable,
     dynamicTheme,
     openDedicatedVisualizer,
   } = usePlayer()
@@ -120,12 +123,33 @@ export const MobileFullPlayer: React.FC = () => {
         </div>
 
         <button
-          onClick={() => saveOffline(currentTrack)}
-          className="w-10 h-10 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-white/80 hover:text-white active:scale-95 transition-all"
-          title={downloaded ? 'Saved Offline' : 'Download Song Offline'}
+          onClick={() => {
+            const st = downloadStates[currentTrack.id]
+            if (st?.status === 'downloading') {
+              cancelDownload(currentTrack.id)
+            } else {
+              saveOffline(currentTrack)
+            }
+          }}
+          className={`w-10 h-10 rounded-full bg-white/5 border border-white/10 flex items-center justify-center active:scale-95 transition-all cursor-pointer ${
+            !isTrackDownloadable(currentTrack).downloadable && !downloaded
+              ? 'text-white/35'
+              : 'text-white/80 hover:text-white'
+          }`}
+          title={
+            downloaded
+              ? 'Downloaded Offline (Verified)'
+              : downloadStates[currentTrack.id]?.status === 'downloading'
+                ? `Downloading ${downloadStates[currentTrack.id].progress}% (Tap to cancel)`
+                : isTrackDownloadable(currentTrack).reason || 'Download Song Offline'
+          }
         >
           {downloaded ? (
             <CheckCircle2 className="w-5 h-5" style={{ color: dynamicTheme.primary }} />
+          ) : downloadStates[currentTrack.id]?.status === 'downloading' ? (
+            <span className="text-[10px] font-bold text-purple-300 font-mono">
+              {downloadStates[currentTrack.id].progress}%
+            </span>
           ) : (
             <ArrowDownToLine className="w-5 h-5" />
           )}
@@ -173,7 +197,7 @@ export const MobileFullPlayer: React.FC = () => {
               </div>
 
               <button
-                onClick={() => toggleLike(currentTrack.id)}
+                onClick={() => toggleLike(currentTrack.id, currentTrack)}
                 className="w-11 h-11 rounded-full bg-white/5 hover:bg-white/10 border border-white/10 flex items-center justify-center shadow-lg active:scale-90 transition-transform flex-shrink-0 cursor-pointer"
                 title={liked ? 'Unlike' : 'Like song'}
               >
@@ -329,15 +353,15 @@ export const MobileFullPlayer: React.FC = () => {
           </button>
         </div>
 
-        {/* Footer shortcuts: Toggle Lyrics, Queue & Share */}
-        <div className="flex items-center justify-around pt-2 border-t border-white/5 text-[#94A3B8]">
+        {/* Footer shortcuts: Toggle Lyrics, Queue, Visualizer & Share */}
+        <div className="flex items-center justify-between gap-1 pt-2 border-t border-white/5 text-[#94A3B8]">
           <button
             onClick={() => setShowInlineLyrics((prev) => !prev)}
-            className={`flex items-center gap-1.5 text-xs transition-colors py-1.5 px-3 rounded-full ${
+            className={`flex items-center gap-1 text-[11px] whitespace-nowrap transition-colors py-1.5 px-2.5 rounded-full cursor-pointer ${
               showInlineLyrics ? 'bg-purple-500/20 text-[#A78BFA] font-bold' : 'hover:text-white'
             }`}
           >
-            <Mic2 className="w-4 h-4 text-[#8B5CF6]" />
+            <Mic2 className="w-3.5 h-3.5 text-[#8B5CF6] flex-shrink-0" />
             <span>{showInlineLyrics ? 'View Art' : 'Live Lyrics'}</span>
           </button>
 
@@ -346,9 +370,9 @@ export const MobileFullPlayer: React.FC = () => {
               toggleMobilePlayer()
               navigateTo('queue')
             }}
-            className="flex items-center gap-1.5 text-xs hover:text-white transition-colors py-1.5 px-3 rounded-full"
+            className="flex items-center gap-1 text-[11px] whitespace-nowrap hover:text-white transition-colors py-1.5 px-2.5 rounded-full cursor-pointer"
           >
-            <ListMusic className="w-4 h-4 text-[#52D6C9]" />
+            <ListMusic className="w-3.5 h-3.5 text-[#52D6C9] flex-shrink-0" />
             <span>Queue</span>
           </button>
 
@@ -356,10 +380,10 @@ export const MobileFullPlayer: React.FC = () => {
             onClick={() => {
               openDedicatedVisualizer()
             }}
-            className="flex items-center gap-1.5 text-xs text-purple-300 hover:text-white transition-colors py-1.5 px-3 rounded-full cursor-pointer bg-purple-500/20 border border-purple-500/30 shadow-[0_0_12px_rgba(168,85,247,0.3)] active:scale-95"
+            className="flex items-center gap-1 text-[11px] whitespace-nowrap text-purple-300 hover:text-white transition-colors py-1.5 px-2.5 rounded-full cursor-pointer bg-purple-500/20 border border-purple-500/30 shadow-[0_0_12px_rgba(168,85,247,0.3)] active:scale-95"
             title="Open Immersive Visualizer"
           >
-            <Activity className="w-4 h-4 text-purple-400" />
+            <Activity className="w-3.5 h-3.5 text-purple-400 flex-shrink-0" />
             <span className="font-semibold">Visualizer</span>
           </button>
 
@@ -373,9 +397,9 @@ export const MobileFullPlayer: React.FC = () => {
                 }).catch(() => {})
               }
             }}
-            className="flex items-center gap-1.5 text-xs hover:text-white transition-colors py-1.5 px-3 rounded-full"
+            className="flex items-center gap-1 text-[11px] whitespace-nowrap hover:text-white transition-colors py-1.5 px-2.5 rounded-full cursor-pointer"
           >
-            <Share2 className="w-4 h-4" />
+            <Share2 className="w-3.5 h-3.5 flex-shrink-0" />
             <span>Share</span>
           </button>
         </div>

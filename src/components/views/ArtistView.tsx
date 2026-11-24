@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react'
+import React, { useState, useEffect } from 'react'
 import {
   Play,
   Pause,
@@ -30,10 +30,11 @@ export const ArtistView: React.FC = () => {
     playNext,
     addToQueue,
     showToast,
+    isLoadingArtist,
   } = usePlayer()
 
   const [isFollowing, setIsFollowing] = useState(false)
-  const [discographyFilter, setDiscographyFilter] = useState<'all' | 'albums' | 'singles'>('all')
+  const [discographyFilter, setDiscographyFilter] = useState<'all' | 'albums' | 'eps' | 'singles'>('all')
   const [activeMenuTrackId, setActiveMenuTrackId] = useState<string | null>(null)
 
   useEffect(() => {
@@ -41,6 +42,24 @@ export const ArtistView: React.FC = () => {
       setIsFollowing(artistService.isFollowing(selectedArtist.id))
     }
   }, [selectedArtist?.id])
+
+  useEffect(() => {
+    if (!activeMenuTrackId) return
+    const closeMenu = (e: MouseEvent) => {
+      const target = e.target as Element | null
+      if (target?.closest?.('[data-track-menu]')) return
+      setActiveMenuTrackId(null)
+    }
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setActiveMenuTrackId(null)
+    }
+    window.addEventListener('click', closeMenu)
+    window.addEventListener('keydown', onKey)
+    return () => {
+      window.removeEventListener('click', closeMenu)
+      window.removeEventListener('keydown', onKey)
+    }
+  }, [activeMenuTrackId])
 
   if (!selectedArtist) {
     return (
@@ -52,7 +71,9 @@ export const ArtistView: React.FC = () => {
 
   const tracks = selectedArtist.topTracks || []
   const albums = selectedArtist.albums || []
+  const eps = selectedArtist.eps || []
   const singles = selectedArtist.singles || []
+  const appearsOn = selectedArtist.appearsOn || []
   const isArtistPlaying = isPlaying && tracks.some((t) => t.id === currentTrack?.id)
 
   const handlePlayAll = () => {
@@ -95,26 +116,30 @@ export const ArtistView: React.FC = () => {
   }
 
   // Filtered discography releases
-  const displayedAlbums = useMemo(() => {
-    if (discographyFilter === 'singles') return []
-    return albums
-  }, [albums, discographyFilter])
-
-  const displayedSingles = useMemo(() => {
-    if (discographyFilter === 'albums') return []
-    return singles
-  }, [singles, discographyFilter])
+  const displayedAlbums =
+    discographyFilter === 'singles' || discographyFilter === 'eps' ? [] : albums
+  const displayedEps =
+    discographyFilter === 'albums' || discographyFilter === 'singles' ? [] : eps
+  const displayedSingles =
+    discographyFilter === 'albums' || discographyFilter === 'eps' ? [] : singles
 
   return (
     <div className="select-none pb-44 md:pb-28 w-full max-w-full touch-pan-y">
       {/* 1. Immersive Hero Banner with Gradient Fade */}
       <div
-        className="relative min-h-[260px] sm:min-h-[320px] flex items-end p-4 sm:p-8 bg-cover bg-center overflow-hidden touch-pan-y"
-        style={{
-          backgroundImage: `linear-gradient(to bottom, rgba(11,13,19,0.3) 0%, rgba(11,13,19,0.8) 65%, #0B0D13 100%), url(${
-            selectedArtist.headerImage || selectedArtist.avatarUrl
-          })`,
-        }}
+        className="relative min-h-[260px] sm:min-h-[320px] flex items-end p-4 sm:p-8 bg-cover bg-center overflow-hidden touch-pan-y bg-[#131024]"
+        style={
+          selectedArtist.headerImage || selectedArtist.avatarUrl
+            ? {
+                backgroundImage: `linear-gradient(to bottom, rgba(11,13,19,0.3) 0%, rgba(11,13,19,0.82) 65%, #0B0D13 100%), url(${
+                  selectedArtist.headerImage || selectedArtist.avatarUrl
+                })`,
+              }
+            : {
+                backgroundImage:
+                  'linear-gradient(135deg, rgba(124,58,237,0.35) 0%, rgba(19,16,36,0.92) 65%, #0B0D13 100%)',
+              }
+        }
       >
         {/* Mobile In-Page Back Button */}
         <button
@@ -138,8 +163,14 @@ export const ArtistView: React.FC = () => {
             {selectedArtist.name}
           </h1>
 
-          <div className="flex items-center gap-3 text-xs sm:text-sm font-semibold text-[#94A3B8]">
-            <span>{selectedArtist.monthlyListeners.toLocaleString()} monthly listeners</span>
+          <div className="flex flex-wrap items-center gap-2.5 text-xs sm:text-sm font-semibold text-[#94A3B8]">
+            <span>
+              {isLoadingArtist
+                ? 'Loading artist profile...'
+                : selectedArtist.monthlyListeners > 0
+                  ? `${selectedArtist.monthlyListeners.toLocaleString()} monthly listeners`
+                  : `${tracks.length > 0 ? `${tracks.length} top tracks` : 'Artist Catalog'} • RAIWAVE`}
+            </span>
             {selectedArtist.genre && (
               <>
                 <span>•</span>
@@ -205,7 +236,17 @@ export const ArtistView: React.FC = () => {
         <section className="space-y-3">
           <h2 className="text-lg sm:text-xl font-bold text-white font-display">Popular Songs</h2>
 
-          <div className="space-y-1.5">
+          {isLoadingArtist && tracks.length === 0 ? (
+            <div className="py-10 text-center space-y-2 rounded-2xl bg-[#12141D]/60 border border-white/5">
+              <div className="w-7 h-7 rounded-full border-2 border-purple-500 border-t-transparent animate-spin mx-auto" />
+              <p className="text-xs text-[#94A3B8]">Fetching verified discography and tracks...</p>
+            </div>
+          ) : tracks.length === 0 ? (
+            <div className="py-8 px-4 text-center rounded-2xl bg-[#12141D]/50 border border-white/5 text-xs text-[#94A3B8]">
+              No tracks found yet for {selectedArtist.name}.
+            </div>
+          ) : (
+            <div className="space-y-1.5">
             {tracks.slice(0, 10).map((track, idx) => {
               const isPlayingThis = currentTrack?.id === track.id && isPlaying
               const isSelectedThis = currentTrack?.id === track.id
@@ -282,6 +323,7 @@ export const ArtistView: React.FC = () => {
 
                     {/* Options Menu Button */}
                     <button
+                      data-track-menu="1"
                       onClick={(e) => {
                         e.stopPropagation()
                         setActiveMenuTrackId(isMenuOpen ? null : track.id)
@@ -294,6 +336,7 @@ export const ArtistView: React.FC = () => {
                     {/* Dropdown Menu */}
                     {isMenuOpen && (
                       <div
+                        data-track-menu="1"
                         onClick={(e) => e.stopPropagation()}
                         className="absolute right-2 top-12 z-30 w-44 bg-[#12141D] border border-white/10 rounded-xl shadow-2xl p-1 animate-in fade-in zoom-in-95 duration-150"
                       >
@@ -324,29 +367,38 @@ export const ArtistView: React.FC = () => {
               )
             })}
           </div>
+          )}
         </section>
 
-        {/* Discography Section (Albums, Singles & EPs) */}
-        {(albums.length > 0 || singles.length > 0) && (
+        {/* Discography Section (Albums, EPs & Singles) */}
+        {(albums.length > 0 || eps.length > 0 || singles.length > 0) && (
           <section className="space-y-4">
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
               <h2 className="text-lg sm:text-xl font-bold text-white font-display">Discography</h2>
 
-              {/* Filter Pills */}
-              <div className="flex items-center gap-1.5">
-                {(['all', 'albums', 'singles'] as const).map((tab) => (
-                  <button
-                    key={tab}
-                    onClick={() => setDiscographyFilter(tab)}
-                    className={`px-3 py-1 rounded-full text-xs font-heading capitalize transition-all cursor-pointer ${
-                      discographyFilter === tab
-                        ? 'bg-purple-600 text-white font-bold'
-                        : 'bg-white/5 text-[#94A3B8] hover:text-white'
-                    }`}
-                  >
-                    {tab === 'all' ? 'All Releases' : tab === 'albums' ? 'Albums' : 'Singles & EPs'}
-                  </button>
-                ))}
+              {/* Mobile-safe horizontal scrollable Filter Pills */}
+              <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar max-w-full pb-0.5">
+                {(['all', 'albums', 'eps', 'singles'] as const)
+                  .filter((tab) => (tab === 'eps' ? eps.length > 0 : true))
+                  .map((tab) => (
+                    <button
+                      key={tab}
+                      onClick={() => setDiscographyFilter(tab)}
+                      className={`px-3 py-1 rounded-full text-xs font-heading capitalize whitespace-nowrap flex-shrink-0 transition-all cursor-pointer ${
+                        discographyFilter === tab
+                          ? 'bg-purple-600 text-white font-bold'
+                          : 'bg-white/5 text-[#94A3B8] hover:text-white'
+                      }`}
+                    >
+                      {tab === 'all'
+                        ? 'All Releases'
+                        : tab === 'albums'
+                          ? `Albums (${albums.length})`
+                          : tab === 'eps'
+                            ? `EPs (${eps.length})`
+                            : `Singles (${singles.length})`}
+                    </button>
+                  ))}
               </div>
             </div>
 
@@ -372,10 +424,31 @@ export const ArtistView: React.FC = () => {
                 </div>
               ))}
 
+              {displayedEps.map((ep) => (
+                <div
+                  key={ep.id}
+                  onClick={() => openAlbum(ep)}
+                  className="p-3 rounded-2xl bg-[#12141D] hover:bg-[#181B27] border border-white/5 cursor-pointer group transition-all hover:-translate-y-1 shadow-lg"
+                >
+                  <img
+                    src={ep.coverUrl}
+                    alt={ep.title}
+                    loading="lazy"
+                    className="w-full aspect-square rounded-xl object-cover mb-2.5 shadow group-hover:scale-105 transition-transform"
+                  />
+                  <h4 className="text-xs sm:text-sm font-bold text-white font-display truncate group-hover:text-purple-400 transition-colors">
+                    {ep.title}
+                  </h4>
+                  <p className="text-[11px] text-[#94A3B8] truncate mt-0.5">
+                    EP • {ep.year}
+                  </p>
+                </div>
+              ))}
+
               {displayedSingles.map((single) => (
                 <div
                   key={single.id}
-                  onClick={() => playTrack(single, tracks)}
+                  onClick={() => playTrack(single, tracks.length > 0 ? tracks : singles)}
                   className="p-3 rounded-2xl bg-[#12141D] hover:bg-[#181B27] border border-white/5 cursor-pointer group transition-all hover:-translate-y-1 shadow-lg"
                 >
                   <img
@@ -389,6 +462,35 @@ export const ArtistView: React.FC = () => {
                   </h4>
                   <p className="text-[11px] text-[#94A3B8] truncate mt-0.5">
                     Single • {single.releaseYear || new Date().getFullYear()}
+                  </p>
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
+
+        {/* Appears On / Featured Releases */}
+        {appearsOn.length > 0 && (
+          <section className="space-y-3">
+            <h2 className="text-lg sm:text-xl font-bold text-white font-display">Appears On</h2>
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
+              {appearsOn.map((item) => (
+                <div
+                  key={item.id}
+                  onClick={() => openAlbum(item)}
+                  className="p-3 rounded-2xl bg-[#12141D] hover:bg-[#181B27] border border-white/5 cursor-pointer group transition-all hover:-translate-y-1 shadow-lg"
+                >
+                  <img
+                    src={item.coverUrl}
+                    alt={item.title}
+                    loading="lazy"
+                    className="w-full aspect-square rounded-xl object-cover mb-2.5 shadow group-hover:scale-105 transition-transform"
+                  />
+                  <h4 className="text-xs sm:text-sm font-bold text-white font-display truncate group-hover:text-purple-400 transition-colors">
+                    {item.title}
+                  </h4>
+                  <p className="text-[11px] text-[#94A3B8] truncate mt-0.5">
+                    Featured • {item.year}
                   </p>
                 </div>
               ))}
@@ -425,28 +527,36 @@ export const ArtistView: React.FC = () => {
           </section>
         )}
 
-        {/* About Section */}
+        {/* About Section (Real Wikipedia bio or honest catalog overview - never fabricated) */}
         <section className="pb-8 pt-4 border-t border-white/10 space-y-3">
           <h3 className="text-lg sm:text-xl font-bold text-white font-display">About</h3>
           <div className="bg-[#12141D] p-5 sm:p-6 rounded-2xl border border-white/5 max-w-2xl space-y-3">
             <div className="flex items-center gap-3">
-              <img
-                src={selectedArtist.avatarUrl}
-                alt={selectedArtist.name}
-                className="w-14 h-14 rounded-full object-cover border border-purple-500/30"
-              />
+              {selectedArtist.avatarUrl ? (
+                <img
+                  src={selectedArtist.avatarUrl}
+                  alt={selectedArtist.name}
+                  className="w-14 h-14 rounded-full object-cover border border-purple-500/30"
+                />
+              ) : (
+                <div className="w-14 h-14 rounded-full bg-purple-600/20 border border-purple-500/30 flex items-center justify-center text-white font-bold text-lg">
+                  {selectedArtist.name.charAt(0).toUpperCase()}
+                </div>
+              )}
               <div>
                 <p className="font-bold text-white text-base font-display">
                   {selectedArtist.name}
                 </p>
                 <p className="text-xs text-[#94A3B8]">
-                  {selectedArtist.monthlyListeners.toLocaleString()} monthly listeners
+                  {selectedArtist.monthlyListeners > 0
+                    ? `${selectedArtist.monthlyListeners.toLocaleString()} monthly listeners`
+                    : `${albums.length} albums • ${tracks.length} top tracks`}
                 </p>
               </div>
             </div>
             <p className="text-xs sm:text-sm text-[#94A3B8] leading-relaxed">
               {selectedArtist.bio ||
-                `${selectedArtist.name} is streamed in lossless studio fidelity on RAIWAVE.`}
+                `Verified releases, albums, and top tracks for ${selectedArtist.name} available to stream on RAIWAVE.`}
             </p>
           </div>
         </section>

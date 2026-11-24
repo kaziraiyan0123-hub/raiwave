@@ -1,12 +1,18 @@
 import React from 'react'
 import { Home, Compass, Search, Bookmark, ListMusic } from 'lucide-react'
 import { usePlayer } from '../../context/PlayerContext'
+import { useMobileKeyboardOpen } from '../../hooks/useMobileKeyboardOpen'
 import type { ViewMode } from '../../types'
 
 export const MobileBottomNav: React.FC = () => {
-  const { currentView, navigateTo, queue, queueIndex } = usePlayer()
+  const { currentView, navigateTo, queue, queueIndex, currentTrack } = usePlayer()
+  const isKeyboardOpen = useMobileKeyboardOpen()
 
-  const upcomingCount = Math.max(0, queue.length - queueIndex - 1)
+  if (isKeyboardOpen) return null
+
+  const upcomingCount = currentTrack
+    ? Math.max(0, queue.length - queueIndex - 1)
+    : queue.length
 
   const navItems: { view: ViewMode; label: string; icon: React.FC<{ className?: string }> }[] = [
     { view: 'home', label: 'Home', icon: Home },

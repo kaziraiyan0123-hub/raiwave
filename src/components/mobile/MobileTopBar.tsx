@@ -1,8 +1,9 @@
-import React from 'react'
+import React, { useState } from 'react'
 import {
   ChevronLeft,
   Search,
   X,
+  User,
 } from 'lucide-react'
 import { usePlayer } from '../../context/PlayerContext'
 import { RaiwaveLogo } from '../RaiwaveLogo'
@@ -22,13 +23,21 @@ export const MobileTopBar: React.FC = () => {
     selectedPlaylist,
     selectedArtist,
   } = usePlayer()
+  const [avatarError, setAvatarError] = useState(false)
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter') {
       const trimmed = searchQuery.trim()
       if (trimmed) {
-        playCustomUrlOrId(trimmed)
+        if (/^(https?:\/\/|youtu\.be|youtube\.com)/i.test(trimmed)) {
+          playCustomUrlOrId(trimmed)
+        } else {
+          navigateTo('search')
+        }
       }
+      e.currentTarget.blur()
+    } else if (e.key === 'Escape') {
+      e.currentTarget.blur()
     }
   }
 
@@ -137,11 +146,18 @@ export const MobileTopBar: React.FC = () => {
           className="relative cursor-pointer flex-shrink-0 active:scale-95 transition-transform"
           title="Account Profile & Settings"
         >
-          <img
-            src={userProfile.avatarUrl}
-            alt="Profile"
-            className="w-8 h-8 rounded-full object-cover border border-purple-500/40 shadow-sm"
-          />
+          {!avatarError && userProfile.avatarUrl ? (
+            <img
+              src={userProfile.avatarUrl}
+              alt="Profile"
+              onError={() => setAvatarError(true)}
+              className="w-8 h-8 rounded-full object-cover border border-purple-500/40 shadow-sm"
+            />
+          ) : (
+            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-purple-600 to-indigo-600 border border-white/20 flex items-center justify-center text-xs font-bold text-white shadow-sm">
+              {userProfile.name?.trim() ? userProfile.name.trim()[0].toUpperCase() : <User className="w-4 h-4 text-white" />}
+            </div>
+          )}
           <span className="absolute bottom-0 right-0 w-2 h-2 rounded-full bg-purple-400 ring-2 ring-[#0B0D13]" />
         </div>
       </div>

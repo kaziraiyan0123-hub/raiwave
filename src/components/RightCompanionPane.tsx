@@ -20,6 +20,7 @@ export const RightCompanionPane: React.FC = () => {
     toggleLike,
     playTrack,
     navigateTo,
+    openArtist,
     dynamicTheme,
   } = usePlayer()
 
@@ -70,8 +71,8 @@ export const RightCompanionPane: React.FC = () => {
           />
           <div className="absolute inset-0 bg-gradient-to-t from-[#0B0D13]/80 via-transparent to-transparent pointer-events-none" />
           <button
-            onClick={() => toggleLike(activeTrack.id)}
-            className="absolute top-2.5 right-2.5 w-8 h-8 rounded-full bg-black/60 backdrop-blur-md flex items-center justify-center text-white/80 hover:text-white transition-colors"
+            onClick={() => toggleLike(activeTrack.id, activeTrack)}
+            className="absolute top-2.5 right-2.5 w-8 h-8 rounded-full bg-black/60 backdrop-blur-md flex items-center justify-center text-white/80 hover:text-white transition-colors cursor-pointer"
           >
             <Heart
               className={`w-4 h-4 ${
@@ -86,7 +87,13 @@ export const RightCompanionPane: React.FC = () => {
           <h4 className="text-sm font-bold text-white truncate font-heading group-hover:text-[#A78BFA] transition-colors">
             {activeTrack.title}
           </h4>
-          <p className="text-xs text-[#94A3B8] truncate">{activeTrack.artist}</p>
+          <button
+            type="button"
+            onClick={() => openArtist(activeTrack.artist)}
+            className="text-xs text-[#94A3B8] hover:text-white hover:underline truncate text-left cursor-pointer"
+          >
+            {activeTrack.artist}
+          </button>
         </div>
 
         {/* Waveform Scrubber Slider */}
@@ -199,7 +206,7 @@ export const RightCompanionPane: React.FC = () => {
             return (
               <div
                 key={track.id}
-                onClick={() => playTrack(track)}
+                onClick={() => playTrack(track, displayedTracks)}
                 className={`flex items-center justify-between p-2 rounded-xl cursor-pointer transition-colors group ${
                   isRowSelected ? 'bg-white/10' : 'hover:bg-white/5'
                 }`}

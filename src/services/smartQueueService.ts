@@ -1,21 +1,39 @@
 import type { Track } from '../types'
 import { SAMPLE_TRACKS } from '../data/musicData'
 import { searchGlobalMusic } from './musicSearch'
+import { getNetworkState } from '../utils/networkImage'
+import { offlineService } from './offlineService'
 
 // Global pool of smart tracks
 let globalSmartPool: Track[] = [...SAMPLE_TRACKS]
 
+function mergePool(newTracks: Track[]) {
+  for (const t of newTracks) {
+    if (!globalSmartPool.some((p) => p.id === t.id)) {
+      globalSmartPool.push(t)
+    }
+  }
+  if (globalSmartPool.length > 120) {
+    globalSmartPool = globalSmartPool.slice(-120)
+  }
+}
+
 export const smartQueueService = {
   /**
-   * Generates intelligent next-track recommendations based on current song
+   * Generates intelligent next-track recommendations based on current song & connectivity
    */
   async getSmartSuggestions(currentTrack: Track, existingQueueIds: string[] = []): Promise<Track[]> {
     const queueSet = new Set(existingQueueIds)
     queueSet.add(currentTrack.id)
+    const net = getNetworkState()
 
-    // 1. Try finding candidates by genre and artist from local pool
+    // When offline, suggest only tracks genuinely available offline
+    if (!net.isOnline) {
+      const offlineTracks = await offlineService.getOfflineTracks()
+      return offlineTracks.filter((t) => !queueSet.has(t.id)).slice(0, 10)
+    }
+
     let candidates = globalSmartPool.filter((t) => !queueSet.has(t.id))
-
     const sameArtist = candidates.filter(
       (t) => t.artist.toLowerCase() === currentTrack.artist.toLowerCase()
     )
@@ -23,34 +41,34 @@ export const smartQueueService = {
       (t) => t.genre?.toLowerCase() === currentTrack.genre?.toLowerCase()
     )
 
-    let suggestions: Track[] = [...sameArtist, ...sameGenre]
+    const suggestions: Track[] = [...sameArtist, ...sameGenre]
 
-    // 2. If candidates are low, query global music for related tracks
-    if (suggestions.length < 5) {
+    if (suggestions.length < 5 && !net.isLowDataMode) {
       try {
         const query = currentTrack.genre ? `${currentTrack.genre} hits` : `${currentTrack.artist} similar`
         const fetched = await searchGlobalMusic(query)
         const newTracks = fetched.filter((t) => !queueSet.has(t.id))
         suggestions.push(...newTracks)
-        // Add to global pool
-        globalSmartPool.push(...newTracks)
-      } catch (e) {
-        console.warn('Smart queue fetch fallback:', e)
+        mergePool(newTracks)
+      } catch {
+        // Fallback to local pool
       }
     }
 
-    // 3. Fallback to remaining candidates
     if (suggestions.length < 5) {
       suggestions.push(...candidates)
     }
 
-    // Remove duplicates
-    const seen = new Set<string>()
-    return suggestions.filter((t) => {
-      if (seen.has(t.id) || queueSet.has(t.id)) return false
-      seen.add(t.id)
-      return true
-    }).slice(0, 10)
+    const seenKeys = new Set<string>()
+    return suggestions
+      .filter((t) => {
+        const normKey = `${t.title.toLowerCase().trim()}|${t.artist.toLowerCase().trim()}`
+        if (seenKeys.has(t.id) || seenKeys.has(normKey) || queueSet.has(t.id)) return false
+        seenKeys.add(t.id)
+        seenKeys.add(normKey)
+        return true
+      })
+      .slice(0, 10)
   },
 
   /**

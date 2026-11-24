@@ -5,6 +5,7 @@ import {
   Search,
   X,
   Radio,
+  User,
 } from 'lucide-react'
 import { usePlayer } from '../context/PlayerContext'
 
@@ -21,6 +22,7 @@ export const TopNav: React.FC = () => {
     toggleNotification,
   } = usePlayer()
   const [urlMessage, setUrlMessage] = useState('')
+  const [avatarError, setAvatarError] = useState(false)
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter') {
@@ -114,11 +116,18 @@ export const TopNav: React.FC = () => {
           className="relative p-1 rounded-full bg-[#12141D] hover:bg-[#181B27] border border-white/10 cursor-pointer group transition-all"
           title="Account Profile & Settings"
         >
-          <img
-            src={userProfile.avatarUrl}
-            alt="Profile"
-            className="w-8 h-8 rounded-full object-cover border border-[#8B5CF6]/50 group-hover:scale-105 transition-transform shadow"
-          />
+          {!avatarError && userProfile.avatarUrl ? (
+            <img
+              src={userProfile.avatarUrl}
+              alt="Profile"
+              onError={() => setAvatarError(true)}
+              className="w-8 h-8 rounded-full object-cover border border-[#8B5CF6]/50 group-hover:scale-105 transition-transform shadow"
+            />
+          ) : (
+            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-purple-600 to-indigo-600 border border-white/20 flex items-center justify-center text-xs font-bold text-white shadow group-hover:scale-105 transition-transform">
+              {userProfile.name?.trim() ? userProfile.name.trim()[0].toUpperCase() : <User className="w-4 h-4 text-white" />}
+            </div>
+          )}
           <span className="absolute bottom-1 right-1 w-2.5 h-2.5 rounded-full bg-[#8B5CF6] ring-2 ring-[#0B0D13]" />
         </button>
       </div>

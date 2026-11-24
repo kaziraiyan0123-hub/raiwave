@@ -1,4 +1,9 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
+import {
+  DATA_SAVER_STORAGE_KEY,
+  DATA_SAVER_EVENT,
+  getNetworkState,
+} from '../utils/networkImage'
 
 export interface NetworkStatus {
   isOnline: boolean
@@ -7,70 +12,65 @@ export interface NetworkStatus {
   saveData: boolean
 }
 
-const DATA_SAVER_KEY = 'raiwave_data_saver_mode'
-
 export function useNetworkStatus() {
-  const [isOnline, setIsOnline] = useState<boolean>(() => {
-    return typeof navigator !== 'undefined' ? navigator.onLine : true
-  })
-
-  const [effectiveType, setEffectiveType] = useState<'4g' | '3g' | '2g' | 'slow-2g' | 'unknown'>('4g')
-  const [dataSaverEnabled, setDataSaverEnabled] = useState<boolean>(() => {
-    try {
-      return localStorage.getItem(DATA_SAVER_KEY) === 'true'
-    } catch {
-      return false
-    }
-  })
+  const [state, setState] = useState(() => getNetworkState())
 
   useEffect(() => {
     if (typeof window === 'undefined') return
 
-    const handleOnline = () => setIsOnline(true)
-    const handleOffline = () => setIsOnline(false)
+    const refresh = () => {
+      setState(getNetworkState())
+    }
 
-    window.addEventListener('online', handleOnline)
-    window.addEventListener('offline', handleOffline)
+    window.addEventListener('online', refresh)
+    window.addEventListener('offline', refresh)
+    window.addEventListener(DATA_SAVER_EVENT, refresh)
 
-    // Check navigator.connection if available (Chrome / Edge / Android WebView)
-    const connection = (navigator as any).connection || (navigator as any).mozConnection || (navigator as any).webkitConnection
-    if (connection) {
-      const updateConn = () => {
-        const type = connection.effectiveType || '4g'
-        setEffectiveType(type)
-      }
-      updateConn()
-      connection.addEventListener('change', updateConn)
-      return () => {
-        window.removeEventListener('online', handleOnline)
-        window.removeEventListener('offline', handleOffline)
-        connection.removeEventListener('change', updateConn)
-      }
+    const handleStorage = (e: StorageEvent) => {
+      if (e.key === DATA_SAVER_STORAGE_KEY) refresh()
+    }
+    window.addEventListener('storage', handleStorage)
+
+    const connection =
+      (navigator as unknown as { connection?: EventTarget }).connection ||
+      (navigator as unknown as { mozConnection?: EventTarget }).mozConnection ||
+      (navigator as unknown as { webkitConnection?: EventTarget }).webkitConnection
+
+    if (connection && typeof connection.addEventListener === 'function') {
+      connection.addEventListener('change', refresh)
     }
 
     return () => {
-      window.removeEventListener('online', handleOnline)
-      window.removeEventListener('offline', handleOffline)
+      window.removeEventListener('online', refresh)
+      window.removeEventListener('offline', refresh)
+      window.removeEventListener(DATA_SAVER_EVENT, refresh)
+      window.removeEventListener('storage', handleStorage)
+      if (connection && typeof connection.removeEventListener === 'function') {
+        connection.removeEventListener('change', refresh)
+      }
     }
   }, [])
 
-  const toggleDataSaver = (val?: boolean) => {
-    setDataSaverEnabled((prev) => {
-      const next = typeof val === 'boolean' ? val : !prev
-      try {
-        localStorage.setItem(DATA_SAVER_KEY, String(next))
-      } catch {}
-      return next
-    })
-  }
-
-  const isSlow = !isOnline || effectiveType === '2g' || effectiveType === 'slow-2g'
+  const toggleDataSaver = useCallback((val?: boolean) => {
+    const current = getNetworkState().dataSaverEnabled
+    const next = typeof val === 'boolean' ? val : !current
+    try {
+      localStorage.setItem(DATA_SAVER_STORAGE_KEY, String(next))
+    } catch {
+      // Ignore storage quota issues
+    }
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent(DATA_SAVER_EVENT, { detail: { enabled: next } }))
+    }
+    setState(getNetworkState())
+  }, [])
 
   return {
-    isOnline,
-    effectiveType,
-    isSlowConnection: isSlow,
-    dataSaverEnabled,
+    isOnline: state.isOnline,
+    effectiveType: state.effectiveType,
+    isSlowConnection: state.isSlowConnection,
+    dataSaverEnabled: state.dataSaverEnabled,
+    isLowDataMode: state.isLowDataMode,
     toggleDataSaver,
   }
 }

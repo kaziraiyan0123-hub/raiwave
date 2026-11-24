@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useId } from 'react'
 
 interface LogoProps {
   size?: 'sm' | 'md' | 'lg' | 'xl'
@@ -9,9 +9,7 @@ interface LogoProps {
 
 /**
  * RAIWAVE Brand Logo
- * Recreates the exact brand specification:
- * - Variant 'wave-r': Harmonic soundwave frequencies morphing into bold letter R with cyan-purple-coral radiant gradient (Image 7)
- * - Variant 'geometric-r': Minimalist dual-stroke R with teal upper loop & amber vertical stem (Image 4)
+ * Uses unique per-instance SVG gradient/filter IDs so mounting/unmounting other instances never breaks fills.
  */
 export const RaiwaveLogo: React.FC<LogoProps> = ({
   size = 'md',
@@ -19,6 +17,10 @@ export const RaiwaveLogo: React.FC<LogoProps> = ({
   className = '',
   variant = 'wave-r',
 }) => {
+  const uid = useId().replace(/:/g, '')
+  const gradId = `raiwaveGrad-${uid}`
+  const glowId = `raiwaveGlow-${uid}`
+
   const sizeMap = {
     sm: { height: 26, width: 54, text: 'text-sm', sub: 'text-[8px]' },
     md: { height: 34, width: 72, text: 'text-lg', sub: 'text-[9px]' },
@@ -31,7 +33,6 @@ export const RaiwaveLogo: React.FC<LogoProps> = ({
   return (
     <div className={`flex items-center gap-3 select-none group cursor-pointer ${className}`}>
       {variant === 'wave-r' ? (
-        // Exact Harmonic Soundwave to R Silhouette (from Reference Image 7)
         <svg
           width={width}
           height={height}
@@ -41,7 +42,7 @@ export const RaiwaveLogo: React.FC<LogoProps> = ({
           className="flex-shrink-0 transition-transform duration-300 group-hover:scale-105"
         >
           <defs>
-            <linearGradient id="raiwaveRadiantGrad" x1="0%" y1="50%" x2="100%" y2="50%">
+            <linearGradient id={gradId} x1="0%" y1="50%" x2="100%" y2="50%">
               <stop offset="0%" stopColor="#00F2FE" />
               <stop offset="22%" stopColor="#38BDF8" />
               <stop offset="45%" stopColor="#818CF8" />
@@ -50,7 +51,7 @@ export const RaiwaveLogo: React.FC<LogoProps> = ({
               <stop offset="100%" stopColor="#FB923C" />
             </linearGradient>
 
-            <filter id="raiwaveLuminance" x="-20%" y="-20%" width="140%" height="140%">
+            <filter id={glowId} x="-20%" y="-20%" width="140%" height="140%">
               <feGaussianBlur stdDeviation="2.5" result="glow" />
               <feMerge>
                 <feMergeNode in="glow" />
@@ -95,8 +96,8 @@ export const RaiwaveLogo: React.FC<LogoProps> = ({
                C 112 40, 118 36, 118 32
                C 118 28, 112 24, 105 24
                Z"
-            fill="url(#raiwaveRadiantGrad)"
-            filter="url(#raiwaveLuminance)"
+            fill={`url(#${gradId})`}
+            filter={`url(#${glowId})`}
           />
         </svg>
       ) : (
