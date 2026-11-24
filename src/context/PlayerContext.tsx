@@ -67,6 +67,7 @@ interface PlayerContextType {
   toggleRepeat: () => void
   toggleLike: (trackId: string, trackObj?: Track) => void
   isLiked: (trackId: string) => boolean
+  playNext: (track: Track) => void
   addToQueue: (track: Track) => void
   addAlbumToQueue: (album: Album) => void
   addPlaylistToQueue: (playlist: Playlist) => void
@@ -255,12 +256,20 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
   // User Profile & Account (Gmail maintained)
   const [userProfile, setUserProfile] = useState<UserProfile>(() => {
+    let savedName = ''
+    try {
+      savedName = localStorage.getItem('raiwave_user_name') || ''
+    } catch {}
     try {
       const saved = localStorage.getItem('raiwave_user_profile')
-      if (saved) return JSON.parse(saved)
+      if (saved) {
+        const parsed = JSON.parse(saved)
+        if (!parsed.name && savedName) parsed.name = savedName
+        return parsed
+      }
     } catch {}
     return {
-      name: '',
+      name: savedName,
       email: '',
       avatarUrl: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=200&auto=format&fit=crop&q=80',
       developerCredit: 'Kazi Raiyan (Lead Developer & Creator)',
@@ -335,6 +344,9 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       const next = { ...prev, ...updates }
       try {
         localStorage.setItem('raiwave_user_profile', JSON.stringify(next))
+        if (updates.name !== undefined) {
+          localStorage.setItem('raiwave_user_name', updates.name)
+        }
       } catch {}
       return next
     })
@@ -583,26 +595,36 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const [selectedArtist, setSelectedArtist] = useState<Artist | null>(null)
   const [searchQuery, setSearchQuery] = useState<string>('')
 
-  // Persistence
+  // Clean legacy demo seeds from user's storage so liked songs starts pristine & empty
+  const DEMO_SEEDS = ['yt-weeknd-blinding-lights', 'yt-daft-punk-get-lucky']
+
+  // Persistence - Starts completely empty (0 songs) for new users; clean legacy demo seeds
   const [likedTracks, setLikedTracks] = useState<Track[]>(() => {
     try {
       const savedData = localStorage.getItem('raiwave_liked_tracks_data')
       if (savedData) {
         const parsed = JSON.parse(savedData)
-        if (Array.isArray(parsed) && parsed.length > 0) return parsed
+        if (Array.isArray(parsed)) {
+          const cleaned = parsed.filter((t: Track) => !DEMO_SEEDS.includes(t.id))
+          return cleaned
+        }
       }
     } catch {}
-    const initialIds = ['yt-weeknd-blinding-lights', 'yt-daft-punk-get-lucky']
-    return SAMPLE_TRACKS.filter((t) => initialIds.includes(t.id))
+    return []
   })
 
   const [likedTrackIds, setLikedTrackIds] = useState<string[]>(() => {
     try {
       const saved = localStorage.getItem('raiwave_liked_tracks') || localStorage.getItem('spotiflow_liked_tracks')
-      return saved ? JSON.parse(saved) : ['yt-weeknd-blinding-lights', 'yt-daft-punk-get-lucky']
-    } catch {
-      return ['yt-weeknd-blinding-lights', 'yt-daft-punk-get-lucky']
-    }
+      if (saved) {
+        const parsed = JSON.parse(saved)
+        if (Array.isArray(parsed)) {
+          const cleaned = parsed.filter((id: string) => !DEMO_SEEDS.includes(id))
+          return cleaned
+        }
+      }
+    } catch {}
+    return []
   })
 
   const [userPlaylists, setUserPlaylists] = useState<Playlist[]>(() => {
@@ -1217,7 +1239,23 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
     let nextIdx = queueIndexRef.current + 1
     if (isShuffleRef.current) {
-      nextIdx = Math.floor(Math.random() * curQueue.length)
+      // Pick randomly from remaining upcoming tracks to avoid repeats
+      const upcomingIndices: number[] = []
+      for (let i = queueIndexRef.current + 1; i < curQueue.length; i++) {
+        upcomingIndices.push(i)
+      }
+      if (upcomingIndices.length > 0) {
+        nextIdx = upcomingIndices[Math.floor(Math.random() * upcomingIndices.length)]
+      } else if (repeatModeRef.current === 'all' && curQueue.length > 1) {
+        // Wrap around but don't re-pick current track
+        const allOtherIndices: number[] = []
+        for (let i = 0; i < curQueue.length; i++) {
+          if (i !== queueIndexRef.current) allOtherIndices.push(i)
+        }
+        nextIdx = allOtherIndices[Math.floor(Math.random() * allOtherIndices.length)]
+      } else {
+        nextIdx = curQueue.length
+      }
     } else if (nextIdx >= curQueue.length) {
       if (repeatModeRef.current === 'all') {
         nextIdx = 0
@@ -1371,6 +1409,16 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   }
 
   const isLiked = (trackId: string) => likedTrackIds.includes(trackId)
+
+  const playNext = (track: Track) => {
+    setQueue((prev) => {
+      if (prev.length === 0) return [track]
+      const next = [...prev]
+      next.splice(queueIndex + 1, 0, track)
+      return next
+    })
+    showToast(`Will play next: "${track.title}"`)
+  }
 
   const addToQueue = (track: Track) => {
     setQueue((prev) => [...prev, track])
@@ -1638,6 +1686,7 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         toggleRepeat,
         toggleLike,
         isLiked,
+        playNext,
         addToQueue,
         addAlbumToQueue,
         addPlaylistToQueue,

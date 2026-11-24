@@ -8,6 +8,7 @@ import {
   Shuffle,
   Radio,
   ListPlus,
+  ListStart,
   MoreVertical,
 } from 'lucide-react'
 import { usePlayer } from '../../context/PlayerContext'
@@ -26,6 +27,7 @@ export const ArtistView: React.FC = () => {
     goBack,
     openAlbum,
     openArtist,
+    playNext,
     addToQueue,
     showToast,
   } = usePlayer()
@@ -297,10 +299,20 @@ export const ArtistView: React.FC = () => {
                       >
                         <button
                           onClick={() => {
+                            playNext(track)
+                            setActiveMenuTrackId(null)
+                          }}
+                          className="w-full flex items-center gap-2 px-3 py-2 text-xs text-white/80 hover:text-white hover:bg-white/5 rounded-lg text-left cursor-pointer"
+                        >
+                          <ListStart className="w-3.5 h-3.5 text-purple-400" />
+                          <span>Play Next</span>
+                        </button>
+                        <button
+                          onClick={() => {
                             addToQueue(track)
                             setActiveMenuTrackId(null)
                           }}
-                          className="w-full flex items-center gap-2 px-3 py-2 text-xs text-white/80 hover:text-white hover:bg-white/5 rounded-lg text-left"
+                          className="w-full flex items-center gap-2 px-3 py-2 text-xs text-white/80 hover:text-white hover:bg-white/5 rounded-lg text-left cursor-pointer"
                         >
                           <ListPlus className="w-3.5 h-3.5 text-purple-400" />
                           <span>Add to Queue</span>

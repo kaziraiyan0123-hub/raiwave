@@ -1,5 +1,5 @@
 import React from 'react'
-import { Play, Pause, Clock, Heart, ListPlus, ChevronLeft } from 'lucide-react'
+import { Play, Pause, Clock, Heart, ListPlus, ListStart, ChevronLeft } from 'lucide-react'
 import { usePlayer } from '../../context/PlayerContext'
 import { EqualizerBars } from '../EqualizerBars'
 
@@ -12,6 +12,7 @@ export const AlbumView: React.FC = () => {
     togglePlay,
     isLiked,
     toggleLike,
+    playNext,
     addToQueue,
     addAlbumToQueue,
     goBack,
@@ -179,6 +180,17 @@ export const AlbumView: React.FC = () => {
                 </div>
 
                 <div className="col-span-3 md:col-span-1 flex items-center justify-end gap-2.5 text-xs text-[#94A3B8] pr-2">
+                  {/* Play Next */}
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      playNext(track)
+                    }}
+                    className="opacity-0 group-hover:opacity-100 transition-all p-1 hover:text-purple-300 hover:scale-110 active:scale-90 cursor-pointer"
+                    title="Play track next"
+                  >
+                    <ListStart className="w-4 h-4" />
+                  </button>
                   {/* Add Track to Queue */}
                   <button
                     onClick={(e) => {

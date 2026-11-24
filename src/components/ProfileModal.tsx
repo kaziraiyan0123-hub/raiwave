@@ -28,6 +28,7 @@ export const ProfileModal: React.FC = () => {
     likedTrackIds,
     userPlaylists,
     setAppMode,
+    showToast,
   } = usePlayer()
 
   const [name, setName] = useState(userProfile.name || '')
@@ -66,11 +67,14 @@ export const ProfileModal: React.FC = () => {
 
   const handleSave = (e?: React.FormEvent) => {
     if (e) e.preventDefault()
+    const cleanName = name.trim()
+    const cleanEmail = email.trim()
     updateUserProfile({
-      name: name.trim(),
-      email: email.trim(),
+      name: cleanName,
+      email: cleanEmail,
     })
     setIsSaved(true)
+    showToast(cleanName ? `Profile updated: ${cleanName}` : 'Profile updated')
     setTimeout(() => setIsSaved(false), 2500)
   }
 

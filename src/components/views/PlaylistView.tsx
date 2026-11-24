@@ -8,6 +8,7 @@ import {
   MoreHorizontal,
   Music,
   ListPlus,
+  ListStart,
   ChevronLeft,
 } from 'lucide-react'
 import { usePlayer } from '../../context/PlayerContext'
@@ -25,6 +26,7 @@ export const PlaylistView: React.FC = () => {
     isShuffle,
     toggleShuffle,
     toggleMobilePlayer,
+    playNext,
     addToQueue,
     addPlaylistToQueue,
     goBack,
@@ -247,6 +249,16 @@ export const PlaylistView: React.FC = () => {
 
                   {/* Add to Queue + Heart Like + Duration */}
                   <div className="col-span-5 sm:col-span-3 md:col-span-1 flex items-center justify-end gap-2.5 text-xs text-[#b3b3b3] pr-2">
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        playNext(track)
+                      }}
+                      className="opacity-0 group-hover:opacity-100 transition-all p-1 hover:text-purple-300 hover:scale-110 active:scale-90 cursor-pointer"
+                      title="Play track next"
+                    >
+                      <ListStart className="w-4 h-4" />
+                    </button>
                     <button
                       onClick={(e) => {
                         e.stopPropagation()

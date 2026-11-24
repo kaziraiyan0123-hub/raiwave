@@ -14,6 +14,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Radio,
+  ListStart,
 } from 'lucide-react'
 import { usePlayer } from '../../context/PlayerContext'
 import {
@@ -43,6 +44,7 @@ export const HomeView: React.FC = () => {
     isLiked,
     toggleLike,
     likedTracks,
+    playNext,
     realtimeTopTracks,
     history,
     clearHistory,
@@ -88,6 +90,16 @@ export const HomeView: React.FC = () => {
     return 'Good Evening'
   }, [])
 
+  // User display name from profile or local storage
+  const displayName = useMemo(() => {
+    if (userProfile?.name?.trim()) return userProfile.name.trim()
+    try {
+      return localStorage.getItem('raiwave_user_name')?.trim() || ''
+    } catch {
+      return ''
+    }
+  }, [userProfile?.name])
+
   // Format seconds to mm:ss
   const formatTime = (secs: number) => {
     if (isNaN(secs) || secs < 0) return '0:00'
@@ -96,17 +108,10 @@ export const HomeView: React.FC = () => {
     return `${m}:${s < 10 ? '0' : ''}${s}`
   }
 
-  // Combined Recently Played + Recommended tracks
+  // User's genuine Recently Played history (no fake filler)
   const recentlyPlayedList = useMemo(() => {
-    const list = [...history]
-    for (const track of categoryFilteredTracks) {
-      if (!list.some((t) => t.id === track.id)) {
-        list.push(track)
-      }
-      if (list.length >= 12) break
-    }
-    return list
-  }, [history, categoryFilteredTracks])
+    return history
+  }, [history])
 
   // Carousel touch/pointer drag handlers for mobile swiping
   const categorySwipe = useCarouselSwipe()
@@ -126,11 +131,11 @@ export const HomeView: React.FC = () => {
       <div className="space-y-3">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
           <div>
-            <h1 className="text-xl sm:text-3xl font-black text-white font-heading tracking-tight">
-              {greeting}
-              {userProfile?.name ? (
-                <span className="text-[#A78BFA] font-medium ml-2 text-lg sm:text-2xl">
-                  {userProfile.name.split(' ')[0]}
+            <h1 className="text-xl sm:text-3xl font-black text-white font-heading tracking-tight flex items-center flex-wrap">
+              <span>{greeting}{displayName ? ',' : ''}</span>
+              {displayName ? (
+                <span className="text-[#A78BFA] font-bold ml-2 text-xl sm:text-3xl">
+                  {displayName.split(' ')[0]}
                 </span>
               ) : null}
             </h1>
@@ -267,7 +272,9 @@ export const HomeView: React.FC = () => {
       {/* =========================================================================
           3. RECENTLY PLAYED SECTION
          ========================================================================= */}
-      <section id="recently-played-section" className="space-y-3">
+      {/* 3. RECENTLY PLAYED SECTION (Displayed when user has playback history) */}
+      {recentlyPlayedList.length > 0 && (
+        <section id="recently-played-section" className="space-y-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <History className="w-4 h-4 text-[#8B5CF6]" />
@@ -372,6 +379,7 @@ export const HomeView: React.FC = () => {
           })}
         </div>
       </section>
+      )}
 
       {/* =========================================================================
           4. POPULAR SONGS TODAY (TOP HITS)
@@ -475,6 +483,17 @@ export const HomeView: React.FC = () => {
                           liked ? 'text-[#8B5CF6] fill-[#8B5CF6]' : 'hover:text-white'
                         }`}
                       />
+                    </button>
+
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        playNext(track)
+                      }}
+                      className="p-1 hover:text-[#A78BFA] transition-colors cursor-pointer"
+                      title="Play Next in queue"
+                    >
+                      <ListStart className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                     </button>
 
                     <button
