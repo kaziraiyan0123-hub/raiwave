@@ -15,6 +15,7 @@ export const MobileMiniPlayer: React.FC = () => {
     currentTime,
     duration,
     dynamicTheme,
+    openArtist,
   } = usePlayer()
 
   if (!currentTrack) return null
@@ -63,7 +64,13 @@ export const MobileMiniPlayer: React.FC = () => {
             <span className="text-xs sm:text-sm font-bold text-white truncate font-heading leading-tight">
               {currentTrack.title}
             </span>
-            <span className="text-[11px] text-white/60 truncate mt-0.5">
+            <span
+              onClick={(e) => {
+                e.stopPropagation()
+                openArtist(currentTrack.artist)
+              }}
+              className="text-[11px] text-white/60 hover:text-[#A78BFA] hover:underline cursor-pointer truncate mt-0.5"
+            >
               {currentTrack.artist}
             </span>
           </div>

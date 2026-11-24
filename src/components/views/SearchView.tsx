@@ -130,7 +130,7 @@ export const SearchView: React.FC = () => {
   }
 
   return (
-    <div className="p-3 sm:p-6 select-none space-y-5 pb-44 md:pb-28 max-w-7xl mx-auto w-full overflow-hidden">
+    <div className="p-3 sm:p-6 select-none space-y-5 pb-44 md:pb-28 max-w-7xl mx-auto w-full touch-pan-y">
       {/* Search Header */}
       {searchQuery && (
         <div className="flex items-center justify-between gap-2 border-b border-white/5 pb-3">
@@ -156,7 +156,7 @@ export const SearchView: React.FC = () => {
 
       {/* Filter Tabs when query is present */}
       {searchQuery && (
-        <div className="flex items-center gap-2 overflow-x-auto no-scrollbar py-0.5">
+        <div className="flex items-center gap-2 overflow-x-auto no-scrollbar py-0.5 touch-pan-y">
           {(['all', 'songs', 'artists', 'albums'] as const).map((tab) => (
             <button
               key={tab}

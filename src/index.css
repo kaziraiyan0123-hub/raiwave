@@ -135,6 +135,12 @@ body.player-mode #root {
 }
 
 /* Custom sleek RAIWAVE scrollbar */
+.custom-scrollbar {
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-y: contain;
+  touch-action: pan-y;
+}
+
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;

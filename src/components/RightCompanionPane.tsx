@@ -15,6 +15,7 @@ export const RightCompanionPane: React.FC = () => {
     seek,
     queue,
     likedTrackIds,
+    likedTracks,
     isLiked,
     toggleLike,
     playTrack,
@@ -36,10 +37,10 @@ export const RightCompanionPane: React.FC = () => {
     return `${m}:${s < 10 ? '0' : ''}${s}`
   }
 
-  // Filter queue or liked tracks
+  // Filter queue or liked tracks (display all liked tracks if available)
   const displayedTracks =
     activeTab === 'liked'
-      ? queue.filter((t) => likedTrackIds.includes(t.id))
+      ? (likedTracks && likedTracks.length > 0 ? likedTracks : queue.filter((t) => likedTrackIds.includes(t.id)))
       : queue
 
   return (
@@ -155,7 +156,7 @@ export const RightCompanionPane: React.FC = () => {
       <div className="bg-[#12141D]/80 backdrop-blur-xl border border-white/5 rounded-2xl p-3 flex-1 flex flex-col overflow-hidden shadow-xl">
         <div className="flex items-center justify-between px-1 mb-2">
           <span className="text-xs font-bold text-white font-heading">
-            My Library <span className="text-[#94A3B8] font-normal font-mono">({likedTrackIds.length})</span>
+            My Library <span className="text-[#94A3B8] font-normal font-mono">({likedTracks.length})</span>
           </span>
           <button
             onClick={() => navigateTo('library')}

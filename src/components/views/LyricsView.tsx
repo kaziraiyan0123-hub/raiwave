@@ -35,7 +35,7 @@ export const LyricsView: React.FC = () => {
   return (
     <div
       ref={containerRef}
-      className="h-full overflow-y-auto px-8 py-16 select-none relative transition-colors duration-700"
+      className="w-full min-h-full px-4 sm:px-8 py-10 sm:py-16 select-none relative transition-colors duration-700 touch-pan-y"
       style={{
         background: `linear-gradient(180deg, ${currentTrack.color || '#12141D'} 0%, #0B0D13 90%)`,
       }}

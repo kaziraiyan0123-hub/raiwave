@@ -104,10 +104,10 @@ export const ArtistView: React.FC = () => {
   }, [singles, discographyFilter])
 
   return (
-    <div className="select-none pb-44 md:pb-28 w-full overflow-hidden">
+    <div className="select-none pb-44 md:pb-28 w-full max-w-full touch-pan-y">
       {/* 1. Immersive Hero Banner with Gradient Fade */}
       <div
-        className="relative min-h-[260px] sm:min-h-[320px] flex items-end p-4 sm:p-8 bg-cover bg-center overflow-hidden"
+        className="relative min-h-[260px] sm:min-h-[320px] flex items-end p-4 sm:p-8 bg-cover bg-center overflow-hidden touch-pan-y"
         style={{
           backgroundImage: `linear-gradient(to bottom, rgba(11,13,19,0.3) 0%, rgba(11,13,19,0.8) 65%, #0B0D13 100%), url(${
             selectedArtist.headerImage || selectedArtist.avatarUrl
